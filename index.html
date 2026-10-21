@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Carlos Velasquez — Product Designer</title>
+    <meta name="description" content="A playable portfolio. Each world is a case study: the blocks are the copy, the billboards are the work." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Press+Start+2P&family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <main id="stage">
+      <div id="tv">
+        <div id="tv-flip">
+          <div id="tv-bezel">
+            <div id="screen">
+              <div id="game"></div>
+              <div id="overlay"></div>
+              <div id="dev-badge">DEV MODE</div>
+            </div>
+          </div>
+          <div id="tv-front">
+            <span class="tv-brand">CV&#8209;1985</span>
+            <span class="tv-knobs"><i></i><i></i><i></i><i></i></span>
+            <span class="tv-power"></span>
+          </div>
+        </div>
+      </div>
+      <p id="legend">
+        <span><kbd>←</kbd><kbd>→</kbd> move</span>
+        <span><kbd>Space</kbd> jump</span>
+        <span><kbd>Shift</kbd> run</span>
+        <span><kbd>↓</kbd> pipes</span>
+        <span><kbd>Esc</kbd> map</span>
+        <span><kbd>M</kbd> mute</span>
+        <button id="qv-btn" type="button">Skip the game → read the case studies</button>
+      </p>
+      <p id="secret">Some old codes still work.</p>
+    </main>
+
+    <aside id="dev-panel" hidden></aside>
+    <div id="quickview" hidden></div>
+
+    <div id="mobile" hidden>
+      <div class="gb">
+        <div class="gb-screen-wrap">
+          <div class="gb-led"></div>
+          <div class="gb-screen">
+            <p class="gb-title">CARLOS<br />VELASQUEZ.</p>
+            <p>This portfolio is a game, and it plays best on a desktop keyboard.</p>
+            <p class="gb-blink">▶ OPEN ON DESKTOP</p>
+          </div>
+          <span class="gb-label">PORTFOLIO BOY</span>
+        </div>
+        <div class="gb-controls">
+          <div class="gb-dpad"><i></i><i></i></div>
+          <div class="gb-ab"><button id="gb-share" type="button" aria-label="Share link">B</button><button id="gb-read" type="button" aria-label="Read case studies">A</button></div>
+        </div>
+        <div class="gb-hint"><span>B: send link</span><span>A: read case studies</span></div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

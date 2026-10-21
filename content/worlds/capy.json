@@ -1,0 +1,117 @@
+{
+  "slug": "capy",
+  "title": "Launch the Capy",
+  "tagline": "Slingshot a capybara as high as you can. Bounce off clouds, dodge birds, upgrade your gear.",
+  "role": "Solo: design, engineering, art direction",
+  "timeline": "2026",
+  "platform": "iOS · SpriteKit",
+  "theme": "sunset",
+  "card": "heart",
+  "summary": "A vertical arcade game I designed and built end to end in SpriteKit, live on the App Store. The loop is launch, fly, fall, upgrade, launch again.",
+  "outcomes": [
+    "Shipped solo, from game design to App Store submission",
+    "7 hand-designed zones from meadow to deep space",
+    "Ads that live on in-world billboards instead of covering the game"
+  ],
+  "links": [],
+  "beats": [
+    {
+      "id": "c-what",
+      "type": "copy",
+      "headline": "Launch. Fly. Upgrade.",
+      "body": "Pull back the slingshot, release Capy into the sky, then steer through an endless world of clouds, coins, powerups and hazards.\n\nHeight is your score. Coins buy upgrades. Every run makes the next one go higher."
+    },
+    {
+      "id": "c-launch",
+      "type": "image",
+      "src": "content/capy/capy-launch.png",
+      "caption": "Capy, mid-launch",
+      "alt": "Capybara character launching"
+    },
+    {
+      "id": "c-zones",
+      "type": "metric",
+      "value": "7",
+      "label": "Zones from meadow to space",
+      "body": "Each zone has its own art, music and difficulty. The sky color blends with altitude, and deep space tiles forever above the moon."
+    },
+    {
+      "id": "c-zone-art",
+      "type": "image",
+      "src": "content/capy/zone.png",
+      "caption": "One of the vertical zone backgrounds",
+      "alt": "Vertical zone background art"
+    },
+    {
+      "id": "c-chain",
+      "type": "decision",
+      "question": "Playtesters found Capy could climb on its own. Fix?",
+      "optionA": {
+        "label": "Fewer powerups",
+        "body": "Spawn fewer powerups so chains can't form.\n\nEasy, but the sky gets empty and the middle of a run gets boring."
+      },
+      "optionB": {
+        "label": "Chain limiter",
+        "body": "Keep the density. After 4 powerups in a row, Capy passes through the next ones for 3 seconds. Hitting a hazard resets the count."
+      },
+      "chosen": "B",
+      "why": "It kept the world full and rewarded skill. I also nudged spawns toward the screen edges so powerups cluster less."
+    },
+    {
+      "id": "c-garage",
+      "type": "image",
+      "src": "content/capy/garage.png",
+      "caption": "The Garage, where coins become upgrades",
+      "alt": "Garage shop background"
+    },
+    {
+      "id": "c-economy",
+      "type": "copy",
+      "headline": "An economy worth grinding",
+      "body": "The slingshot has 6 upgrade tiers on an exponential power curve, about 1.4× per tier.\n\nConsumables (Jetpack, Dynamite, Super Feather) and cosmetics give coins somewhere to go after the big upgrades are bought."
+    },
+    {
+      "id": "c-powerups",
+      "type": "metric",
+      "value": "8 + 4",
+      "label": "Powerups and hazards",
+      "body": "8 powerups to grab mid-flight. 4 hazards with their own feel: birds stun and knock back, wind pushes sideways, storm clouds push down, rain slows you."
+    },
+    {
+      "id": "c-billboard",
+      "type": "image",
+      "src": "content/capy/billboard.png",
+      "caption": "The billboard prop. The green panel becomes a live ad",
+      "alt": "Cardboard billboard with green screen panel"
+    },
+    {
+      "id": "c-ads",
+      "type": "copy",
+      "lens": "build",
+      "headline": "A real ad inside the world",
+      "body": "AdMob's banner is a UIKit view, but the ad lives on a billboard inside the SpriteKit scene.\n\nEvery frame, the billboard's panel is converted from world space to screen coordinates and the banner is moved to match, so the ad scrolls with the world. A shader paints the green placeholder navy until an ad loads."
+    },
+    {
+      "id": "c-controls",
+      "type": "decision",
+      "lens": "build",
+      "question": "Touch or tilt to steer?",
+      "optionA": {
+        "label": "Tilt only",
+        "body": "Gyroscope steering feels great once you learn it, but it's hard on new players and awkward on a couch."
+      },
+      "optionB": {
+        "label": "Both, in Garage",
+        "body": "Touch (Easy) moves Capy toward your finger. Gyroscope (Hard) applies tilt force. Players pick in the Garage and it's saved."
+      },
+      "chosen": "B",
+      "why": "Different players, different hands. The gyroscope only starts when Hard mode is on, which saves battery too."
+    },
+    {
+      "id": "c-differently",
+      "type": "copy",
+      "headline": "What I'd do differently",
+      "body": "- Plan the ad system first. Designing it late meant refactoring the camera and coordinate math.\n- Design both control modes as one input abstraction from the start.\n- Lock asset naming early. Prefixes changed mid-project and took several sweeps to clean up."
+    }
+  ]
+}

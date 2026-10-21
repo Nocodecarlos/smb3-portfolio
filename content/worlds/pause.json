@@ -1,0 +1,121 @@
+{
+  "slug": "pause",
+  "title": "Pause",
+  "tagline": "A quick puzzle before your most distracting apps open.",
+  "role": "Product designer & builder",
+  "timeline": "2025–2026",
+  "platform": "iOS · Screen Time",
+  "theme": "sky",
+  "card": "star",
+  "summary": "Pause turns opening a distracting app into a choice instead of a reflex. It's live on the App Store, built on Apple's Screen Time framework, with a free tier and a premium trial.",
+  "outcomes": [
+    "Shipped on iPhone with 9 polished puzzles sharing one calm visual shell",
+    "Analytics rebuilt around one north star: D7 gate retention",
+    "Five-star App Store reviews that describe exactly the moment we designed for"
+  ],
+  "links": [{ "label": "try-pause.com", "url": "https://try-pause.com" }],
+  "beats": [
+    {
+      "id": "p-problem",
+      "type": "copy",
+      "headline": "The problem: autopilot",
+      "body": "People check their phones dozens of times a day, and most of those opens aren't decisions. They're reflexes.\n\nBlocking apps outright doesn't stick. People resent it, then turn it off. I wanted something that kept the apps and removed the autopilot."
+    },
+    {
+      "id": "p-hero",
+      "type": "image",
+      "src": "content/pause/hero.png",
+      "caption": "Pause: scroll on purpose",
+      "alt": "Pause marketing image"
+    },
+    {
+      "id": "p-friction",
+      "type": "decision",
+      "question": "How much friction is the right amount?",
+      "optionA": {
+        "label": "Hard block",
+        "body": "Lock the app behind a timer or a settings screen, the way iOS Screen Time does.\n\nStrong, but it feels like punishment, and people delete apps that punish them."
+      },
+      "optionB": {
+        "label": "Quick puzzle",
+        "body": "Ask for a 15–30 second puzzle before the app opens, then let the user pick how long it stays open.\n\nJust enough of a pause to notice the reflex."
+      },
+      "chosen": "B",
+      "why": "A puzzle makes opening the app a small, intentional act. Reviewers keep describing that exact moment: \"that tiny 10 second delay is all my brain needs.\""
+    },
+    {
+      "id": "p-flow",
+      "type": "copy",
+      "headline": "Solve it. Choose your time.",
+      "body": "The core loop:\n\n- Open a paused app and a puzzle appears instead\n- Solve it, then choose 5, 10, 15 or 20 minutes\n- When time's up, the pause comes back on its own\n\nThe user is always in control. Pause just asks the question at the right moment."
+    },
+    {
+      "id": "p-word-jumble",
+      "type": "image",
+      "src": "content/pause/word-jumble.jpg",
+      "caption": "Word Jumble, the first puzzle most people see",
+      "alt": "Word Jumble puzzle screen"
+    },
+    {
+      "id": "p-puzzles",
+      "type": "metric",
+      "value": "9",
+      "label": "Puzzles, one calm shell",
+      "body": "Word Jumble, Maze, Five Letters, Mini Crossword, Connect the Dots, Sliding Tile, Ball Sort, Connect the Colors and Sixdoku.\n\nEvery puzzle shares the same brand gradient, glass tiles, header and haptics, so a new puzzle feels like Pause on day one."
+    },
+    {
+      "id": "p-maze",
+      "type": "image",
+      "src": "content/pause/maze.jpg",
+      "caption": "Maze: 11×11, drag to move",
+      "alt": "Maze puzzle screen"
+    },
+    {
+      "id": "p-deadends",
+      "type": "copy",
+      "headline": "No dead ends",
+      "body": "Analytics showed people tapping Reset on Word Jumble almost every time it appeared. A hard word had no way out, so the puzzle felt like a test you were stuck in.\n\nThe fix followed the design principles (calm, no failure states, 15–30 seconds): after one miss a \"Show word\" button appears, any real word made from the letters counts, and a \"Mix letters\" button reshuffles without counting as a failure."
+    },
+    {
+      "id": "p-ballsort",
+      "type": "image",
+      "src": "content/pause/ball-sort.jpg",
+      "caption": "Ball Sort: 15 tubes, 12 colors",
+      "alt": "Ball Sort puzzle screen"
+    },
+    {
+      "id": "p-generation",
+      "type": "copy",
+      "lens": "build",
+      "headline": "Puzzles that are always solvable",
+      "body": "Connect the Colors is generated on the fly: a Hamiltonian path across a 6×6 grid (Warnsdorff's rule), cut into five colored segments.\n\nBecause the path covers every cell by construction, every puzzle is guaranteed to have a solution. No puzzle library to maintain."
+    },
+    {
+      "id": "p-analytics",
+      "type": "copy",
+      "lens": "build",
+      "headline": "Measure the right thing",
+      "body": "I rebuilt the analytics around one north star: D7 gate retention, meaning activated users still solving puzzles a week later.\n\n- Internal and TestFlight users flagged and filtered out\n- First launch counted once per real install, not per update\n- Subscription events read from StoreKit 2, not UI taps\n- Every paywall view ends in exactly one outcome"
+    },
+    {
+      "id": "p-north-star",
+      "type": "metric",
+      "value": "16→30%",
+      "label": "D7 gate retention goal",
+      "body": "One change per release, so each one gets a clean read. Word Jumble's no-dead-end fix shipped first, with a target of 85% completions per open."
+    },
+    {
+      "id": "p-sixdoku",
+      "type": "image",
+      "src": "content/pause/sixdoku.jpg",
+      "caption": "Sixdoku: a six-by-six sudoku",
+      "alt": "Sixdoku puzzle screen"
+    },
+    {
+      "id": "p-reviews",
+      "type": "copy",
+      "headline": "What people say",
+      "body": "\"It creates just enough friction to make me stop and think before mindlessly opening an app, without feeling restrictive or annoying.\"\n\n\"That tiny bit of friction is enough to make you stop and ask, do I actually want to scroll right now? Half the time I just close my phone.\"\n\nApp Store reviews"
+    }
+  ]
+}

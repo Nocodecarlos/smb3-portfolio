@@ -1,0 +1,100 @@
+{
+  "slug": "mustard-seed",
+  "title": "Mustard Seed",
+  "tagline": "Sunday readings and activities for Catholic families, in English and Spanish.",
+  "role": "Product designer & builder",
+  "timeline": "2025–2026",
+  "platform": "iOS · Web · Admin",
+  "theme": "meadow",
+  "card": "seed",
+  "summary": "Mustard Seed is a small ecosystem: a native iOS app for families, a marketing site that drives downloads and SEO, and an admin site where editors publish each Sunday. All three read from one Supabase backend.",
+  "outcomes": [
+    "Three surfaces shipped on one shared content model",
+    "Weekly content updates without an app release or a redeploy",
+    "Offline-first app with background refresh and a 14-day free trial"
+  ],
+  "links": [{ "label": "mustard-seed.netlify.app", "url": "https://mustard-seed.netlify.app" }],
+  "beats": [
+    {
+      "id": "m-problem",
+      "type": "copy",
+      "headline": "Faith at the kitchen table",
+      "body": "Families want to read the Sunday Gospel with their kids, but the readings are written for adults and the activities are scattered across PDFs and parish emails.\n\nMustard Seed puts this week's readings, in kid-friendly language, next to coloring pages and puzzles in one place."
+    },
+    {
+      "id": "m-splash",
+      "type": "image",
+      "src": "content/mustard-seed/splash.png",
+      "caption": "The brand: calm, warm, a little old-world",
+      "alt": "Mustard Seed splash screen"
+    },
+    {
+      "id": "m-surfaces",
+      "type": "metric",
+      "value": "3",
+      "label": "Surfaces, one backend",
+      "body": "The iOS app for families, the marketing website for discovery and SEO, and the admin website for editors. All of them read the same Supabase tables."
+    },
+    {
+      "id": "m-app",
+      "type": "image",
+      "src": "content/mustard-seed/app.jpg",
+      "caption": "This Sunday's readings, plus past weeks",
+      "alt": "Mustard Seed readings screen"
+    },
+    {
+      "id": "m-content",
+      "type": "decision",
+      "question": "How does new content reach families each week?",
+      "optionA": {
+        "label": "Ship in the app",
+        "body": "Bundle each Sunday into an app update.\n\nSimple to build, but it means an App Store release every week, and missing a week is very visible."
+      },
+      "optionB": {
+        "label": "Publish from an admin",
+        "body": "Editors publish or schedule a Sunday package from a web admin, and the app and website pick it up.\n\nMore to build up front, but no releases for content."
+      },
+      "chosen": "B",
+      "why": "Content is the product here, and it changes every week. A Sunday becomes visible everywhere once its published_at date passes, so editors can schedule weeks ahead."
+    },
+    {
+      "id": "m-seed",
+      "type": "copy",
+      "headline": "Watch your faith grow",
+      "body": "Progress is shown as a seed that grows through 8 stages as a family reads and plays together.\n\nIt's gentle gamification: no streak-shaming, just a plant that gets bigger. The stage art lives in storage, so it can change without a release."
+    },
+    {
+      "id": "m-bilingual",
+      "type": "metric",
+      "value": "EN/ES",
+      "label": "Bilingual from day one",
+      "body": "Titles, summaries, activities and blog posts all carry English and Spanish versions, in the app and on the web."
+    },
+    {
+      "id": "m-admin",
+      "type": "copy",
+      "headline": "An editor that fits Sunday",
+      "body": "The admin site has one job: build a Sunday package.\n\n- Four readings (First Reading, Psalm, Second Reading, Gospel) with EN/ES titles and summaries\n- One activity with a PDF upload\n- Publish now or schedule it\n\nOnly people on the admin list can sign in, and row-level security enforces it in the database."
+    },
+    {
+      "id": "m-stack",
+      "type": "copy",
+      "lens": "build",
+      "headline": "The build",
+      "body": "- iOS: Swift, SwiftUI, Supabase Swift, StoreKit 2 subscriptions, PencilKit for drawing on activities\n- Offline: local cache plus BGTaskScheduler background refresh\n- Web and admin: Next.js App Router on Netlify\n- Backend: Supabase auth, Postgres, storage buckets for images and PDFs, RLS policies tied to an admin_users table"
+    },
+    {
+      "id": "m-hidden-admin",
+      "type": "copy",
+      "lens": "build",
+      "headline": "A hidden admin mode",
+      "body": "The app has its own hidden admin entry (triple-tap the version number in Settings) with drafts, an editor and a Seed Growth Emulator to preview all 8 stages.\n\nSound familiar? You found this editor the same way."
+    },
+    {
+      "id": "m-learned",
+      "type": "copy",
+      "headline": "What I learned",
+      "body": "One content model for every surface saved me again and again. A Sunday is a Sunday in the app, on the site and in the admin.\n\nWriting setup guides for every piece (storage, seed assets, fonts, splash screen) made it possible to pick the project back up months later."
+    }
+  ]
+}
