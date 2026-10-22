@@ -277,6 +277,8 @@ body.qv-open #stage, body.qv-open #dev-panel { visibility: hidden; }
   flex-direction: column;
   z-index: 20;
 }
+/* display:flex above would otherwise beat the hidden attribute */
+#dev-panel[hidden] { display: none; }
 #dev-panel header { padding: 14px 16px 0; border-bottom: 1px solid #333; }
 #dev-panel h2 { font: 12px var(--pixel); margin: 0 0 4px; display: flex; justify-content: space-between; align-items: center; }
 #dev-panel .sub { color: #888; margin: 0 0 10px; }
