@@ -60,6 +60,8 @@ export interface World {
   summary: string;
   outcomes: string[];
   links: { label: string; url: string }[];
+  /** Hand-built course in content/levels (e.g. "world-1-1"). When set, it replaces the generated level. */
+  level?: string;
   beats: Beat[];
 }
 

@@ -41,6 +41,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private hurtUntil = 0;
   /** Set when the player presses down while standing; read by the scene for pipes. */
   downPressed = false;
+  /** Feather power: lets a full P-meter take off, and jump taps slow a fall. */
+  powered = false;
+  /** 0..1, fills while running flat out on the ground. */
+  pMeter = 0;
+  private flyUntil = 0;
+  private floatUntil = 0;
+  /** The current ascent came from a jump, so releasing jump cuts it short. */
+  private jumping = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number, controls: Controls) {
     super(scene, x, y, 'player-0');
@@ -65,7 +73,18 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   bounce() {
+    this.jumping = false;
     this.setVelocityY(held(this.controls.jump) ? -320 : -200);
+  }
+
+  /** Launch off a spring-like surface (note blocks). Holding jump goes higher. */
+  spring(low: number, high: number) {
+    this.jumping = false;
+    this.setVelocityY(held(this.controls.jump) ? -high : -low);
+  }
+
+  get flying() {
+    return this.scene.time.now < this.flyUntil;
   }
 
   update() {
@@ -92,21 +111,44 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.downPressed = onGround && pressed(c.down);
 
-    if (onGround && pressed(c.jump)) {
+    const now = this.scene.time.now;
+    const dt = this.scene.game.loop.delta / 1000;
+    if (onGround) {
+      const flatOut = running && dir !== 0 && Math.abs(b.velocity.x) >= RUN - 12;
+      this.pMeter = Phaser.Math.Clamp(this.pMeter + (flatOut ? dt / 0.8 : -dt / 0.6), 0, 1);
+    } else if (!this.flying) {
+      this.pMeter = Math.max(0, this.pMeter - dt / 2);
+    }
+
+    const jumpTap = pressed(c.jump);
+    if (onGround && jumpTap) {
       b.setVelocityY(-(Math.abs(b.velocity.x) > WALK + 10 ? RUN_JUMP : JUMP));
+      this.jumping = true;
+      if (this.powered && this.pMeter >= 0.98) this.flyUntil = now + 4000;
+      sfx.jump();
+    } else if (!onGround && jumpTap && this.powered) {
+      // Flutter: in flight each tap climbs, otherwise it slows the fall.
+      if (this.flying) {
+        b.setVelocityY(Math.min(b.velocity.y, -200));
+        this.jumping = false;
+      } else this.floatUntil = now + 260;
       sfx.jump();
     }
-    if (!held(c.jump) && b.velocity.y < -JUMP_CUT) b.velocity.y = -JUMP_CUT;
+    if (b.velocity.y >= 0) this.jumping = false;
+    if (this.jumping && !held(c.jump) && b.velocity.y < -JUMP_CUT) b.velocity.y = -JUMP_CUT;
+    if (now < this.floatUntil && b.velocity.y > 50) b.velocity.y = 50;
+    if (this.flying) this.pMeter = 1;
 
+    const k = this.powered ? 'playerF' : 'player';
     if (!onGround) {
       this.anims.stop();
-      this.setTexture('player-3');
+      this.setTexture(`${k}-3`);
     } else if (Math.abs(b.velocity.x) > 5) {
-      this.anims.play('walk', true);
+      this.anims.play(this.powered ? 'walkF' : 'walk', true);
       this.anims.timeScale = Math.abs(b.velocity.x) > WALK + 10 ? 1.8 : 1;
     } else {
       this.anims.stop();
-      this.setTexture('player-0');
+      this.setTexture(`${k}-0`);
     }
   }
 }

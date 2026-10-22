@@ -216,7 +216,7 @@ export class OverworldScene extends Phaser.Scene {
       sfx.select();
       this.moving = true;
       this.cameras.main.fadeOut(250);
-      this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('World', { slug: n.world }));
+      this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start(getWorld(n.world!)?.level ? 'Course' : 'World', { slug: n.world }));
     } else if (n.type === 'house') {
       const about = getSite().about;
       await showDialog(about.title, about.body);

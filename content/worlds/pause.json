@@ -13,7 +13,13 @@
     "Analytics rebuilt around one north star: D7 gate retention",
     "Five-star App Store reviews that describe exactly the moment we designed for"
   ],
-  "links": [{ "label": "try-pause.com", "url": "https://try-pause.com" }],
+  "links": [
+    {
+      "label": "try-pause.com",
+      "url": "https://try-pause.com"
+    }
+  ],
+  "level": "world-1-1",
   "beats": [
     {
       "id": "p-problem",

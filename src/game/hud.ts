@@ -24,7 +24,7 @@ export class StatusBar {
     const y2 = FIELD + 17;
     const ink = '#000000';
     this.add(px(scene, 9, y1, worldLabel, { color: ink }));
-    this.meter = this.add(px(scene, 74, y1, '', { color: ink }));
+    this.meter = this.add(px(scene, 9 + (worldLabel.length + 1) * 8, y1, '', { color: ink }));
     this.coinText = this.add(px(scene, 178, y1, '', { color: ink }));
     this.line2 = this.add(px(scene, 9, y2, line2, { color: ink }));
 

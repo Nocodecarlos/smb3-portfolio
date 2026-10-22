@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { generateCourseTextures, registerCourseAnims } from '../art/course';
 import { generateTextures, registerAnims } from '../art/sprites';
 
 export class BootScene extends Phaser.Scene {
@@ -9,6 +10,8 @@ export class BootScene extends Phaser.Scene {
   create() {
     generateTextures(this);
     registerAnims(this);
+    generateCourseTextures(this);
+    registerCourseAnims(this);
     this.scene.start('Title');
   }
 }

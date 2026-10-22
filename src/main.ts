@@ -3,6 +3,7 @@ import { onContentChange } from './content/store';
 import { toggleMute } from './game/sfx';
 import { HEIGHT, WIDTH, ui } from './game/state';
 import { BootScene } from './scenes/BootScene';
+import { CourseScene } from './scenes/CourseScene';
 import { OverworldScene } from './scenes/OverworldScene';
 import { TitleScene } from './scenes/TitleScene';
 import { WorldScene } from './scenes/WorldScene';
@@ -32,7 +33,7 @@ async function start() {
     fps: { forceSetTimeOut: new URLSearchParams(location.search).has('timer'), target: 60 },
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.NO_CENTER },
     physics: { default: 'arcade', arcade: { gravity: { x: 0, y: 1000 }, debug: false } },
-    scene: [BootScene, TitleScene, OverworldScene, WorldScene],
+    scene: [BootScene, TitleScene, OverworldScene, WorldScene, CourseScene],
   });
 
   if (import.meta.env.DEV) import('./devtools').then((m) => m.installDevtools(game));
@@ -64,7 +65,10 @@ async function start() {
     window.clearTimeout(pending);
     pending = window.setTimeout(() => {
       const world = game.scene.getScene('World') as WorldScene;
-      if (game.scene.isActive('World')) {
+      if (game.scene.isActive('Course')) {
+        const course = game.scene.getScene('Course') as CourseScene;
+        if (scope === 'site' || scope === course.slug) course.scene.restart({ slug: course.slug });
+      } else if (game.scene.isActive('World')) {
         if (scope === 'site' || scope === world.slug) world.scene.restart({ slug: world.slug, x: world.playerX });
       } else if (game.scene.isActive('Overworld')) game.scene.getScene('Overworld').scene.restart();
       else if (game.scene.isActive('Title') && scope === 'site') game.scene.getScene('Title').scene.restart();
