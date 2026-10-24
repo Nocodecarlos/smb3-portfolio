@@ -82,6 +82,8 @@ body.dev #tv { --w: min(calc(54vw - 32px), calc((100vh - 170px) * 1.18)); }
 }
 #game, #game canvas { width: 100% !important; height: 100% !important; display: block; }
 #game canvas { image-rendering: pixelated; }
+/* felt courses render at 4x and are scaled down to the screen: smooth, not nearest-neighbour */
+body.felt #game canvas { image-rendering: auto; }
 
 body.dev #game { filter: grayscale(1) contrast(1.15); }
 #dev-badge {

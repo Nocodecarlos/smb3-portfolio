@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { FELT, Z } from '../art/felt';
 import { sfx } from './sfx';
 import { ui } from './state';
 
@@ -50,12 +51,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   /** The current ascent came from a jump, so releasing jump cuts it short. */
   private jumping = false;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, controls: Controls) {
-    super(scene, x, y, 'player-0');
+  /** Felt courses draw the plush player at Z times resolution (one frame, so walking is a waddle). */
+  private felt: boolean;
+
+  constructor(scene: Phaser.Scene, x: number, y: number, controls: Controls, felt = false) {
+    super(scene, x, y, felt ? FELT : 'player-0', felt ? 'player-0' : undefined);
     this.controls = controls;
+    this.felt = felt;
     scene.add.existing(this);
     scene.physics.add.existing(this);
-    this.body.setSize(10, 15).setOffset(3, 1);
+    if (felt) this.setScale(1 / Z).body.setSize(10 * Z, 15 * Z).setOffset(3 * Z, 1 * Z);
+    else this.body.setSize(10, 15).setOffset(3, 1);
     this.body.setMaxVelocity(RUN, 600);
     this.setDepth(10);
   }
@@ -140,7 +146,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (this.flying) this.pMeter = 1;
 
     const k = this.powered ? 'playerF' : 'player';
-    if (!onGround) {
+    if (this.felt) {
+      this.setFrame(`${k}-0`);
+      const walking = onGround && Math.abs(b.velocity.x) > 5;
+      this.rotation = walking ? Math.sin(now / (Math.abs(b.velocity.x) > WALK + 10 ? 45 : 70)) * 0.09 : 0;
+    } else if (!onGround) {
       this.anims.stop();
       this.setTexture(`${k}-3`);
     } else if (Math.abs(b.velocity.x) > 5) {

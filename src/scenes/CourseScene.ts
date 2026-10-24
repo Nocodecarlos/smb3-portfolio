@@ -1,17 +1,18 @@
 import Phaser from 'phaser';
-import { bushTexture, drawPlatform } from '../art/course';
+import { FELT, SKY, Z, feltImage, feltPlatform, feltSprite, preloadFelt, setupFelt } from '../art/felt';
 import { getWorld, getWorlds } from '../content/store';
 import type { World } from '../content/types';
-import { StatusBar } from '../game/hud';
+import { FeltStatusBar } from '../game/feltHud';
 import { Player, createControls, type Controls } from '../game/Player';
 import { sfx } from '../game/sfx';
-import { BAR, HEIGHT, markCleared, progress, saveProgress, ui } from '../game/state';
+import { BAR, HEIGHT, WIDTH, markCleared, progress, saveProgress, ui } from '../game/state';
 import { px } from '../game/text';
 import { showEndCard } from '../ui/overlays';
 
 // A hand-built course loaded from content/levels/*.json (World 1-1 is
 // imported from the Figma reference). Content beats get attached to its
-// blocks in a later pass; for now it's the look and feel.
+// blocks in a later pass; for now it's the look and feel. Courses use the
+// felt art (src/art/felt.ts) and render at Z times the base resolution.
 
 export interface CourseLevel {
   id: string;
@@ -62,7 +63,7 @@ export class CourseScene extends Phaser.Scene {
   private worldIndex = 0;
   private player!: Player;
   private controls!: Controls;
-  private hud!: StatusBar;
+  private hud!: FeltStatusBar;
   private solids!: Phaser.Physics.Arcade.StaticGroup;
   private semis!: Phaser.Physics.Arcade.StaticGroup;
   private coins!: Phaser.Physics.Arcade.StaticGroup;
@@ -99,6 +100,10 @@ export class CourseScene extends Phaser.Scene {
     this.busy = this.finished = this.inRoom = false;
   }
 
+  preload() {
+    preloadFelt(this);
+  }
+
   create() {
     const L = this.level;
     this.controls = createControls(this);
@@ -106,7 +111,19 @@ export class CourseScene extends Phaser.Scene {
     this.H = L.height * T;
     this.RX = this.W + 8 * T;
     const G = L.groundRow * T;
+
+    // Felt needs more pixels than the pixel-art scenes: render this scene
+    // at Z times the base size and zoom the camera to match.
+    this.scale.resize(WIDTH * Z, HEIGHT * Z);
+    this.cameras.main.setSize(WIDTH * Z, HEIGHT * Z).setZoom(Z);
+    document.body.classList.add('felt');
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.scale.resize(WIDTH, HEIGHT);
+      document.body.classList.remove('felt');
+    });
+    setupFelt(this);
     this.cameras.main.setBackgroundColor(L.sky);
+    this.add.image(0, 0, SKY).setOrigin(0).setDisplaySize(this.W, this.H).setDepth(-20);
 
     this.solids = this.physics.add.staticGroup();
     this.semis = this.physics.add.staticGroup();
@@ -121,21 +138,20 @@ export class CourseScene extends Phaser.Scene {
 
     // ---- Scenery ----
     for (const [x, y, s] of L.scenery.glints) {
-      const g = this.add.image(x, y, 'glint').setDepth(-10).setScale(s / 5).setAlpha(0.8);
+      const g = feltImage(this, x, y, 'glint').setDepth(-10).setScale(s / 5 / Z).setAlpha(0.8);
       this.tweens.add({ targets: g, alpha: 0.2, yoyo: true, repeat: -1, duration: 900 + ((x * 7) % 900), delay: (y * 13) % 1200 });
     }
-    for (const [x, y, w] of L.scenery.clouds) this.add.image(x, y, w > 50 ? 'cloud-l' : w > 40 ? 'cloud-m' : 'cloud-s').setOrigin(0).setDepth(-8);
-    for (const [x, y, w, h] of L.scenery.bushes) this.add.image(x, y, bushTexture(this, w, h)).setOrigin(0).setDepth(-6);
-    for (const [x, y] of L.scenery.shrubs) this.add.image(x * T, y * T, 'shrub').setOrigin(0).setDepth(-6);
+    for (const [x, y, w] of L.scenery.clouds) feltImage(this, x, y, w > 50 ? 'cloud-l' : w > 40 ? 'cloud-m' : 'cloud-s').setOrigin(0).setDepth(-8);
+    for (const [x, y, w, h] of L.scenery.bushes) feltImage(this, x, y, `bush2-${w}x${h}`).setOrigin(0).setDepth(-6);
+    for (const [x, y] of L.scenery.shrubs) feltImage(this, x * T, y * T, 'shrub').setOrigin(0).setDepth(-6);
 
     // ---- Platforms: drawn back to front, tops are jump-through ----
-    const g = this.add.graphics().setDepth(-4);
     for (const p of L.platforms) {
       const x = p.x * T;
       const y = p.y * T;
       const w = p.w * T;
       const h = p.h * T;
-      drawPlatform(g, x, y, w, h, Phaser.Display.Color.HexStringToColor(p.color).color);
+      feltPlatform(this, x, y, w, h, p.color);
       const top = this.add.rectangle(x + w / 2, y + 3, w, 6).setVisible(false);
       this.semis.add(top);
       const b = top.body as Phaser.Physics.Arcade.StaticBody;
@@ -144,8 +160,10 @@ export class CourseScene extends Phaser.Scene {
 
     // ---- Ground ----
     for (const [x, w] of L.ground) {
-      this.add.tileSprite(x * T, G, w * T, T, 'soil-top').setOrigin(0).setDepth(3);
-      this.add.tileSprite(x * T, G + T, w * T, this.H - G - T, 'soil').setOrigin(0).setDepth(3);
+      // felt soil tiles are separate rounded squares; the dark backing shows as the seams between them
+      this.add.rectangle(x * T, G, w * T, this.H - G, 0x4e2e24).setOrigin(0).setDepth(3);
+      // the Figma course fills both ground rows with the diagonal soil felt
+      this.add.tileSprite(x * T, G, w * T, this.H - G, FELT, 'soil').setOrigin(0).setDepth(3).setTileScale(1 / Z);
       solidRect(x * T, G, w * T, this.H - G);
     }
     solidRect(this.W, 0, 8, this.H); // end wall
@@ -155,14 +173,15 @@ export class CourseScene extends Phaser.Scene {
       const x = p.x * T;
       const top = p.y * T;
       const h = p.h * T;
-      for (let r = 0; r < p.h; r++) {
-        const capRow = p.hanging ? p.h - 1 : 0;
-        this.add.image(x + 16, top + r * T + 8, r === capRow ? 'pipe2-top' : 'pipe2-body').setDepth(2).setFlipY(!!p.hanging && r === capRow);
-      }
+      // One knitted body (tiled down the pipe) under a 14px felt cap; hanging pipes cap their bottom end.
+      const cap = 14;
+      const bodyY = p.hanging ? top : top + cap - 4;
+      this.add.tileSprite(x, bodyY, 32, h - cap + 4, FELT, 'pipe2-body').setOrigin(0).setDepth(2).setTileScale(1 / Z);
+      feltImage(this, x, p.hanging ? top + h - cap : top, 'pipe2-top').setOrigin(0).setDisplaySize(32, cap).setDepth(2).setFlipY(!!p.hanging);
       solidRect(x, top, 32, h);
       if (p.plant) {
-        const s = this.add.sprite(x + 16, top, 'snapper-0').setOrigin(0.5, 0).setDepth(1);
-        s.play('snap');
+        const s = feltSprite(this, x + 16, top, 'snapper-0').setOrigin(0.5, 0).setDepth(1);
+        s.play('felt-snap');
         this.plants.push({ sprite: s, top, cx: x + 16 });
       }
       if (p.warp) this.warp = { x0: x, x1: x + 32, top };
@@ -171,13 +190,13 @@ export class CourseScene extends Phaser.Scene {
 
     // ---- Blocks ----
     const block = (kind: Kind, tx: number, ty: number, key: string, ox = 0, oy = 0) => {
-      const s = this.add.sprite(ox + tx * T + 8, oy + ty * T + 8, key).setDepth(3);
+      const s = feltSprite(this, ox + tx * T + 8, oy + ty * T + 8, key).setDepth(3);
       this.solids.add(s);
       this.blocks.set(s, { sprite: s, kind });
       return s;
     };
     for (const [k, x, y] of L.blocks) {
-      if (k === 'q') block('q', x, y, 'q2-0').play('q2');
+      if (k === 'q') block('q', x, y, 'q2-0');
       else if (k === 'item') block('item', x, y, 'wood');
       else if (k === 'brick') block('brick', x, y, 'brick2');
       else if (k === 'pswitch') block('pswitch', x, y, 'pswitch');
@@ -185,15 +204,18 @@ export class CourseScene extends Phaser.Scene {
     for (const [x, y] of L.notes) block('note', x, y, 'note');
 
     // ---- Coins & pickups ----
-    for (const [x, y] of L.coins) this.coins.add(this.add.image(x * T + 8, y * T + 8, 'coin').setDepth(4));
+    for (const [x, y] of L.coins) this.coins.add(feltImage(this, x * T + 8, y * T + 8, 'coin').setDepth(4));
     for (const [, x, y] of L.pickups) this.spawnFeather(x * T + 8, y * T + 8, false);
 
     // ---- Enemies ----
     for (const [k, x, y] of L.enemies) {
       const walker = k === 'walker';
-      const e = this.enemies.create(x * T + 8, (y + 1) * T - (walker ? 10 : 8), walker ? 'hiker-0' : 'bug-0') as Phaser.Physics.Arcade.Sprite;
-      e.play(walker ? 'hiker-walk' : 'bug-walk').setDepth(6);
-      (e.body as Phaser.Physics.Arcade.Body).setSize(12, walker ? 18 : 12).setOffset(2, walker ? 2 : 4);
+      const e = this.enemies.create(x * T + 8, (y + 1) * T - (walker ? 10 : 8), FELT, walker ? 'hiker-0' : 'bug-0') as Phaser.Physics.Arcade.Sprite;
+      e.setScale(1 / Z).setDepth(6);
+      // hikers have two walk frames; the plush bug waddles
+      if (walker) e.play('felt-hiker-walk');
+      else this.tweens.add({ targets: e, angle: { from: -6, to: 6 }, yoyo: true, repeat: -1, duration: 240, ease: 'Sine.easeInOut' });
+      (e.body as Phaser.Physics.Arcade.Body).setSize(12 * Z, (walker ? 18 : 12) * Z).setOffset(2 * Z, (walker ? 2 : 4) * Z);
       e.setVelocityX(-24);
       e.setData('walker', walker);
     }
@@ -201,14 +223,14 @@ export class CourseScene extends Phaser.Scene {
     // ---- Goal: black end zone with the spinning card box ----
     const gx = L.goal * T;
     this.add.rectangle(gx - 6 * T, 0, this.W - (gx - 6 * T), this.H, 0x000000).setOrigin(0).setDepth(-9);
-    this.goal = this.add.image(gx, G - 5 * T, `icon-${this.world.card}`).setDepth(5);
+    this.goal = feltImage(this, gx, G - 5 * T, `icon-${this.world.card}`).setDepth(5);
     this.add.graphics().setDepth(4).lineStyle(2, 0xffffff).strokeRect(gx - 14, G - 5 * T - 14, 28, 28);
 
     this.buildRoom();
 
     // ---- Player ----
     const [sx, sy] = L.spawn;
-    this.player = new Player(this, sx * T + 8, sy * T, this.controls);
+    this.player = new Player(this, sx * T + 8, sy * T, this.controls, true);
     this.safe = { x: this.player.x, y: this.player.y };
     this.physics.world.setBounds(0, -64, this.RX + 32 * T, this.H + 128);
     this.physics.world.setBoundsCollision(true, true, false, false);
@@ -222,7 +244,7 @@ export class CourseScene extends Phaser.Scene {
     this.physics.add.overlap(this.player, this.coins, (_p, c) => this.collect(c as Phaser.GameObjects.Image));
 
     this.useMainCamera();
-    this.hud = new StatusBar(this, `WORLD ${this.worldIndex + 1}-1`, this.world.title.toUpperCase().slice(0, 26));
+    this.hud = new FeltStatusBar(this, `WORLD ${this.worldIndex + 1}-1`, this.world.title.toUpperCase().slice(0, 26));
     this.input.keyboard!.on('keydown-ESC', () => !ui.blocking && this.exitToMap());
     this.cameras.main.fadeIn(250);
   }
@@ -237,13 +259,13 @@ export class CourseScene extends Phaser.Scene {
     R.tiles.forEach((row, ty) => {
       for (let tx = 0; tx < row.length; tx++) {
         if (row[tx] !== '#') continue;
-        const s = this.add.image(this.RX + tx * T + 8, ty * T + 8, 'diamond').setDepth(3);
+        const s = feltImage(this, this.RX + tx * T + 8, ty * T + 8, 'diamond').setDepth(3);
         this.solids.add(s);
       }
     });
     // The entry pipe hangs from the ceiling; the way out is up the stairs and off the right edge.
-    this.solids.add(this.add.image(this.RX + R.pipe * T + 16, 16, 'pipe-dark').setDepth(3));
-    for (const [x, y] of R.coins) this.coins.add(this.add.image(this.RX + x * T + 8, y * T + 8, 'coin').setDepth(4));
+    this.solids.add(feltImage(this, this.RX + R.pipe * T + 16, 16, 'pipe-dark').setDepth(3));
+    for (const [x, y] of R.coins) this.coins.add(feltImage(this, this.RX + x * T + 8, y * T + 8, 'coin').setDepth(4));
   }
 
   private useMainCamera() {
@@ -252,7 +274,8 @@ export class CourseScene extends Phaser.Scene {
     cam.setBounds(0, 0, this.W, this.H + BAR);
     cam.startFollow(this.player, true, 0.15, 0.12);
     cam.setDeadzone(24, 80);
-    cam.setRoundPixels(true);
+    // felt scrolls smoothly; snapping to whole game pixels would jump 4 screen pixels at a time
+    cam.setRoundPixels(false);
   }
 
   private useRoomCamera() {
@@ -348,7 +371,7 @@ export class CourseScene extends Phaser.Scene {
 
     if (!this.finished) {
       if (Phaser.Math.Distance.Between(p.x, p.y, this.goal.x, this.goal.y) < 18) void this.finish();
-      else this.goal.setTexture(`icon-${['star', 'heart', 'pencil', 'seed'][Math.floor(this.time.now / 140) % 4]}`);
+      else this.goal.setTexture(FELT, `icon-${['star', 'heart', 'pencil', 'seed'][Math.floor(this.time.now / 140) % 4]}`);
     }
   }
 
@@ -386,11 +409,11 @@ export class CourseScene extends Phaser.Scene {
     if (b.used) return;
     if (b.kind === 'q') {
       b.used = true;
-      s.stop().setTexture('empty');
+      s.setTexture(FELT, 'empty');
       this.popCoin(s.x, s.y - 12);
     } else if (b.kind === 'item') {
       b.used = true;
-      s.setTexture('empty');
+      s.setTexture(FELT, 'empty');
       if (this.player.powered) this.popCoin(s.x, s.y - 12);
       else this.spawnFeather(s.x, s.y - 8, true);
     }
@@ -404,7 +427,7 @@ export class CourseScene extends Phaser.Scene {
       this.tweens.add({ targets: s, y: s.y + 4, duration: 60, yoyo: true });
     } else if (b.kind === 'pswitch' && !b.used) {
       b.used = true;
-      s.setTexture('pswitch-flat');
+      s.setTexture(FELT, 'pswitch-flat');
       (s.body as Phaser.Physics.Arcade.StaticBody).enable = false;
       this.pressSwitch();
     }
@@ -419,7 +442,7 @@ export class CourseScene extends Phaser.Scene {
       if (b.kind !== 'brick' || !b.sprite.active) continue;
       b.sprite.setVisible(false);
       (b.sprite.body as Phaser.Physics.Arcade.StaticBody).enable = false;
-      const c = this.add.image(b.sprite.x, b.sprite.y, 'coin').setDepth(4);
+      const c = feltImage(this, b.sprite.x, b.sprite.y, 'coin').setDepth(4);
       this.coins.add(c);
       swapped.push([b, c]);
     }
@@ -440,7 +463,8 @@ export class CourseScene extends Phaser.Scene {
     if (pb.velocity.y > 0 && pb.bottom - eb.top < 10) {
       e.setData('dead', true);
       e.anims.stop();
-      e.setTexture(e.getData('walker') ? 'hiker-flat' : 'bug-flat');
+      this.tweens.killTweensOf(e);
+      e.setAngle(0).setTexture(FELT, e.getData('walker') ? 'hiker-flat' : 'bug-flat');
       eb.enable = false;
       sfx.stomp();
       this.player.bounce();
@@ -457,7 +481,7 @@ export class CourseScene extends Phaser.Scene {
   private popCoin(x: number, y: number) {
     sfx.coin();
     this.addCoins(1);
-    const c = this.add.image(x, y, 'coin').setDepth(8);
+    const c = feltImage(this, x, y, 'coin').setDepth(8);
     this.tweens.add({ targets: c, y: y - 32, duration: 260, yoyo: true, onComplete: () => c.destroy() });
   }
 
@@ -470,7 +494,7 @@ export class CourseScene extends Phaser.Scene {
   // ---------- Feather power-up ----------
 
   private spawnFeather(x: number, y: number, rising: boolean) {
-    const f = this.add.sprite(x, y, 'feather').setDepth(7);
+    const f = feltSprite(this, x, y, 'feather').setDepth(7);
     f.setData('x0', x).setData('t0', this.time.now).setData('drift', rising);
     if (rising) this.tweens.add({ targets: f, y: y - 24, duration: 300 });
     else this.tweens.add({ targets: f, y: y - 3, yoyo: true, repeat: -1, duration: 500, ease: 'Sine.easeInOut' });
@@ -522,7 +546,7 @@ export class CourseScene extends Phaser.Scene {
 
   private async finish() {
     this.finished = true;
-    this.goal.setTexture(`icon-${this.world.card}`);
+    this.goal.setTexture(FELT, `icon-${this.world.card}`);
     this.tweens.add({ targets: this.goal, y: this.goal.y - 40, duration: 600, ease: 'Quad.easeOut' });
     markCleared(this.world.slug);
     this.busy = true;
