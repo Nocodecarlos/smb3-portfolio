@@ -14,18 +14,13 @@
     <main id="stage">
       <div id="tv">
         <div id="tv-flip">
-          <div id="tv-bezel">
-            <div id="screen">
-              <div id="game"></div>
-              <div id="overlay"></div>
-              <div id="dev-badge">DEV MODE</div>
-            </div>
+          <div id="screen">
+            <div id="game"></div>
+            <div id="overlay"></div>
+            <div id="dev-badge">DEV MODE</div>
+            <div id="curtain" aria-hidden="true"></div>
           </div>
-          <div id="tv-front">
-            <span class="tv-brand">CV&#8209;1985</span>
-            <span class="tv-knobs"><i></i><i></i><i></i><i></i></span>
-            <span class="tv-power"></span>
-          </div>
+          <span class="tv-power"></span>
         </div>
       </div>
       <p id="legend">
@@ -44,22 +39,17 @@
     <div id="quickview" hidden></div>
 
     <div id="mobile" hidden>
+      <!-- photo of a Game Boy (public/felt/gameboy.webp) with live text on its screen and real A/B buttons -->
       <div class="gb">
-        <div class="gb-screen-wrap">
-          <div class="gb-led"></div>
-          <div class="gb-screen">
-            <p class="gb-title">CARLOS<br />VELASQUEZ.</p>
-            <p>This portfolio is a game, and it plays best on a desktop keyboard.</p>
-            <p class="gb-blink">▶ OPEN ON DESKTOP</p>
-          </div>
-          <span class="gb-label">PORTFOLIO BOY</span>
+        <div class="gb-screen">
+          <p class="gb-title">CARLOS<br />VELASQUEZ.</p>
+          <p>This portfolio is a game, and it plays best on a desktop keyboard.</p>
+          <p class="gb-blink">▶ OPEN ON DESKTOP</p>
         </div>
-        <div class="gb-controls">
-          <div class="gb-dpad"><i></i><i></i></div>
-          <div class="gb-ab"><button id="gb-share" type="button" aria-label="Share link">B</button><button id="gb-read" type="button" aria-label="Read case studies">A</button></div>
-        </div>
-        <div class="gb-hint"><span>B: send link</span><span>A: read case studies</span></div>
+        <button id="gb-share" class="gb-btn gb-b" type="button" aria-label="B: send yourself the link"></button>
+        <button id="gb-read" class="gb-btn gb-a" type="button" aria-label="A: read the case studies"></button>
       </div>
+      <div class="gb-hint"><span>B: send link</span><span>A: read case studies</span></div>
     </div>
 
     <script type="module" src="/src/main.ts"></script>

@@ -4,6 +4,7 @@ import { ChibiRig, preloadHeroes } from '../art/hero';
 import { stopMusic } from '../game/music';
 import { sfx } from '../game/sfx';
 import { HEIGHT, type Hero, WIDTH, progress, saveProgress, ui } from '../game/state';
+import { raiseCurtain } from '../ui/curtain';
 import { showQuickView } from '../ui/overlays';
 
 // Felt title screen (Figma: 02 · Screens / screen/title). The static art is
@@ -103,5 +104,6 @@ export class TitleScene extends Phaser.Scene {
     setChoice(this.choice);
     stopMusic(); // the title is silent
     this.cameras.main.fadeIn(300);
+    raiseCurtain();
   }
 }

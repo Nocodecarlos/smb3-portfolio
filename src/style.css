@@ -2,9 +2,6 @@
   --bg: #1c1c1c;
   --ink: #f4f1ea;
   --muted: #9a958c;
-  --tv: #2a2a2c;
-  --tv-hi: #3b3b3e;
-  --tv-lo: #131314;
   --dlg: #b8f8d8;
   --gold: #f8b800;
   --red: #d82800;
@@ -37,15 +34,24 @@ body {
 }
 body.dev #stage { padding-right: min(440px, 46vw); }
 
-#tv { --w: min(92vw, calc((100vh - 170px) * 1.18)); width: var(--w); max-width: 1180px; }
-body.dev #tv { --w: min(calc(54vw - 32px), calc((100vh - 170px) * 1.18)); }
+/* The TV is a photo of a Sony monitor (public/felt/tv-sony.webp) with its
+   screen cut out; the game sits behind the hole. Positions are % of the photo. */
+#tv { --w: min(92vw, calc((100vh - 130px) * 1.09)); width: var(--w); max-width: 1240px; }
+body.dev #tv { --w: min(calc(54vw - 32px), calc((100vh - 130px) * 1.09)); }
 
 #tv-flip {
-  background: linear-gradient(180deg, var(--tv-hi), var(--tv) 30%, var(--tv-lo));
-  border-radius: 22px 22px 14px 14px;
-  padding: 3.2% 4% 0;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.55), inset 0 2px 0 rgba(255, 255, 255, 0.08);
+  position: relative;
+  aspect-ratio: 1600 / 1468;
   transform-style: preserve-3d;
+}
+#tv-flip::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  background: url("/felt/tv-sony.webp") center / 100% 100% no-repeat;
+  filter: drop-shadow(0 24px 40px rgba(0, 0, 0, 0.55));
 }
 #tv-flip.flipping { animation: flip 0.9s cubic-bezier(0.6, 0, 0.3, 1); }
 @keyframes flip {
@@ -54,30 +60,27 @@ body.dev #tv { --w: min(calc(54vw - 32px), calc((100vh - 170px) * 1.18)); }
   100% { transform: rotateY(0); }
 }
 
-#tv-bezel {
-  background: #0b0b0c;
-  border-radius: 14px;
-  padding: 3.2%;
-  box-shadow: inset 0 0 0 2px #000, inset 0 8px 24px rgba(0, 0, 0, 0.8);
-}
-
+/* 4:3, a touch taller than the hole so the bezel hides the edges */
 #screen {
-  position: relative;
+  position: absolute;
+  left: 13.66%;
+  top: 14.19%;
+  width: 72.72%;
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  border-radius: 10px / 14px;
   background: #000;
   container-type: inline-size;
 }
 #screen::after {
-  /* scanlines + glass curvature */
+  /* the tube's glass: scanlines, darker curved edges and a soft reflection */
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
   background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.03) 28%, transparent 42%),
     repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.12) 0 1px, transparent 1px 3px),
-    radial-gradient(120% 100% at 50% 50%, transparent 60%, rgba(0, 0, 0, 0.45));
+    radial-gradient(115% 105% at 50% 50%, transparent 58%, rgba(0, 0, 0, 0.5));
   z-index: 3;
 }
 #game, #game canvas { width: 100% !important; height: 100% !important; display: block; }
@@ -98,23 +101,19 @@ body.dev #game { filter: grayscale(1) contrast(1.15); }
 }
 body.dev #dev-badge { display: block; }
 
-#tv-front {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.4% 1% 1.8%;
-  color: #c9c6c0;
-}
-.tv-brand { font: 800 clamp(10px, 1.4vw, 15px) Inter, sans-serif; letter-spacing: 0.25em; }
-.tv-knobs { display: flex; gap: clamp(6px, 1vw, 12px); }
-.tv-knobs i {
-  width: clamp(14px, 2vw, 24px);
+/* power lamp on the photo's front panel; it turns white on the other side */
+.tv-power {
+  position: absolute;
+  left: 87.9%;
+  top: 94%;
+  z-index: 7;
+  width: 0.55%;
   aspect-ratio: 1;
+  translate: -50% -50%;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #4a4a4e, #111 70%);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
+  background: #e33;
+  box-shadow: 0 0 6px 1px #e33;
 }
-.tv-power { width: 10px; height: 10px; border-radius: 50%; background: #e33; box-shadow: 0 0 8px #e33; }
 body.dev .tv-power { background: #fff; box-shadow: 0 0 8px #fff; }
 
 #legend {
@@ -151,6 +150,36 @@ kbd {
 /* ---------- Game overlays ---------- */
 
 #overlay { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+
+/* The opening curtain (src/ui/curtain.ts): felt, under the glass, rises off the top of the screen */
+#curtain {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: #6b260c url("/felt/curtain.jpg") center top / cover;
+  box-shadow: 0 1.5cqw 3cqw rgba(0, 0, 0, 0.55);
+  transition: transform 1.6s cubic-bezier(0.55, 0, 0.25, 1);
+}
+/* a heavier hem with a stitched line along the bottom */
+#curtain::before {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 7%;
+  background: linear-gradient(rgba(40, 10, 0, 0), rgba(40, 10, 0, 0.55));
+}
+#curtain::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 3.2%;
+  border-top: 0.35cqw dashed rgba(255, 196, 150, 0.45);
+}
+#curtain.up { transform: translateY(-106%); }
+#curtain.fast { transition-duration: 0.5s; }
+@media (prefers-reduced-motion: reduce) {
+  #curtain { transition: opacity 0.4s; }
+  #curtain.up { transform: none; opacity: 0; }
+}
 .ov { position: absolute; inset: 0; pointer-events: auto; animation: ov-in 0.12s ease-out both; }
 @keyframes ov-in { from { opacity: 0; transform: scale(0.98); } }
 
@@ -396,6 +425,7 @@ body.qv-open #stage, body.qv-open #dev-panel { visibility: hidden; }
   position: fixed;
   inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   background: #2b2a33;
@@ -404,32 +434,48 @@ body.qv-open #stage, body.qv-open #dev-panel { visibility: hidden; }
 }
 #mobile[hidden] { display: none; }
 .gb {
-  width: min(360px, 100%);
-  background: #c8c4be;
-  border-radius: 14px 14px 56px 14px;
-  padding: 22px 22px 28px;
-  box-shadow: inset -4px -6px 0 #a9a49c, 0 20px 40px rgba(0, 0, 0, 0.4);
-  color: #2e2b6e;
+  position: relative;
+  width: min(380px, 100%);
+  aspect-ratio: 584 / 968;
+  container-type: inline-size;
+  background: url("/felt/gameboy.webp") center / 100% 100% no-repeat;
+  filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.5));
 }
-.gb-screen-wrap { position: relative; background: #5f5d6c; border-radius: 10px 10px 34px 10px; padding: 22px 30px 26px; }
-.gb-led { position: absolute; left: 10px; top: 46%; width: 8px; height: 8px; border-radius: 50%; background: #e33; box-shadow: 0 0 6px #e33; }
-.gb-screen { background: #9bbc0f; color: #0f380f; font: 9px/1.8 var(--pixel); padding: 14px 12px; aspect-ratio: 10 / 9; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+/* sits on the photo's LCD; sizes are cqw of the Game Boy's width */
+.gb-screen {
+  position: absolute;
+  left: 23.6%;
+  top: 13.1%;
+  width: 53.8%;
+  height: 29.9%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2.2cqw;
+  padding: 3.2cqw;
+  color: #34420f;
+  font: 2.5cqw/1.7 var(--pixel);
+  /* a little depth under the bezel, like a real LCD */
+  box-shadow: inset 0 1.1cqw 2.2cqw rgba(40, 50, 10, 0.25);
+}
 .gb-screen p { margin: 0; }
-.gb-title { font: 16px/1.2 "Luckiest Guy", sans-serif; letter-spacing: 0.04em; }
+.gb-title { font: 5.9cqw/1.05 "Luckiest Guy", sans-serif; letter-spacing: 0.04em; }
 .gb-blink { animation: blink 0.8s steps(2) infinite; }
-.gb-label { position: absolute; left: 30px; bottom: 6px; font: italic 800 10px Inter, sans-serif; color: #c9c6d6; letter-spacing: 0.08em; }
-.gb-controls { display: flex; justify-content: space-between; align-items: center; margin-top: 30px; padding: 0 6px; }
-.gb-dpad { position: relative; width: 84px; height: 84px; }
-.gb-dpad i { position: absolute; background: #222; border-radius: 4px; }
-.gb-dpad i:first-child { left: 28px; top: 0; width: 28px; height: 84px; }
-.gb-dpad i:last-child { top: 28px; left: 0; width: 84px; height: 28px; }
-.gb-ab { display: flex; gap: 14px; transform: rotate(-22deg); }
-.gb-ab button {
-  width: 48px; height: 48px; border-radius: 50%;
-  background: #9a2257; color: #e7c3d2; border: 0;
-  font: 800 16px Inter, sans-serif;
-  box-shadow: inset -2px -3px 0 #6d1239;
+/* invisible hit areas over the photo's A and B buttons; they dip when pressed */
+.gb-btn {
+  position: absolute;
+  width: 11%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s, background 0.08s;
 }
-.gb-ab button:first-child { margin-top: 26px; }
-.gb-hint { display: flex; justify-content: space-between; margin-top: 18px; font: 600 12px Inter, sans-serif; }
+.gb-btn:active { transform: scale(0.92); background: radial-gradient(circle, rgba(0, 0, 0, 0.28), transparent 70%); }
+.gb-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.gb-a { left: 86%; top: 64.1%; }
+.gb-b { left: 70.2%; top: 68.4%; }
+.gb-hint { display: flex; justify-content: space-between; width: min(380px, 100%); margin-top: 16px; font: 600 12px Inter, sans-serif; color: #c9c6d6; }
