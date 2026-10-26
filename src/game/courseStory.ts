@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { FELT, Z, feltPost } from '../art/felt';
+import { ART, FELT, Z, feltPost } from '../art/felt';
 import { resolveSrc } from '../content/store';
 import type { Beat, ImageBeat, World } from '../content/types';
 import { type StoryCard, showImage, showStory } from '../ui/overlays';
@@ -95,7 +95,7 @@ export class CourseStory {
       const postH = groundY - top - SIGN_H + 2;
       feltPost(this.scene, x + 9, top + SIGN_H - 2, 5, postH).setDepth(-3.1);
       feltPost(this.scene, x + SIGN_W - 14, top + SIGN_H - 2, 5, postH).setDepth(-3.1);
-      this.scene.add.nineslice(x, top, FELT, 'platform-f4faf4', SIGN_W * Z, SIGN_H * Z, 36, 36, 36, 36).setOrigin(0).setScale(1 / Z).setDepth(-3);
+      this.scene.add.nineslice(x, top, FELT, 'platform-f4faf4', SIGN_W * ART, SIGN_H * ART, 9 * ART, 9 * ART, 9 * ART, 9 * ART).setOrigin(0).setScale(1 / ART).setDepth(-3);
       if (b.src && this.scene.textures.exists(`img:${b.src}`)) {
         const img = this.scene.add.image(x + SIGN_W / 2, top + SIGN_H / 2, `img:${b.src}`).setDepth(-2.9);
         img.setScale(Math.min((SIGN_W - 10) / img.width, (SIGN_H - 10) / img.height));

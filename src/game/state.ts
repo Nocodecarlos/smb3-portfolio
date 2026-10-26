@@ -4,7 +4,8 @@ import type { Lens } from '../content/types';
 // so it lives in localStorage and the game works without it.
 
 export const TILE = 16;
-export const WIDTH = 320;
+/** 16:9 at the NES's 240 lines (426.7, rounded). */
+export const WIDTH = 427;
 export const HEIGHT = 240;
 export const BAR = 32; // SMB3-style status bar at the bottom
 export const FIELD = HEIGHT - BAR; // 208px playfield = 13 tiles

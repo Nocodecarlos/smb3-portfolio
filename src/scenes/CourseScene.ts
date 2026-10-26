@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { FELT, SKY, Z, feltImage, feltOnGround, feltPlatform, feltPost, feltSprite, preloadFelt, setupFelt } from '../art/felt';
+import { ART, FELT, SKY, Z, feltImage, feltOnGround, feltPlatform, feltPost, feltSprite, haze, preloadFelt, setupFelt } from '../art/felt';
 import { HeroRig, preloadHeroes } from '../art/hero';
 import { getWorld, getWorlds } from '../content/store';
 import type { World } from '../content/types';
@@ -171,12 +171,13 @@ export class CourseScene extends Phaser.Scene {
 
     // ---- Scenery ----
     for (const [x, y, s] of L.scenery.glints) {
-      const g = feltImage(this, x, y, 'glint').setDepth(-10).setScale(s / 5 / Z).setAlpha(0.8);
+      const g = feltImage(this, x, y, 'glint').setDepth(-10).setScale(s / 5 / ART).setAlpha(0.8);
       this.tweens.add({ targets: g, alpha: 0.2, yoyo: true, repeat: -1, duration: 900 + ((x * 7) % 900), delay: (y * 13) % 1200 });
     }
-    for (const [x, y, w] of L.scenery.clouds) feltImage(this, x, y, w > 50 ? 'cloud-l' : w > 40 ? 'cloud-m' : 'cloud-s').setOrigin(0).setDepth(-8);
+    // clouds and the big bushes are the far layer: hazed toward the sky so the course reads first
+    for (const [x, y, w] of L.scenery.clouds) haze(feltImage(this, x, y, w > 50 ? 'cloud-l' : w > 40 ? 'cloud-m' : 'cloud-s').setOrigin(0).setDepth(-8), 0.45, 0.8);
     // Plants stand on the ground line (their felt art has empty rows underneath)
-    for (const [x, , w, h] of L.scenery.bushes) feltOnGround(this, x, G, `bush2-${w}x${h}`).setDepth(-6);
+    for (const [x, , w, h] of L.scenery.bushes) haze(feltOnGround(this, x, G, `bush2-${w}x${h}`).setDepth(-6), 0.22, 0.85);
     for (const [x] of L.scenery.shrubs) feltOnGround(this, x * T, G, 'shrub').setDepth(-6);
 
     // ---- Platforms: drawn back to front, tops are jump-through ----
@@ -198,7 +199,7 @@ export class CourseScene extends Phaser.Scene {
       // felt soil tiles are separate rounded squares; the dark backing shows as the seams between them
       this.add.rectangle(x * T, G, w * T, this.H - G, 0x4e2e24).setOrigin(0).setDepth(3);
       // the Figma course fills both ground rows with the diagonal soil felt
-      this.add.tileSprite(x * T, G, w * T, this.H - G, FELT, 'soil').setOrigin(0).setDepth(3).setTileScale(1 / Z);
+      this.add.tileSprite(x * T, G, w * T, this.H - G, FELT, 'soil').setOrigin(0).setDepth(3).setTileScale(1 / ART);
       solidRect(x * T, G, w * T, this.H - G);
     }
     solidRect(this.W, 0, 8, this.H); // end wall
@@ -211,7 +212,7 @@ export class CourseScene extends Phaser.Scene {
       // One knitted body (tiled down the pipe) under a 14px felt cap; hanging pipes cap their bottom end.
       const cap = 14;
       const bodyY = p.hanging ? top : top + cap - 4;
-      this.add.tileSprite(x, bodyY, 32, h - cap + 4, FELT, 'pipe2-body').setOrigin(0).setDepth(2).setTileScale(1 / Z);
+      this.add.tileSprite(x, bodyY, 32, h - cap + 4, FELT, 'pipe2-body').setOrigin(0).setDepth(2).setTileScale(1 / ART);
       feltImage(this, x, p.hanging ? top + h - cap : top, 'pipe2-top').setOrigin(0).setDisplaySize(32, cap).setDepth(2).setFlipY(!!p.hanging);
       solidRect(x, top, 32, h);
       if (p.plant) {
@@ -240,8 +241,10 @@ export class CourseScene extends Phaser.Scene {
     // only the first story block says READ; after that players know what the book blocks are
     const [first] = [...this.story.storyCells].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
     if (first) this.story.tagStoryBlock(...first);
+    // story blocks stand alone: no bricks right next to them, so the book reads as the thing to hit
+    const nearStory = (x: number, y: number) => this.story.storyCells.some(([sx, sy]) => Math.abs(sx - x) <= 1 && Math.abs(sy - y) <= 1);
     for (const [k, x, y] of L.blocks) {
-      if (storyCells.has(`${x},${y}`)) continue;
+      if (storyCells.has(`${x},${y}`) || (k === 'brick' && nearStory(x, y))) continue;
       if (k === 'q') block('q', x, y, 'q2-0');
       else if (k === 'item') block('item', x, y, 'wood');
       else if (k === 'brick') block('brick', x, y, 'brick2');
@@ -257,14 +260,14 @@ export class CourseScene extends Phaser.Scene {
     for (const [k, x, y] of L.enemies) {
       const walker = k === 'walker';
       const e = this.enemies.create(x * T + 8, (y + 1) * T - (walker ? 10 : 8), FELT, walker ? 'hiker-0' : 'bug-0') as Phaser.Physics.Arcade.Sprite;
-      e.setScale(1 / Z).setDepth(6);
+      e.setScale(1 / ART).setDepth(6);
       // walkers are turtle puppets whose feet step; the plush bug waddles
       if (walker) {
         const rig = new HeroRig(this, 'turtle', 20);
         rig.root.setDepth(6);
         e.setVisible(false).setData('rig', rig);
       } else this.tweens.add({ targets: e, angle: { from: -6, to: 6 }, yoyo: true, repeat: -1, duration: 240, ease: 'Sine.easeInOut' });
-      (e.body as Phaser.Physics.Arcade.Body).setSize(12 * Z, (walker ? 18 : 12) * Z).setOffset(2 * Z, (walker ? 2 : 4) * Z);
+      (e.body as Phaser.Physics.Arcade.Body).setSize(12 * ART, (walker ? 18 : 12) * ART).setOffset(2 * ART, (walker ? 2 : 4) * ART);
       e.setVelocityX(-24);
       e.setData('walker', walker);
     }
@@ -388,7 +391,7 @@ export class CourseScene extends Phaser.Scene {
     const R = this.level.room;
     const w = R.tiles[0].length * T;
     const h = R.tiles.length * T;
-    this.add.rectangle(this.RX, 0, w, Math.max(h, HEIGHT), 0x000000).setOrigin(0).setDepth(-9);
+    this.add.rectangle(this.RX, 0, Math.max(w, WIDTH), Math.max(h, HEIGHT), 0x000000).setOrigin(0).setDepth(-9);
     R.tiles.forEach((row, ty) => {
       for (let tx = 0; tx < row.length; tx++) {
         if (row[tx] !== '#') continue;

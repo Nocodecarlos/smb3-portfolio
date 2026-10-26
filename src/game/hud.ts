@@ -16,23 +16,25 @@ export class StatusBar {
     const g = scene.add.graphics().setScrollFactor(0).setDepth(100);
     g.fillStyle(0x000000).fillRect(0, FIELD, WIDTH, BAR);
     // Info panel
-    g.fillStyle(0xfcfcfc).fillRect(3, FIELD + 3, 222, BAR - 6);
-    g.fillStyle(0x000000).fillRect(4, FIELD + 4, 220, BAR - 8);
-    g.fillStyle(0xb8f8f8).fillRect(5, FIELD + 5, 218, BAR - 10);
+    // the info panel takes the extra width of a wide screen; card slots stay on the right
+    const extra = WIDTH - 320;
+    g.fillStyle(0xfcfcfc).fillRect(3, FIELD + 3, 222 + extra, BAR - 6);
+    g.fillStyle(0x000000).fillRect(4, FIELD + 4, 220 + extra, BAR - 8);
+    g.fillStyle(0xb8f8f8).fillRect(5, FIELD + 5, 218 + extra, BAR - 10);
 
     const y1 = FIELD + 7;
     const y2 = FIELD + 17;
     const ink = '#000000';
     this.add(px(scene, 9, y1, worldLabel, { color: ink }));
     this.meter = this.add(px(scene, 9 + (worldLabel.length + 1) * 8, y1, '', { color: ink }));
-    this.coinText = this.add(px(scene, 178, y1, '', { color: ink }));
+    this.coinText = this.add(px(scene, 178 + extra, y1, '', { color: ink }));
     this.line2 = this.add(px(scene, 9, y2, line2, { color: ink }));
 
     // Card slots
     const worlds = getWorlds();
     const slots = Math.max(3, Math.min(worlds.length, 3));
     for (let i = 0; i < slots; i++) {
-      const x = 231 + i * 29;
+      const x = 231 + extra + i * 29;
       g.fillStyle(0xfcfcfc).fillRect(x, FIELD + 3, 26, BAR - 6);
       g.fillStyle(0x000000).fillRect(x + 1, FIELD + 4, 24, BAR - 8);
       g.fillStyle(0xb8f8f8).fillRect(x + 2, FIELD + 5, 22, BAR - 10);

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { setRenderZoom } from './art/felt';
 import { onContentChange } from './content/store';
 import { isMuted, toggleMute } from './game/sfx';
 import { HEIGHT, WIDTH, ui } from './game/state';
@@ -20,6 +21,13 @@ async function start() {
     Promise.all([document.fonts.load('8px "Press Start 2P"'), document.fonts.load('30px "Luckiest Guy"'), document.fonts.load('600 8px "Fredoka"')]),
     new Promise((r) => setTimeout(r, 2500)),
   ]);
+
+  // Felt scenes draw at the display's real resolution: enough screen pixels per
+  // game pixel for the largest the TV screen gets on this display (see #stage in
+  // style.css), between the art's 4x and 8x.
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const tallest = Math.min(window.screen.height - 92, ((window.screen.width - 48) * HEIGHT) / WIDTH);
+  setRenderZoom(Phaser.Math.Clamp(Math.ceil((tallest * dpr) / HEIGHT), 4, 8));
 
   const game = new Phaser.Game({
     type: Phaser.AUTO,

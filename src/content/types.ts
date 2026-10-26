@@ -107,7 +107,7 @@ export type MapNodeType = 'start' | 'world' | 'step' | 'house' | 'spade' | 'fort
 export interface MapNode {
   id: string;
   type: MapNodeType;
-  /** Centre of the stop on the felt map art (public/felt/map-bg.jpg), in Figma pixels of the 2000x1384 map. */
+  /** Centre of the stop on the felt map art (public/felt/map-bg.jpg), in Figma pixels of the 2668x1384 map (overworld · felt · 16:9). */
   x: number;
   y: number;
   /** World slug for type 'world'. Leave empty for a world that isn't ready yet. */

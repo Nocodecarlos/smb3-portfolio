@@ -21,27 +21,40 @@ body {
 
 /* ---------- Stage + CRT ---------- */
 
+/* The game screen comes first: --s is its height, as tall as the window
+   allows (minus a strip for the key legend, or less if the window is narrow).
+   The TV frame is sized from it and simply runs off the edges of the window. */
 #stage {
+  --side: 0px; /* room taken by the dev panel on the right */
+  /* the screen's height: the window height minus a sliver of top bezel and the
+     TV's bottom strip (0.1 screen-heights, with the badge), or less if narrow */
+  --s: min(calc((100vh - 30px) / 1.1), calc((100vw - var(--side) - 48px) * 240 / 427));
+  --screen-top: max(24px, calc((100vh - 30px - 1.1 * var(--s)) / 2 + 24px));
+  --screen-bottom: calc(var(--screen-top) + var(--s));
+  position: relative;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  padding: 16px;
-  transition: padding-right 0.4s ease;
+  overflow: hidden;
   perspective: 1600px;
 }
-body.dev #stage { padding-right: min(440px, 46vw); }
+body.dev #stage { --side: min(440px, 46vw); }
 
-/* The TV is a photo of a Sony monitor (public/felt/tv-sony.webp) with its
-   screen cut out; the game sits behind the hole. Positions are % of the photo. */
-#tv { --w: min(92vw, calc((100vh - 130px) * 1.09)); width: var(--w); max-width: 1240px; }
-body.dev #tv { --w: min(calc(54vw - 32px), calc((100vh - 130px) * 1.09)); }
+/* The TV is a photo of a widescreen tube TV (public/felt/tv-wide.webp) with
+   its screen cut out; the game sits behind the opening. Positions are % of the
+   photo: it's 2.0901 screen-heights wide, and the screen starts 0.1363
+   screen-heights below its top edge. */
+#tv {
+  position: absolute;
+  z-index: 1;
+  width: calc(var(--s) * 2.0901);
+  left: calc((100% - var(--side)) / 2);
+  top: calc(var(--screen-top) - var(--s) * 0.1363);
+  translate: -50% 0;
+  transition: width 0.4s ease, left 0.4s ease, top 0.4s ease;
+}
 
 #tv-flip {
   position: relative;
-  aspect-ratio: 1600 / 1468;
+  aspect-ratio: 2515 / 1555;
   transform-style: preserve-3d;
 }
 #tv-flip::after {
@@ -50,7 +63,7 @@ body.dev #tv { --w: min(calc(54vw - 32px), calc((100vh - 130px) * 1.09)); }
   inset: 0;
   z-index: 6;
   pointer-events: none;
-  background: url("/felt/tv-sony.webp") center / 100% 100% no-repeat;
+  background: url("/felt/tv-wide.webp") center / 100% 100% no-repeat;
   filter: drop-shadow(0 24px 40px rgba(0, 0, 0, 0.55));
 }
 #tv-flip.flipping { animation: flip 0.9s cubic-bezier(0.6, 0, 0.3, 1); }
@@ -60,27 +73,24 @@ body.dev #tv { --w: min(calc(54vw - 32px), calc((100vh - 130px) * 1.09)); }
   100% { transform: rotateY(0); }
 }
 
-/* 4:3, a touch taller than the hole so the bezel hides the edges */
+/* 16:9 like the game (427x240), a touch bigger than the opening so the bezel hides the edges */
 #screen {
   position: absolute;
-  left: 13.66%;
-  top: 14.19%;
-  width: 72.72%;
-  aspect-ratio: 4 / 3;
+  left: 7.5%;
+  top: 10.55%;
+  width: 85.1%;
+  aspect-ratio: 427 / 240;
   overflow: hidden;
   background: #000;
   container-type: inline-size;
 }
 #screen::after {
-  /* the tube's glass: scanlines, darker curved edges and a soft reflection */
+  /* the tube's glass: only a soft darkening toward the curved edges (no scanlines, they blur the art) */
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background:
-    linear-gradient(155deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.03) 28%, transparent 42%),
-    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.12) 0 1px, transparent 1px 3px),
-    radial-gradient(115% 105% at 50% 50%, transparent 58%, rgba(0, 0, 0, 0.5));
+  background: radial-gradient(120% 110% at 50% 50%, transparent 70%, rgba(0, 0, 0, 0.35));
   z-index: 3;
 }
 #game, #game canvas { width: 100% !important; height: 100% !important; display: block; }
@@ -101,13 +111,13 @@ body.dev #game { filter: grayscale(1) contrast(1.15); }
 }
 body.dev #dev-badge { display: block; }
 
-/* power lamp on the photo's front panel; it turns white on the other side */
+/* power lamp beside the C-V-ision badge; it turns white on the other side */
 .tv-power {
   position: absolute;
-  left: 87.9%;
-  top: 94%;
+  left: 55%;
+  top: 94.4%;
   z-index: 7;
-  width: 0.55%;
+  width: 0.4%;
   aspect-ratio: 1;
   translate: -50% -50%;
   border-radius: 50%;
@@ -116,7 +126,20 @@ body.dev #dev-badge { display: block; }
 }
 body.dev .tv-power { background: #fff; box-shadow: 0 0 8px #fff; }
 
+/* The key legend lives on the TV's bottom strip, keys on the left and the
+   Quick View button on the right with the badge between them; on narrower
+   windows (spare height) it sits under the TV instead. The hint runs along the top. */
+#legend, #secret {
+  position: absolute;
+  z-index: 2;
+  left: calc((100% - var(--side)) / 2);
+  translate: -50% 0;
+  width: max-content;
+  max-width: calc(100% - var(--side) - 32px);
+  transition: left 0.4s ease, top 0.4s ease;
+}
 #legend {
+  top: calc(var(--screen-bottom) + var(--s) * 0.1562 + 12px);
   margin: 0;
   display: flex;
   flex-wrap: wrap;
@@ -145,7 +168,21 @@ kbd {
   cursor: pointer;
 }
 #qv-btn:hover { border-color: var(--ink); }
-#secret { margin: 0; font-size: 10px; color: #4a4a4a; letter-spacing: 0.08em; }
+@media (min-aspect-ratio: 3 / 2) {
+  body:not(.dev) #legend {
+    top: calc(var(--screen-bottom) + var(--s) * 0.084 - 15px);
+    left: calc((100% - var(--side)) / 2 - var(--s) * 0.8894);
+    translate: none;
+    width: calc(var(--s) * 1.7787);
+    max-width: none;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+  }
+  body:not(.dev) #qv-btn { margin-left: auto; }
+}
+/* in the secret world the editor panel takes over */
+body.dev #legend { display: none; }
+#secret { top: 6px; margin: 0; font-size: 10px; color: #6a6a6a; letter-spacing: 0.08em; }
 
 /* ---------- Game overlays ---------- */
 

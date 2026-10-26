@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { FELT, Z, preloadFelt, setupFelt } from '../art/felt';
+import { ART, FELT, Z, preloadFelt, setupFelt } from '../art/felt';
 import { heroFront, preloadHeroes } from '../art/hero';
 import { getSite, getWorld, getWorlds } from '../content/store';
 import type { MapNode } from '../content/types';
@@ -17,9 +17,12 @@ import { devBus } from '../ui/devBus';
 
 type Dir = 'left' | 'right' | 'up' | 'down';
 
-/** Figma map pixels (2000 wide) to game pixels (320 wide). */
-const K = WIDTH / 2000;
+/** The Figma map frame's width (overworld · felt · 16:9); the map fills the screen's width. */
+const MAP_W = 2668;
+const K = WIDTH / MAP_W;
 const MAP_H = 1384 * K;
+/** Texture pixels per Figma pixel in the exported map art (map-bg.jpg, map-lock.png). */
+const MAP_TEX = 1.25;
 
 const at = (n: MapNode) => ({ x: n.x * K, y: n.y * K });
 
@@ -70,14 +73,14 @@ export class OverworldScene extends Phaser.Scene {
     const lock = nodes.find((n) => n.type === 'lock');
     if (lock && !this.isOpen(lock)) {
       const p = at(lock);
-      this.lockArt = this.add.image(p.x, p.y, 'felt-map-lock').setScale(1 / Z);
+      this.lockArt = this.add.image(p.x, p.y, 'felt-map-lock').setScale(K / MAP_TEX);
     }
     const worlds = getWorlds();
     for (const n of nodes) {
       const p = at(n);
       if (n.type === 'world' && n.world && progress.cleared.includes(n.world)) {
         const card = worlds.find((w) => w.slug === n.world)?.card ?? 'star';
-        this.add.image(p.x + 9, p.y - 9, FELT, `icon-${card}`).setScale(0.45 / Z);
+        this.add.image(p.x + 9, p.y - 9, FELT, `icon-${card}`).setScale(0.45 / ART);
       }
       if ((n.type === 'house' || n.type === 'castle') && n.label) {
         const sign = px(this, p.x, p.y - (n.type === 'castle' ? 30 : 16), n.label, { size: 6, color: '#000' }).setOrigin(0.5);

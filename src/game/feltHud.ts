@@ -1,7 +1,11 @@
 import Phaser from 'phaser';
-import { FELT, Z } from '../art/felt';
+import { ART, FELT, Z } from '../art/felt';
 import { getWorlds } from '../content/store';
 import { FIELD, WIDTH, progress } from './state';
+
+/** Extra width over the 320px bar the art was drawn for: the panel stretches, the card slots move right. */
+const EXTRA = WIDTH - 320;
+const CARD_X = 230 + EXTRA;
 import { px } from './text';
 
 // The felt status bar (Figma: ui-felt/status-bar) for courses that render
@@ -35,8 +39,11 @@ export class FeltStatusBar {
       .setScrollFactor(0)
       .setDepth(100));
 
-    const bg = scene.add.image(0, FIELD - 1, FELT, 'hud-bg').setOrigin(0).setScale(1 / Z);
-    root.add(bg);
+    // the info panel is a 3-slice that stretches across; the card slots keep their size
+    const panelW = scene.textures.getFrame(FELT, 'hud-panel').width;
+    const panel = scene.add.nineslice(0, FIELD - 1, FELT, 'hud-panel', panelW + EXTRA * ART, undefined, 40 * (ART / 4), 40 * (ART / 4)).setOrigin(0).setScale(1 / ART);
+    const cards = scene.add.image(panelW / ART + EXTRA, FIELD - 1, FELT, 'hud-cards').setOrigin(0).setScale(1 / ART);
+    root.add([panel, cards]);
 
     const text = (x: number, y: number, s: string, color: string) => {
       const t = scene.add
@@ -50,7 +57,7 @@ export class FeltStatusBar {
     const y2 = FIELD + 14;
     this.worldText = text(10, y1, worldLabel, NAVY);
     this.meter = text(75, y1, '', NAVY);
-    this.coinText = text(179, y1, '', NAVY);
+    this.coinText = text(179 + EXTRA, y1, '', NAVY);
     this.line2 = text(10, y2, line2, BROWN);
     this.subtitle = scene.add
       .text(10, y2 + 1.5, '', { fontFamily: '"Fredoka", sans-serif', fontStyle: '600', fontSize: '6.5px', color: BROWN })
@@ -64,7 +71,7 @@ export class FeltStatusBar {
     for (let i = 0; i < 3; i++) {
       const w = worlds[i];
       if (w && progress.cleared.includes(w.slug)) {
-        const card = scene.add.image(230 + i * 30 + 14, FIELD - 1 + 13.5, FELT, `icon-${w.card}`).setScale(0.85 / Z);
+        const card = scene.add.image(CARD_X + i * 30 + 14, FIELD - 1 + 13.5, FELT, `icon-${w.card}`).setScale(0.85 / ART);
         root.add(card);
         this.cards.push(card);
       }
@@ -96,7 +103,7 @@ export class FeltStatusBar {
     this.chapterIcon?.destroy();
     const frame = CHAPTER_FRAMES[i];
     if (frame) {
-      this.chapterIcon = this.scene.add.image(15, FIELD + 18.5, FELT, frame).setScale(0.42 / Z);
+      this.chapterIcon = this.scene.add.image(15, FIELD + 18.5, FELT, frame).setScale(0.42 / ART);
       this.root.add(this.chapterIcon);
     }
     this.line2.setText(title).setX(frame ? 24 : 10);
@@ -118,7 +125,7 @@ export class FeltStatusBar {
       .setOrigin(0.5)
       .setResolution(Z);
     const parts: Phaser.GameObjects.GameObject[] = [big, sub];
-    if (frame) parts.push(this.scene.add.image(cx - big.width / 2 - 14, cy, FELT, frame).setScale(0.6 / Z));
+    if (frame) parts.push(this.scene.add.image(cx - big.width / 2 - 14, cy, FELT, frame).setScale(0.6 / ART));
     const group = this.scene.add.container(0, 0, parts).setAlpha(0);
     this.root.add(group);
     this.scene.tweens.chain({
@@ -140,7 +147,7 @@ export class FeltStatusBar {
   setChapters(frames: string[]) {
     this.cards.forEach((c) => c.destroy());
     this.cards = frames.map((frame, i) => {
-      const img = this.scene.add.image(230 + i * 30 + 14, FIELD - 1 + 13.5, FELT, frame).setScale(0.7 / Z).setAlpha(0.22);
+      const img = this.scene.add.image(CARD_X + i * 30 + 14, FIELD - 1 + 13.5, FELT, frame).setScale(0.7 / ART).setAlpha(0.22);
       this.root.add(img);
       return img;
     });
@@ -150,7 +157,7 @@ export class FeltStatusBar {
     const card = this.cards[i];
     if (!card || card.alpha === 1) return;
     card.setAlpha(1);
-    this.scene.tweens.add({ targets: card, scale: { from: 1.25 / Z, to: 0.8 / Z }, duration: 380, ease: 'Back.easeOut' });
+    this.scene.tweens.add({ targets: card, scale: { from: 1.25 / ART, to: 0.8 / ART }, duration: 380, ease: 'Back.easeOut' });
   }
 
   setWorld(s: string) {
