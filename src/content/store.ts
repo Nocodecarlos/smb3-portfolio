@@ -1,5 +1,6 @@
 import type { Site, World } from './types';
 import siteJson from '../../content/site.json';
+import { asset } from '../assets';
 
 // Content is bundled at build time. Dev mode edits these in-memory copies,
 // marks files dirty, and the GitHub save writes them back to the repo.
@@ -74,7 +75,7 @@ export function addPendingAsset(slug: string, fileName: string, dataUrl: string)
 
 /** Resolve a beat's src to something an <img> or Phaser loader can fetch. */
 export function resolveSrc(src: string): string {
-  return pendingAssets.get(`public/${src}`) ?? `${import.meta.env.BASE_URL}${src}`;
+  return pendingAssets.get(`public/${src}`) ?? asset(src);
 }
 
 export function getDirtyFiles(): { path: string; content: string; encoding: 'utf-8' | 'base64' }[] {

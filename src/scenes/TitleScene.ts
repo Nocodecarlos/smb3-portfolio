@@ -6,6 +6,7 @@ import { sfx } from '../game/sfx';
 import { HEIGHT, type Hero, WIDTH, progress, saveProgress, ui } from '../game/state';
 import { raiseCurtain } from '../ui/curtain';
 import { showQuickView } from '../ui/overlays';
+import { asset } from '../assets';
 
 // Felt title screen (Figma: 02 · Screens / screen/title). The static art is
 // one exported background; the hero menu, arrow, puppet, bugs and PRESS
@@ -31,11 +32,10 @@ export class TitleScene extends Phaser.Scene {
   }
 
   preload() {
-    const base = import.meta.env.BASE_URL;
     preloadFelt(this);
     preloadHeroes(this);
     for (const [key, file] of [['title-bg', 'title-bg.jpg'], ['title-arrow', 'title-arrow.png'], ['title-press', 'title-press.png']]) {
-      if (!this.textures.exists(key)) this.load.image(key, `${base}felt/${file}`);
+      if (!this.textures.exists(key)) this.load.image(key, asset(`felt/${file}`));
     }
   }
 

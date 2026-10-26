@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { asset } from '../assets';
 
 // Felt art for hand-built courses, exported from the Figma sprite library
 // ("03 · World 1-1"). Frames are drawn at ART times the game's pixel grid.
@@ -19,10 +20,9 @@ export const SKY = 'felt-sky';
 export const POST = 'felt-post';
 
 export function preloadFelt(scene: Phaser.Scene) {
-  const base = import.meta.env.BASE_URL;
-  if (!scene.textures.exists(FELT)) scene.load.atlas(FELT, `${base}felt/course.webp`, `${base}felt/course.json`);
-  if (!scene.textures.exists(SKY)) scene.load.image(SKY, `${base}felt/sky.jpg`);
-  if (!scene.textures.exists(POST)) scene.load.image(POST, `${base}felt/post-knit.png`);
+  if (!scene.textures.exists(FELT)) scene.load.atlas(FELT, asset('felt/course.webp'), asset('felt/course.json'));
+  if (!scene.textures.exists(SKY)) scene.load.image(SKY, asset('felt/sky.jpg'));
+  if (!scene.textures.exists(POST)) scene.load.image(POST, asset('felt/post-knit.png'));
 }
 
 /** Empty rows under the plush art in some frames (measured on the 4x art), so they can sit on the ground. */

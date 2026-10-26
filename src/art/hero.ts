@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { Hero } from '../game/state';
+import { asset } from '../assets';
 
 // Felt characters that walk are paper-doll puppets: a top piece (head,
 // torso, arms) and one leg piece used twice, swung at the hip so the feet
@@ -41,7 +42,6 @@ const CHIBI: Record<Hero, { side: Pose; cape: Pose; fly: { size: [number, number
 };
 
 export function preloadHeroes(scene: Phaser.Scene) {
-  const base = import.meta.env.BASE_URL;
   const keys = [
     ...Object.keys(RIG).flatMap((n) => [`hero-${n}-top`, `hero-${n}-leg`]),
     ...Object.keys(CHIBI).flatMap((h) => [
@@ -50,7 +50,7 @@ export function preloadHeroes(scene: Phaser.Scene) {
       `hero-${h}-front`,
     ]),
   ];
-  for (const key of keys) if (!scene.textures.exists(key)) scene.load.image(key, `${base}felt/${key}.png`);
+  for (const key of keys) if (!scene.textures.exists(key)) scene.load.image(key, asset(`felt/${key}.png`));
 }
 
 /** Front-facing hero for the overworld (Figma: sprite/player-*-overworld-0). */

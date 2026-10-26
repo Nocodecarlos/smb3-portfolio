@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { asset } from '../assets';
 
 // Background music: one looping track at a time, shared across scenes
 // (Phaser's sound manager is global). The overworld and World 1-1 each have
@@ -25,8 +26,7 @@ export function playMusic(scene: Phaser.Scene, track: Track) {
   stopMusic();
   wanted = track;
   if (!scene.cache.audio.exists(key(track))) {
-    const base = import.meta.env.BASE_URL;
-    scene.load.audio(key(track), [`${base}music/${track}.m4a`, `${base}music/${track}.mp3`]);
+    scene.load.audio(key(track), [asset(`music/${track}.m4a`), asset(`music/${track}.mp3`)]);
     scene.load.once(`filecomplete-audio-${key(track)}`, () => wanted === track && playMusic(scene, track));
     scene.load.start();
     return;

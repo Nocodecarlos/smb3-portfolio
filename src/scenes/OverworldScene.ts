@@ -10,6 +10,7 @@ import { BAR, HEIGHT, WIDTH, progress, saveProgress, ui } from '../game/state';
 import { px } from '../game/text';
 import { showDialog, showLetter, showQuickView } from '../ui/overlays';
 import { devBus } from '../ui/devBus';
+import { asset } from '../assets';
 
 // The felt overworld (Figma: 02 · Screens / overworld · felt). The map art
 // is one image; stops, roads and what each stop does come from
@@ -43,11 +44,10 @@ export class OverworldScene extends Phaser.Scene {
   }
 
   preload() {
-    const base = import.meta.env.BASE_URL;
     preloadFelt(this);
     preloadHeroes(this);
-    if (!this.textures.exists('felt-map')) this.load.image('felt-map', `${base}felt/map-bg.jpg`);
-    if (!this.textures.exists('felt-map-lock')) this.load.image('felt-map-lock', `${base}felt/map-lock.png`);
+    if (!this.textures.exists('felt-map')) this.load.image('felt-map', asset('felt/map-bg.jpg'));
+    if (!this.textures.exists('felt-map-lock')) this.load.image('felt-map-lock', asset('felt/map-lock.png'));
   }
 
   create() {

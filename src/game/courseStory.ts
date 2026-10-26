@@ -6,6 +6,7 @@ import { type StoryCard, showImage, showStory } from '../ui/overlays';
 import type { FeltStatusBar } from './feltHud';
 import { ui } from './state';
 import { px } from './text';
+import { asset } from '../assets';
 
 // Puts a world's story into a hand-built course: play, then read, then play.
 // The status bar names the chapter; the story itself lives in a few story
@@ -63,7 +64,7 @@ export class CourseStory {
 
   /** The story block image and any billboard pictures, loaded with the scene. */
   static preload(scene: Phaser.Scene, world: World) {
-    if (!scene.textures.exists(STORY_TEXTURE)) scene.load.image(STORY_TEXTURE, `${import.meta.env.BASE_URL}felt/story-block.png`);
+    if (!scene.textures.exists(STORY_TEXTURE)) scene.load.image(STORY_TEXTURE, asset('felt/story-block.png'));
     for (const b of world.beats) {
       if (b.type === 'image' && b.place?.as === 'sign' && b.src && !scene.textures.exists(`img:${b.src}`)) {
         scene.load.image(`img:${b.src}`, resolveSrc(b.src));

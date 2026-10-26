@@ -27,7 +27,9 @@ async function start() {
   // style.css), between the art's 4x and 8x.
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const tallest = Math.min(window.screen.height - 92, ((window.screen.width - 48) * HEIGHT) / WIDTH);
-  setRenderZoom(Phaser.Math.Clamp(Math.ceil((tallest * dpr) / HEIGHT), 4, 8));
+  // ?zoom=5 forces it, to see how another display renders
+  const forced = Number(new URLSearchParams(location.search).get('zoom'));
+  setRenderZoom(Phaser.Math.Clamp(forced || Math.ceil((tallest * dpr) / HEIGHT), 4, 8));
 
   const game = new Phaser.Game({
     type: Phaser.AUTO,

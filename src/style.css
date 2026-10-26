@@ -63,7 +63,7 @@ body.dev #stage { --side: min(440px, 46vw); }
   inset: 0;
   z-index: 6;
   pointer-events: none;
-  background: url("/felt/tv-wide.webp") center / 100% 100% no-repeat;
+  background: url("./art/page/tv-wide.webp") center / 100% 100% no-repeat;
   filter: drop-shadow(0 24px 40px rgba(0, 0, 0, 0.55));
 }
 #tv-flip.flipping { animation: flip 0.9s cubic-bezier(0.6, 0, 0.3, 1); }
@@ -193,7 +193,7 @@ body.dev #legend { display: none; }
   position: absolute;
   inset: 0;
   z-index: 2;
-  background: #6b260c url("/felt/curtain.jpg") center top / cover;
+  background: #6b260c url("./art/page/curtain.jpg") center top / cover;
   box-shadow: 0 1.5cqw 3cqw rgba(0, 0, 0, 0.55);
   transition: transform 1.6s cubic-bezier(0.55, 0, 0.25, 1);
 }
@@ -283,7 +283,7 @@ body.dev #legend { display: none; }
   position: relative;
   width: 100%; max-height: 100%;
   display: grid; grid-template-columns: 1fr; grid-template-rows: auto 1fr auto;
-  background: url(/felt/ui/felt-peach.jpg) 0 0 / calc(var(--px) * 64) #f6cf9c;
+  background: url("./art/page/felt-peach.jpg") 0 0 / calc(var(--px) * 64) #f6cf9c;
   border: calc(var(--px) * 2.5) solid var(--cream);
   border-radius: calc(var(--px) * 8);
   box-shadow: 0 calc(var(--px) * 3) calc(var(--px) * 6) rgba(58, 36, 16, 0.45), inset 0 calc(var(--px) * 1) calc(var(--px) * 1.5) rgba(255, 255, 255, 0.35);
@@ -295,7 +295,7 @@ body.dev #legend { display: none; }
   grid-column: 1 / -1;
   display: flex; justify-content: space-between; align-items: center; gap: 1em;
   padding: calc(var(--px) * 4) calc(var(--px) * 8) calc(var(--px) * 3);
-  background: url(/felt/ui/felt-orange.jpg) 0 0 / calc(var(--px) * 64) #e8924a;
+  background: url("./art/page/felt-orange.jpg") 0 0 / calc(var(--px) * 64) #e8924a;
   font: calc(var(--px) * 5.5) / 1.1 "Luckiest Guy", sans-serif; letter-spacing: 0.04em; color: #5a3518;
 }
 .story-progress { font: 600 calc(var(--px) * 4.2) / 1 Fredoka, sans-serif; letter-spacing: 0.02em; color: #4a2a12; opacity: 0.85; white-space: nowrap; }
@@ -324,7 +324,7 @@ body.dev #legend { display: none; }
 .story-btn {
   font: calc(var(--px) * 5.5) / 1 "Luckiest Guy", sans-serif; letter-spacing: 0.04em; color: #5a3518; cursor: pointer;
   padding: calc(var(--px) * 3) calc(var(--px) * 9);
-  background: url(/felt/ui/felt-orange.jpg) 0 0 / calc(var(--px) * 64) #e8924a;
+  background: url("./art/page/felt-orange.jpg") 0 0 / calc(var(--px) * 64) #e8924a;
   border: calc(var(--px) * 1.5) solid var(--cream); border-radius: calc(var(--px) * 10);
   box-shadow: 0 calc(var(--px) * 1.5) calc(var(--px) * 3) rgba(58, 36, 16, 0.35);
 }
@@ -475,7 +475,7 @@ body.qv-open #stage, body.qv-open #dev-panel { visibility: hidden; }
   width: min(380px, 100%);
   aspect-ratio: 584 / 968;
   container-type: inline-size;
-  background: url("/felt/gameboy.webp") center / 100% 100% no-repeat;
+  background: url("./art/page/gameboy.webp") center / 100% 100% no-repeat;
   filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.5));
 }
 /* sits on the photo's LCD; sizes are cqw of the Game Boy's width */
