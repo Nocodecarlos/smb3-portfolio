@@ -76,7 +76,7 @@ export class CourseStory {
     return [...this.cells.keys()].map((k) => k.split(',').map(Number) as [number, number]);
   }
 
-  /** A "READ" tag over each story block, shown when the player is close and it hasn't been read. */
+  /** A "READ" tag over a story block, shown when the player is close and it hasn't been read. */
   tagStoryBlock(x: number, y: number) {
     const id = this.cells.get(`${x},${y}`)?.id;
     if (!id) return;

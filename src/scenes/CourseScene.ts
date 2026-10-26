@@ -236,10 +236,10 @@ export class CourseScene extends Phaser.Scene {
       this.blocks.set(s, { sprite: s, kind, tx, ty });
       return s;
     };
-    for (const [x, y] of this.story.storyCells) {
-      block('story', x, y, STORY_TEXTURE);
-      this.story.tagStoryBlock(x, y);
-    }
+    for (const [x, y] of this.story.storyCells) block('story', x, y, STORY_TEXTURE);
+    // only the first story block says READ; after that players know what the book blocks are
+    const [first] = [...this.story.storyCells].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    if (first) this.story.tagStoryBlock(...first);
     for (const [k, x, y] of L.blocks) {
       if (storyCells.has(`${x},${y}`)) continue;
       if (k === 'q') block('q', x, y, 'q2-0');
