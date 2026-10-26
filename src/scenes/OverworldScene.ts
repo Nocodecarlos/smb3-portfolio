@@ -1,196 +1,176 @@
 import Phaser from 'phaser';
+import { FELT, Z, preloadFelt, setupFelt } from '../art/felt';
+import { heroFront, preloadHeroes } from '../art/hero';
 import { getSite, getWorld, getWorlds } from '../content/store';
 import type { MapNode } from '../content/types';
-import { StatusBar } from '../game/hud';
+import { FeltStatusBar } from '../game/feltHud';
+import { playMusic } from '../game/music';
 import { sfx } from '../game/sfx';
-import { FIELD, TILE, WIDTH, progress, saveProgress, ui } from '../game/state';
+import { BAR, HEIGHT, WIDTH, progress, saveProgress, ui } from '../game/state';
 import { px } from '../game/text';
 import { showDialog, showLetter, showQuickView } from '../ui/overlays';
 import { devBus } from '../ui/devBus';
 
+// The felt overworld (Figma: 02 · Screens / overworld · felt). The map art
+// is one image; stops, roads and what each stop does come from
+// content/site.json, with positions in the Figma map's pixels.
+
 type Dir = 'left' | 'right' | 'up' | 'down';
 
-const COLS = WIDTH / TILE; // 20
-const ROWS = FIELD / TILE; // 13
+/** Figma map pixels (2000 wide) to game pixels (320 wide). */
+const K = WIDTH / 2000;
+const MAP_H = 1384 * K;
 
-/** Path between two nodes: horizontal leg from `a`, then vertical. */
-function legs(a: MapNode, b: MapNode): { x: number; y: number }[] {
-  return [
-    { x: a.x, y: a.y },
-    { x: b.x, y: a.y },
-    { x: b.x, y: b.y },
-  ];
-}
+const at = (n: MapNode) => ({ x: n.x * K, y: n.y * K });
 
-const center = (t: number) => t * TILE + TILE / 2;
+/** The hero on the map covers most of a world tile (about 25x23 game px): its height, and how far below a stop's centre its feet stand. */
+const MARKER_H = 24;
+const MARKER_FEET = 10;
 
 export class OverworldScene extends Phaser.Scene {
   private current!: MapNode;
-  private marker!: Phaser.GameObjects.Sprite;
+  private marker!: Phaser.GameObjects.Container;
+  private markerImg!: Phaser.GameObjects.Image;
   private moving = false;
-  private hud!: StatusBar;
+  private hud!: FeltStatusBar;
+  private lockArt?: Phaser.GameObjects.Image;
 
   constructor() {
     super('Overworld');
   }
 
+  preload() {
+    const base = import.meta.env.BASE_URL;
+    preloadFelt(this);
+    preloadHeroes(this);
+    if (!this.textures.exists('felt-map')) this.load.image('felt-map', `${base}felt/map-bg.jpg`);
+    if (!this.textures.exists('felt-map-lock')) this.load.image('felt-map-lock', `${base}felt/map-lock.png`);
+  }
+
   create() {
     const site = getSite();
     const nodes = site.map.nodes;
-    this.current = nodes.find((n) => n.id === progress.mapNode) ?? nodes[0];
+    this.current = nodes.find((n) => n.id === progress.mapNode) ?? nodes.find((n) => n.type === 'start') ?? nodes[0];
     this.moving = false;
 
-    this.cameras.main.setBackgroundColor(0x000000);
-    const onPath = new Set<string>();
-    const mark = (x: number, y: number) => onPath.add(`${x},${y}`);
+    this.scale.resize(WIDTH * Z, HEIGHT * Z);
+    const cam = this.cameras.main;
+    cam.setSize(WIDTH * Z, HEIGHT * Z).setZoom(Z).setRoundPixels(false).setBackgroundColor(0xe8807a);
+    document.body.classList.add('felt');
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.scale.resize(WIDTH, HEIGHT);
+      document.body.classList.remove('felt');
+    });
+    setupFelt(this);
+    for (const key of ['felt-map', 'felt-map-lock']) this.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR);
 
-    // Background
-    for (let y = 1; y < ROWS - 1; y++) for (let x = 1; x < COLS - 1; x++) this.add.image(center(x), center(y), 'map-bg');
-    const frame = this.add.graphics();
-    frame.lineStyle(2, 0xfcbcb0).strokeRect(TILE - 3, TILE - 3, (COLS - 2) * TILE + 6, (ROWS - 2) * TILE + 6);
+    this.add.image(0, 0, 'felt-map').setOrigin(0).setDisplaySize(WIDTH, MAP_H);
 
-    // Paths
-    const g = this.add.graphics();
-    for (const [ia, ib] of site.map.edges) {
-      const a = nodes.find((n) => n.id === ia);
-      const b = nodes.find((n) => n.id === ib);
-      if (!a || !b) continue;
-      const pts = legs(a, b);
-      for (let i = 0; i < pts.length - 1; i++) {
-        const p = pts[i];
-        const q = pts[i + 1];
-        const x0 = Math.min(p.x, q.x);
-        const x1 = Math.max(p.x, q.x);
-        const y0 = Math.min(p.y, q.y);
-        const y1 = Math.max(p.y, q.y);
-        for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) mark(x, y);
-        g.fillStyle(0xc88c38).fillRect(x0 * TILE + 4, y0 * TILE + 4, (x1 - x0) * TILE + 8, (y1 - y0) * TILE + 8);
-        g.fillStyle(0xfcf0d8).fillRect(x0 * TILE + 5, y0 * TILE + 5, (x1 - x0) * TILE + 6, (y1 - y0) * TILE + 6);
-      }
-      // Dots along the way, like the stepping stones on the SMB3 map
-      for (let i = 0; i < pts.length - 1; i++) {
-        const p = pts[i];
-        const q = pts[i + 1];
-        const steps = Math.abs(q.x - p.x) + Math.abs(q.y - p.y);
-        for (let s = 1; s < steps; s++) {
-          const x = p.x + Math.sign(q.x - p.x) * s;
-          const y = p.y + Math.sign(q.y - p.y) * s;
-          g.fillStyle(0xe8b878).fillRect(center(x) - 1, center(y) - 1, 2, 2);
-        }
-      }
+    // Live pieces on top of the art: the lock (until opened), cleared-world cards, signs
+    const lock = nodes.find((n) => n.type === 'lock');
+    if (lock && !this.isOpen(lock)) {
+      const p = at(lock);
+      this.lockArt = this.add.image(p.x, p.y, 'felt-map-lock').setScale(1 / Z);
     }
-    nodes.forEach((n) => mark(n.x, n.y));
-
-    // Scenery fills the rest, seeded so it doesn't move between visits
-    let seed = 7;
-    const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-    for (let y = 1; y < ROWS - 1; y++) {
-      for (let x = 1; x < COLS - 1; x++) {
-        const near = [-1, 0, 1].some((dx) => [-1, 0, 1].some((dy) => onPath.has(`${x + dx},${y + dy}`) && Math.abs(dx) + Math.abs(dy) < 2));
-        if (onPath.has(`${x},${y}`) || near) continue;
-        const r = rand();
-        if (y >= 8 && x <= 4) this.add.image(center(x), center(y), r > 0.4 ? 'map-rock' : 'map-bg');
-        else if (r < 0.62) this.add.image(center(x), center(y), 'map-bush');
-      }
-    }
-
-    // Nodes
     const worlds = getWorlds();
     for (const n of nodes) {
-      const cx = center(n.x);
-      const cy = center(n.y);
-      if (n.type === 'start') this.add.image(cx, cy, 'map-start');
-      else if (n.type === 'world') {
-        const idx = worlds.findIndex((w) => w.slug === n.world);
-        const done = n.world ? progress.cleared.includes(n.world) : false;
-        this.add.image(cx, cy, done ? 'map-panel-done' : 'map-panel');
-        if (!done) px(this, cx - 1, cy - 3, String(idx + 1), { color: '#ffffff' });
-      } else if (n.type === 'house') {
-        this.add.image(cx, cy, 'map-house');
-        px(this, cx, cy + 10, n.label ?? 'ABOUT', { size: 6, color: '#000' }).setOrigin(0.5, 0);
-      } else if (n.type === 'castle') {
-        this.add.image(cx, cy, 'map-castle');
-        const bubble = px(this, cx, cy - 20, n.label ?? 'HIRE ME!', { size: 6, color: '#000' }).setOrigin(0.5, 0.5);
-        bubble.setBackgroundColor('#ffffff').setPadding(2, 2, 2, 1);
-        bubble.setX(Math.min(cx, WIDTH - TILE - bubble.width / 2));
-        this.tweens.add({ targets: bubble, y: bubble.y - 2, yoyo: true, repeat: -1, duration: 500 });
+      const p = at(n);
+      if (n.type === 'world' && n.world && progress.cleared.includes(n.world)) {
+        const card = worlds.find((w) => w.slug === n.world)?.card ?? 'star';
+        this.add.image(p.x + 9, p.y - 9, FELT, `icon-${card}`).setScale(0.45 / Z);
+      }
+      if ((n.type === 'house' || n.type === 'castle') && n.label) {
+        const sign = px(this, p.x, p.y - (n.type === 'castle' ? 30 : 16), n.label, { size: 6, color: '#000' }).setOrigin(0.5);
+        sign.setBackgroundColor('#ffffff').setPadding(2, 2, 2, 1).setDepth(5);
+        if (n.type === 'castle') this.tweens.add({ targets: sign, y: sign.y - 2, yoyo: true, repeat: -1, duration: 500 });
       }
     }
 
-    this.marker = this.add.sprite(center(this.current.x), center(this.current.y) - 4, 'player-0').setDepth(10);
-    this.tweens.add({ targets: this.marker, scaleY: 0.92, yoyo: true, repeat: -1, duration: 260 });
+    // The chosen hero walks the roads
+    // The chosen hero faces us on the map (Figma: sprite/player-*-overworld-0) and hops along the roads
+    const key = heroFront(progress.hero);
+    this.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR);
+    this.markerImg = this.add.image(0, 0, key).setOrigin(0.5, 1);
+    this.markerImg.setScale(MARKER_H / this.markerImg.height);
+    const start = at(this.current);
+    this.marker = this.add.container(start.x, start.y + MARKER_FEET, [this.markerImg]).setDepth(10);
 
-    this.hud = new StatusBar(this, 'WORLD 1', '');
+    cam.setBounds(0, 0, WIDTH, MAP_H + BAR);
+    cam.startFollow(this.marker, true, 0.2, 0.2);
+
+    this.hud = new FeltStatusBar(this, 'WORLD 1', '');
     this.updateLabel();
 
     const k = this.input.keyboard!;
     const go = (d: Dir) => () => !ui.blocking && this.move(d);
-    k.on('keydown-LEFT', go('left'));
-    k.on('keydown-A', go('left'));
-    k.on('keydown-RIGHT', go('right'));
-    k.on('keydown-D', go('right'));
-    k.on('keydown-UP', go('up'));
-    k.on('keydown-W', go('up'));
-    k.on('keydown-DOWN', go('down'));
-    k.on('keydown-S', go('down'));
+    for (const [key, d] of [['LEFT', 'left'], ['A', 'left'], ['RIGHT', 'right'], ['D', 'right'], ['UP', 'up'], ['W', 'up'], ['DOWN', 'down'], ['S', 'down']] as [string, Dir][]) {
+      k.on(`keydown-${key}`, go(d));
+    }
     const enter = () => !ui.blocking && !this.moving && void this.enter();
-    k.on('keydown-ENTER', enter);
-    k.on('keydown-SPACE', enter);
-    k.on('keydown-Z', enter);
+    for (const key of ['ENTER', 'SPACE', 'L', 'Z']) k.on(`keydown-${key}`, enter);
     k.on('keydown-Q', () => !ui.blocking && showQuickView(this.current.world));
 
     const offDev = devBus.on('dev', () => this.updateLabel());
     this.events.once('shutdown', offDev);
-    this.cameras.main.fadeIn(250);
+    cam.fadeIn(250);
+    playMusic(this, 'overworld');
 
     if (!progress.cleared.length && this.current.type === 'start' && !this.registry.get('mapHintShown')) {
       this.registry.set('mapHintShown', true);
-      const hint = px(this, center(this.current.x) - 8, center(this.current.y) + 12, 'ARROWS + ENTER', { size: 6, color: '#000' });
+      const hint = px(this, start.x, start.y + 12, 'WASD + ENTER', { size: 6, color: '#000' }).setOrigin(0.5, 0).setDepth(20);
       hint.setBackgroundColor('#ffffff').setPadding(2, 2, 2, 1);
       this.time.delayedCall(4000, () => hint.destroy());
     }
   }
 
-  private neighbors(): { node: MapNode; dir: Dir; path: { x: number; y: number }[] }[] {
+  update(_time: number, delta: number) {
+    const t = this.time.now;
+    this.markerImg.y = this.moving ? -Math.abs(Math.sin(t / 85)) * 2.5 : Math.sin(t / 420) * 0.35;
+  }
+
+  private isOpen(n: MapNode) {
+    return n.type !== 'lock' || (n.requires ?? []).every((slug) => progress.cleared.includes(slug));
+  }
+
+  /** Stops joined to the current one, keyed by the direction you press to reach them. */
+  private neighbors(): { node: MapNode; dir: Dir }[] {
     const site = getSite();
-    const out: { node: MapNode; dir: Dir; path: { x: number; y: number }[] }[] = [];
+    const out: { node: MapNode; dir: Dir }[] = [];
     for (const [ia, ib] of site.map.edges) {
       if (ia !== this.current.id && ib !== this.current.id) continue;
-      const a = site.map.nodes.find((n) => n.id === ia);
-      const b = site.map.nodes.find((n) => n.id === ib);
-      if (!a || !b) continue;
-      const forward = ia === this.current.id;
-      let path = legs(a, b);
-      if (!forward) path = [...path].reverse();
-      // drop zero-length legs
-      path = path.filter((p, i) => i === 0 || p.x !== path[i - 1].x || p.y !== path[i - 1].y);
-      const first = path[1];
-      const dx = first.x - path[0].x;
-      const dy = first.y - path[0].y;
-      const dir: Dir = dx > 0 ? 'right' : dx < 0 ? 'left' : dy > 0 ? 'down' : 'up';
-      out.push({ node: forward ? b : a, dir, path });
+      const other = site.map.nodes.find((n) => n.id === (ia === this.current.id ? ib : ia));
+      if (!other) continue;
+      const dx = other.x - this.current.x;
+      const dy = other.y - this.current.y;
+      const dir: Dir = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up';
+      out.push({ node: other, dir });
     }
     return out;
   }
 
   private move(d: Dir) {
     if (this.moving) return;
-    const n = this.neighbors().find((n) => n.dir === d);
-    if (!n) return;
+    const next = this.neighbors().find((n) => n.dir === d);
+    if (!next) return;
+    if (!this.isOpen(next.node)) {
+      sfx.bump();
+      const need = (next.node.requires ?? []).map((slug) => getWorlds().findIndex((w) => w.slug === slug) + 1).filter(Boolean);
+      this.hud.setLine2(`LOCKED » CLEAR WORLD ${need.join(' + ') || '?'}`);
+      this.tweens.add({ targets: this.lockArt, angle: { from: -6, to: 6 }, yoyo: true, repeat: 2, duration: 60, onComplete: () => this.lockArt?.setAngle(0) });
+      return;
+    }
     this.moving = true;
     sfx.select();
-    this.marker.setFlipX(d === 'left');
-    const tweens = n.path.slice(1).map((p, i) => {
-      const prev = n.path[i];
-      const dist = Math.abs(p.x - prev.x) + Math.abs(p.y - prev.y);
-      return { x: center(p.x), y: center(p.y) - 4, duration: dist * 90 };
-    });
-    this.tweens.chain({
+    const from = at(this.current);
+    const to = at(next.node);
+    this.tweens.add({
       targets: this.marker,
-      tweens,
+      x: to.x,
+      y: to.y + MARKER_FEET,
+      duration: Math.max(180, Phaser.Math.Distance.Between(from.x, from.y, to.x, to.y) * 14),
       onComplete: () => {
-        this.current = n.node;
-        progress.mapNode = n.node.id;
+        this.current = next.node;
+        progress.mapNode = next.node.id;
         saveProgress();
         this.moving = false;
         this.updateLabel();
@@ -200,14 +180,19 @@ export class OverworldScene extends Phaser.Scene {
 
   private updateLabel() {
     const n = this.current;
-    let label = 'START  ▶ PICK A WORLD';
+    const name = (n.label ?? n.title ?? '').toUpperCase();
+    let world = 'WORLD 1';
+    let label = 'START  »  PICK A WORLD';
     if (n.type === 'world') {
       const w = n.world ? getWorld(n.world) : undefined;
-      const idx = getWorlds().findIndex((x) => x.slug === n.world);
-      label = `${idx + 1} ${(w?.title ?? '?').toUpperCase()}`.slice(0, 26);
-    } else if (n.type === 'house') label = `${(n.label ?? 'ABOUT').toUpperCase()}  ▶ ENTER`;
-    else if (n.type === 'castle') label = 'CASTLE  ▶ READ LETTER';
-    this.hud.setLine2(label);
+      world = `WORLD ${n.number ?? '?'}`;
+      label = w ? w.title.toUpperCase() : 'COMING SOON';
+    } else if (n.type === 'house') label = `${name || 'HOUSE'}  »  ENTER`;
+    else if (n.type === 'castle') label = `${name || 'CASTLE'}  »  READ LETTER`;
+    else if (n.type === 'spade' || n.type === 'fortress') label = `${name || n.type.toUpperCase()}  »  ENTER`;
+    else if (n.type !== 'start') label = '';
+    this.hud.setWorld(world);
+    this.hud.setLine2(label.slice(0, 30));
   }
 
   private async enter() {
@@ -217,16 +202,15 @@ export class OverworldScene extends Phaser.Scene {
       this.moving = true;
       this.cameras.main.fadeOut(250);
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start(getWorld(n.world!)?.level ? 'Course' : 'World', { slug: n.world }));
-    } else if (n.type === 'house') {
-      const about = getSite().about;
-      await showDialog(about.title, about.body);
-      this.input.keyboard!.resetKeys();
-    } else if (n.type === 'castle') {
-      await showLetter();
-      this.input.keyboard!.resetKeys();
-    } else {
-      await showDialog('Welcome!', 'Walk the path with the arrow keys and press ENTER on a numbered panel to play that project.\n\nIn a hurry? Press Q for Quick View, a plain case-study page.');
-      this.input.keyboard!.resetKeys();
+      return;
     }
+    if (n.type === 'step' || n.type === 'lock') return;
+    if (n.type === 'castle') await showLetter();
+    else if (n.about) await showDialog(getSite().about.title, getSite().about.body);
+    else if (n.title || n.body) await showDialog(n.title ?? '', n.body ?? '');
+    else if (n.type === 'start') {
+      await showDialog('Welcome!', 'Walk the roads with WASD and press ENTER on a numbered panel to play that project. Mushroom houses, the bonus panel and the fortress open up as they are built.\n\nIn a hurry? Press Q for Quick View, a plain case-study page.');
+    }
+    this.input.keyboard!.resetKeys();
   }
 }

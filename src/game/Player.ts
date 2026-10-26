@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
-import { FELT, Z } from '../art/felt';
+import { ChibiRig } from '../art/hero';
 import { sfx } from './sfx';
-import { ui } from './state';
+import { type Hero, ui } from './state';
 
 const WALK = 85;
 const RUN = 140;
@@ -24,11 +24,12 @@ export function createControls(scene: Phaser.Scene): Controls {
   const K = Phaser.Input.Keyboard.KeyCodes;
   const keys = (...codes: number[]) => codes.map((c) => k.addKey(c, false));
   return {
-    left: keys(K.LEFT, K.A),
-    right: keys(K.RIGHT, K.D),
-    down: keys(K.DOWN, K.S),
-    jump: keys(K.SPACE, K.Z, K.UP, K.W),
-    run: keys(K.SHIFT, K.X),
+    // WASD + K (run) and L (jump) are the advertised scheme; arrows/space/shift still work
+    left: keys(K.A, K.LEFT),
+    right: keys(K.D, K.RIGHT),
+    down: keys(K.S, K.DOWN),
+    jump: keys(K.L, K.W, K.SPACE, K.Z, K.UP),
+    run: keys(K.K, K.SHIFT, K.X),
   };
 }
 
@@ -51,17 +52,26 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   /** The current ascent came from a jump, so releasing jump cuts it short. */
   private jumping = false;
 
-  /** Felt courses draw the plush player at Z times resolution (one frame, so walking is a waddle). */
-  private felt: boolean;
+  /** Felt courses draw the chosen felt hero as a puppet; this sprite then only carries the physics body. */
+  private rig?: ChibiRig;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, controls: Controls, felt = false) {
-    super(scene, x, y, felt ? FELT : 'player-0', felt ? 'player-0' : undefined);
+  constructor(scene: Phaser.Scene, x: number, y: number, controls: Controls, hero?: Hero) {
+    super(scene, x, y, 'player-0');
     this.controls = controls;
-    this.felt = felt;
     scene.add.existing(this);
     scene.physics.add.existing(this);
-    if (felt) this.setScale(1 / Z).body.setSize(10 * Z, 15 * Z).setOffset(3 * Z, 1 * Z);
-    else this.body.setSize(10, 15).setOffset(3, 1);
+    this.body.setSize(10, 15).setOffset(3, 1);
+    if (hero) {
+      // a little taller than the 15px body, like the Figma sprite
+      const rig = new ChibiRig(scene, hero, 19);
+      rig.root.setDepth(10);
+      this.rig = rig;
+      this.setVisible(false);
+      // follow the body every frame, including scripted moves (pipes) when update() isn't running
+      const follow = () => rig.root.setPosition(this.x, this.body.bottom).setAlpha(this.alpha);
+      scene.events.on(Phaser.Scenes.Events.POST_UPDATE, follow);
+      this.once(Phaser.GameObjects.Events.DESTROY, () => scene.events.off(Phaser.Scenes.Events.POST_UPDATE, follow));
+    }
     this.body.setMaxVelocity(RUN, 600);
     this.setDepth(10);
   }
@@ -146,10 +156,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (this.flying) this.pMeter = 1;
 
     const k = this.powered ? 'playerF' : 'player';
-    if (this.felt) {
-      this.setFrame(`${k}-0`);
-      const walking = onGround && Math.abs(b.velocity.x) > 5;
-      this.rotation = walking ? Math.sin(now / (Math.abs(b.velocity.x) > WALK + 10 ? 45 : 70)) * 0.09 : 0;
+    if (this.rig) {
+      // With the feather the hero wears a cape: caped walk on the ground, flying pose in the air.
+      this.rig.setPowered(this.powered);
+      this.rig.setFacing(this.flipX);
+      this.rig.animate(dt, onGround ? Math.min(1, Math.abs(b.velocity.x) / RUN) : 0, !onGround);
     } else if (!onGround) {
       this.anims.stop();
       this.setTexture(`${k}-3`);

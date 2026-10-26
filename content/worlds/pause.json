@@ -1,17 +1,22 @@
 {
   "slug": "pause",
   "title": "Pause",
-  "tagline": "A quick puzzle before your most distracting apps open.",
-  "role": "Product designer & builder",
-  "timeline": "2025–2026",
-  "platform": "iOS · Screen Time",
+  "tagline": "Designing friction that helps people scroll on purpose.",
+  "role": "Solo founder & designer",
+  "timeline": "2026 – ongoing",
+  "platform": "iOS · Screen Time API",
   "theme": "sky",
   "card": "star",
-  "summary": "Pause turns opening a distracting app into a choice instead of a reflex. It's live on the App Store, built on Apple's Screen Time framework, with a free tier and a premium trial.",
+  "summary": "I designed, shipped and iterated a screen-time app that puts a short puzzle in front of distracting apps. Solo, with Claude Code as my engineering partner, and analytics to find where the design was losing people.",
   "outcomes": [
-    "Shipped on iPhone with 9 polished puzzles sharing one calm visual shell",
-    "Analytics rebuilt around one north star: D7 gate retention",
-    "Five-star App Store reviews that describe exactly the moment we designed for"
+    "10+ puzzle types on one shared design system, plus seasonal themes",
+    "Downloads +170% after a metadata update, then a funnel analysis that moved the focus to week-one retention",
+    "Dead ends and onboarding drop-offs fixed; D7 gate retention 16% now, 30% is the target"
+  ],
+  "lessons": [
+    "Design the failure state first",
+    "Systems beat screens",
+    "AI changes the bottleneck, not the job"
   ],
   "links": [
     {
@@ -20,108 +25,377 @@
     }
   ],
   "level": "world-1-1",
+  "chapters": [
+    {
+      "id": "problem",
+      "at": 0,
+      "title": "THE PROBLEM",
+      "subtitle": "Screen Time is one tap to bypass"
+    },
+    {
+      "id": "design",
+      "at": 38,
+      "title": "THE DESIGN",
+      "subtitle": "Friction that feels like a pause"
+    },
+    {
+      "id": "results",
+      "at": 116,
+      "title": "THE RESULTS",
+      "subtitle": "The leak was week one"
+    }
+  ],
   "beats": [
     {
       "id": "p-problem",
       "type": "copy",
-      "headline": "The problem: autopilot",
-      "body": "People check their phones dozens of times a day, and most of those opens aren't decisions. They're reflexes.\n\nBlocking apps outright doesn't stick. People resent it, then turn it off. I wanted something that kept the apps and removed the autopilot."
+      "chapter": "problem",
+      "place": {
+        "as": "story",
+        "x": 7,
+        "y": 22
+      },
+      "image": {
+        "src": "content/pause/easy-to-bypass.jpg",
+        "caption": "One tap to bypass: the iOS Time Limit screen",
+        "alt": "iOS Time Limit screen with an Ignore Limit button"
+      },
+      "headline": "One tap to bypass",
+      "body": "Screen Time limits fold the moment you tap “Ignore Limit.” Temptation hits when you're least able to enforce your own rules, so people knew they were doomscrolling and did it anyway."
     },
     {
-      "id": "p-hero",
-      "type": "image",
-      "src": "content/pause/hero.png",
-      "caption": "Pause: scroll on purpose",
-      "alt": "Pause marketing image"
+      "id": "p-hmw",
+      "type": "copy",
+      "chapter": "problem",
+      "place": {
+        "as": "story",
+        "x": 27,
+        "y": 19
+      },
+      "headline": "How might we…",
+      "body": "…add enough friction to interrupt autopilot, without making people feel punished or locked out of their own phone?\n\nToo little friction is a toothless timer. Too much and people delete the app."
     },
     {
       "id": "p-friction",
       "type": "decision",
+      "chapter": "problem",
+      "place": {
+        "as": "decision",
+        "a": [
+          33,
+          15
+        ],
+        "b": [
+          34,
+          15
+        ]
+      },
       "question": "How much friction is the right amount?",
       "optionA": {
         "label": "Hard block",
-        "body": "Lock the app behind a timer or a settings screen, the way iOS Screen Time does.\n\nStrong, but it feels like punishment, and people delete apps that punish them."
+        "body": "Lock the app behind a timer. Strong, but it feels like punishment, and people delete apps that punish them."
       },
       "optionB": {
         "label": "Quick puzzle",
-        "body": "Ask for a 15–30 second puzzle before the app opens, then let the user pick how long it stays open.\n\nJust enough of a pause to notice the reflex."
+        "body": "A short puzzle before the app opens: enough to interrupt autopilot, without locking anyone out."
       },
       "chosen": "B",
-      "why": "A puzzle makes opening the app a small, intentional act. Reviewers keep describing that exact moment: \"that tiny 10 second delay is all my brain needs.\""
+      "why": "A puzzle turns the scroll into a choice."
     },
     {
-      "id": "p-flow",
+      "id": "p-principles",
       "type": "copy",
-      "headline": "Solve it. Choose your time.",
-      "body": "The core loop:\n\n- Open a paused app and a puzzle appears instead\n- Solve it, then choose 5, 10, 15 or 20 minutes\n- When time's up, the pause comes back on its own\n\nThe user is always in control. Pause just asks the question at the right moment."
+      "chapter": "design",
+      "place": {
+        "as": "story",
+        "x": 44,
+        "y": 22
+      },
+      "image": {
+        "src": "content/pause/all-puzzles-same-shell.jpg",
+        "caption": "Every puzzle, one shared shell"
+      },
+      "headline": "One shell, many games",
+      "body": "- A pause, not a punishment: warm gradients, glass, calm copy\n- Varied difficulty: a speed bump for some apps, a longer slowdown for others\n- One shell for every puzzle, so you learn it once\n- Collect nothing I don't need"
     },
     {
-      "id": "p-word-jumble",
+      "id": "p-principles-img",
       "type": "image",
-      "src": "content/pause/word-jumble.jpg",
-      "caption": "Word Jumble, the first puzzle most people see",
-      "alt": "Word Jumble puzzle screen"
-    },
-    {
-      "id": "p-puzzles",
-      "type": "metric",
-      "value": "9",
-      "label": "Puzzles, one calm shell",
-      "body": "Word Jumble, Maze, Five Letters, Mini Crossword, Connect the Dots, Sliding Tile, Ball Sort, Connect the Colors and Sixdoku.\n\nEvery puzzle shares the same brand gradient, glass tiles, header and haptics, so a new puzzle feels like Pause on day one."
-    },
-    {
-      "id": "p-maze",
-      "type": "image",
-      "src": "content/pause/maze.jpg",
-      "caption": "Maze: 11×11, drag to move",
-      "alt": "Maze puzzle screen"
+      "chapter": "design",
+      "place": {
+        "as": "sign",
+        "at": 46
+      },
+      "src": "content/pause/puzzle-difficulty.jpg",
+      "caption": "Friction per app: pick the difficulty"
     },
     {
       "id": "p-deadends",
       "type": "copy",
-      "headline": "No dead ends",
-      "body": "Analytics showed people tapping Reset on Word Jumble almost every time it appeared. A hard word had no way out, so the puzzle felt like a test you were stuck in.\n\nThe fix followed the design principles (calm, no failure states, 15–30 seconds): after one miss a \"Show word\" button appears, any real word made from the letters counts, and a \"Mix letters\" button reshuffles without counting as a failure."
+      "chapter": "design",
+      "place": {
+        "as": "story",
+        "x": 76,
+        "y": 22
+      },
+      "image": {
+        "src": "",
+        "caption": "Word Jumble, after the fixes"
+      },
+      "headline": "No more dead ends",
+      "body": "The first Word Jumble trapped people after a wrong answer, right when they were already frustrated. Analytics confirmed the drop-off.\n\n- Free retries\n- Show word after a miss\n- Anagrams count\n- A Mix letters button",
+      "note": "Image still to add (Notion §3.3): IMG_0368, Word Jumble after the fixes. Placeholder for now."
     },
     {
-      "id": "p-ballsort",
+      "id": "p-deadends-img",
       "type": "image",
-      "src": "content/pause/ball-sort.jpg",
-      "caption": "Ball Sort: 15 tubes, 12 colors",
-      "alt": "Ball Sort puzzle screen"
+      "chapter": "design",
+      "place": {
+        "as": "sign",
+        "at": 71
+      },
+      "src": "",
+      "caption": "Word Jumble, after the fixes",
+      "note": "Image still to add (Notion §3.3): IMG_0368, Word Jumble after the fixes. Placeholder for now."
     },
     {
-      "id": "p-generation",
+      "id": "p-crossword",
+      "type": "decision",
+      "chapter": "design",
+      "place": {
+        "as": "decision",
+        "a": [
+          91,
+          23
+        ],
+        "b": [
+          93,
+          21
+        ]
+      },
+      "question": "Kill or keep the Mini Crossword?",
+      "optionA": {
+        "label": "Mini Crossword",
+        "body": "Same clue every time, no hints. A real one needs a fill algorithm and a clue database, out of scope solo."
+      },
+      "optionB": {
+        "label": "Word Search",
+        "body": "A fresh 8×8 board on every gate from a calming-word list. No timer, no fail state."
+      },
+      "chosen": "B",
+      "why": "The gate fires many times a day, so a puzzle that repeats is worse than no puzzle."
+    },
+    {
+      "id": "p-ai",
       "type": "copy",
-      "lens": "build",
-      "headline": "Puzzles that are always solvable",
-      "body": "Connect the Colors is generated on the fly: a Hamiltonian path across a 6×6 grid (Warnsdorff's rule), cut into five colored segments.\n\nBecause the path covers every cell by construction, every puzzle is guaranteed to have a solution. No puzzle library to maintain."
+      "chapter": "design",
+      "place": {
+        "as": "story",
+        "x": 96,
+        "y": 22
+      },
+      "image": {
+        "src": "content/pause/working-with-claude.jpg",
+        "caption": "Design feedback, built with Claude Code"
+      },
+      "headline": "How I work with AI",
+      "body": "I own the problem, the taste and every go/no-go. Claude Code turns Figma frames into SwiftUI, audits code and analytics, and checks builds. I test everything on my phone.\n\nAI didn't replace design judgment. It made it cheaper to act on."
     },
     {
-      "id": "p-analytics",
+      "id": "p-ai-img",
+      "type": "image",
+      "chapter": "design",
+      "place": {
+        "as": "sign",
+        "at": 95,
+        "lift": 34
+      },
+      "src": "content/pause/emulator-and-design-feedback.jpg",
+      "caption": "Working alongside the emulator, with design feedback"
+    },
+    {
+      "id": "p-feather",
       "type": "copy",
-      "lens": "build",
-      "headline": "Measure the right thing",
-      "body": "I rebuilt the analytics around one north star: D7 gate retention, meaning activated users still solving puzzles a week later.\n\n- Internal and TestFlight users flagged and filtered out\n- First launch counted once per real install, not per update\n- Subscription events read from StoreKit 2, not UI taps\n- Every paywall view ends in exactly one outcome"
+      "chapter": "design",
+      "place": {
+        "as": "feather"
+      },
+      "lines": [
+        "POWER-UP: AI PARTNER"
+      ],
+      "headline": "The working loop",
+      "body": "- Design in Figma first\n- Build one thing at a time\n- Test on my phone\n- Write the decision down\n\nIt even caught bugs in my own analytics: puzzle_reset meant a tap on Reset, not a wrong answer."
     },
     {
-      "id": "p-north-star",
+      "id": "p-themes",
+      "type": "copy",
+      "chapter": "design",
+      "place": {
+        "as": "story",
+        "x": 109,
+        "y": 22
+      },
+      "image": {
+        "src": "content/pause/apps-season-theme.jpg",
+        "caption": "Default, Halloween and Thanksgiving themes"
+      },
+      "headline": "Seasonal themes",
+      "body": "An accent layer, not a re-skin: one set of tokens for gradients, accents, fonts and decor. Halloween added Memory Match. Thanksgiving added Gratitude, where answers never leave the phone."
+    },
+    {
+      "id": "p-themes-img",
+      "type": "image",
+      "chapter": "design",
+      "place": {
+        "as": "sign",
+        "at": 104
+      },
+      "src": "content/pause/app-dashboard-halloween.jpg",
+      "caption": "The dashboard in its Halloween theme"
+    },
+    {
+      "id": "p-constraints",
+      "type": "copy",
+      "chapter": "design",
+      "headline": "Inside platform constraints",
+      "body": "Screen Time keeps app names and icons as private tokens, and categories can't be expanded. Instead of hiding that, I showed app and category tiles side by side, sized the system title to match my type, and documented the rule in the code."
+    },
+    {
+      "id": "p-onboarding",
+      "type": "copy",
+      "chapter": "results",
+      "place": {
+        "as": "story",
+        "x": 121,
+        "y": 21
+      },
+      "image": {
+        "src": "",
+        "caption": "The new onboarding"
+      },
+      "headline": "Onboarding fixes",
+      "body": "Onboarding lost people at permissions and at the app picker.\n\n- Try Again after a denied permission\n- A Choose Apps screen before the picker\n- Fewer, reordered steps\n- A Heads up box before iOS asks\n- Honest trial copy: 7 days free · Cancel anytime",
+      "note": "Image still to add (Notion §5): the onboarding screenshot. Placeholder for now."
+    },
+    {
+      "id": "p-onboarding-img",
+      "type": "image",
+      "chapter": "results",
+      "place": {
+        "as": "sign",
+        "at": 116
+      },
+      "src": "",
+      "caption": "The new onboarding",
+      "note": "Image still to add (Notion §5): the onboarding screenshot. Placeholder for now."
+    },
+    {
+      "id": "p-twist",
+      "type": "copy",
+      "chapter": "results",
+      "place": {
+        "as": "switch"
+      },
+      "headline": "Plot twist: week one",
+      "body": "Marketing wasn't the leak. Week one was.\n\n- D7 gate retention: 16% now, 30% is the target\n- About $4.33 to get an install, about $1.14 of value per download\n- Paying subscribers: still single digits",
+      "note": "Notion 8.4: update the results with the latest numbers once 1.7 ships (Nov 1).",
+      "image": {
+        "src": "content/pause/free-vs-premium-starts.jpg",
+        "caption": "Free tier vs premium starts"
+      }
+    },
+    {
+      "id": "p-downloads",
       "type": "metric",
-      "value": "16→30%",
-      "label": "D7 gate retention goal",
-      "body": "One change per release, so each one gets a clean read. Word Jumble's no-dead-end fix shipped first, with a target of 85% completions per open."
+      "chapter": "results",
+      "place": {
+        "as": "story",
+        "x": 141,
+        "y": 19
+      },
+      "image": {
+        "src": "content/pause/appstore-connect-data.jpg",
+        "caption": "App Store Connect: acquisition"
+      },
+      "value": "+170%",
+      "label": "downloads after new metadata",
+      "body": "Impressions +137%, page views +160%. But keyword ranks stayed flat, so the lift was likely people searching for Pause by name. I stopped iterating metadata.",
+      "note": "Notion 8.4: update the results with the latest numbers once 1.7 ships (Nov 1)."
     },
     {
-      "id": "p-sixdoku",
+      "id": "p-downloads-img",
       "type": "image",
-      "src": "content/pause/sixdoku.jpg",
-      "caption": "Sixdoku: a six-by-six sudoku",
-      "alt": "Sixdoku puzzle screen"
+      "chapter": "results",
+      "place": {
+        "as": "sign",
+        "at": 143
+      },
+      "src": "content/pause/appstore-connect-data.jpg",
+      "caption": "App Store Connect: acquisition"
     },
     {
-      "id": "p-reviews",
+      "id": "p-room",
       "type": "copy",
-      "headline": "What people say",
-      "body": "\"It creates just enough friction to make me stop and think before mindlessly opening an app, without feeling restrictive or annoying.\"\n\n\"That tiny bit of friction is enough to make you stop and ask, do I actually want to scroll right now? Half the time I just close my phone.\"\n\nApp Store reviews"
+      "chapter": "results",
+      "place": {
+        "as": "room"
+      },
+      "headline": "Bonus: the honest numbers",
+      "body": "- Impressions 775 → 1,840\n- Page views 124 → 323\n- Conversion 5.67% → 6.45%\n- Downloads 27 → 73\n\nOnly 1 of 13 tracked keywords ranked at all, so I stopped optimising keywords.",
+      "note": "Notion 8.4: update the results with the latest numbers once 1.7 ships (Nov 1).",
+      "image": {
+        "src": "content/pause/applyra.jpg",
+        "caption": "Applyra: keyword ranks stayed flat"
+      }
+    },
+    {
+      "id": "p-posthog-img",
+      "type": "image",
+      "chapter": "results",
+      "src": "content/pause/posthog-roadmap.jpg",
+      "caption": "PostHog: weekly retention by cohort"
+    },
+    {
+      "id": "p-surface",
+      "type": "copy",
+      "chapter": "results",
+      "headline": "Beyond the app",
+      "body": "- try-pause.com, designed and built from scratch\n- App Store screenshots and a preview video per season\n- GA4, Search Console and comparison posts\n- A roadmap page with a live vote"
+    },
+    {
+      "id": "p-surface-img",
+      "type": "image",
+      "chapter": "results",
+      "src": "content/pause/marketing-site-halloween.jpg",
+      "caption": "try-pause.com in its Halloween theme"
+    },
+    {
+      "id": "p-roadmap-img",
+      "type": "image",
+      "chapter": "results",
+      "src": "content/pause/public-roadmap.jpg",
+      "caption": "The public roadmap"
+    },
+    {
+      "id": "p-roadmap-votes-img",
+      "type": "image",
+      "chapter": "results",
+      "src": "content/pause/public-roadmap-votes.jpg",
+      "caption": "The public roadmap, with votes"
+    },
+    {
+      "id": "p-appstore-img",
+      "type": "image",
+      "chapter": "results",
+      "src": "content/pause/appstore-first-images.jpg",
+      "caption": "The first App Store images"
+    },
+    {
+      "id": "p-lessons",
+      "type": "copy",
+      "chapter": "results",
+      "headline": "What I'd tell another designer",
+      "body": "- Design the failure state first\n- Systems beat screens\n- Cut early\n- Instrument what you design\n- Stay honest with the data\n- AI changes the bottleneck, not the job"
     }
   ]
 }

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { onContentChange } from './content/store';
-import { toggleMute } from './game/sfx';
+import { isMuted, toggleMute } from './game/sfx';
 import { HEIGHT, WIDTH, ui } from './game/state';
 import { BootScene } from './scenes/BootScene';
 import { CourseScene } from './scenes/CourseScene';
@@ -17,7 +17,7 @@ async function start() {
 
   // Pixel fonts must be ready before the first scene draws text.
   await Promise.race([
-    Promise.all([document.fonts.load('8px "Press Start 2P"'), document.fonts.load('30px "Luckiest Guy"')]),
+    Promise.all([document.fonts.load('8px "Press Start 2P"'), document.fonts.load('30px "Luckiest Guy"'), document.fonts.load('600 8px "Fredoka"')]),
     new Promise((r) => setTimeout(r, 2500)),
   ]);
 
@@ -36,6 +36,7 @@ async function start() {
     scene: [BootScene, TitleScene, OverworldScene, WorldScene, CourseScene],
   });
 
+  game.sound.mute = isMuted();
   if (import.meta.env.DEV) import('./devtools').then((m) => m.installDevtools(game));
 
   // Overlays size their pixel font off the real screen width.
@@ -54,7 +55,7 @@ async function start() {
   window.addEventListener('keydown', (e) => {
     const t = e.target as HTMLElement;
     if (isTyping(t) || ui.blocking) return;
-    if (e.key === 'm' || e.key === 'M') toggleMute();
+    if (e.key === 'm' || e.key === 'M') game.sound.mute = toggleMute();
   });
 
   document.getElementById('qv-btn')!.addEventListener('click', () => showQuickView());
@@ -67,7 +68,7 @@ async function start() {
       const world = game.scene.getScene('World') as WorldScene;
       if (game.scene.isActive('Course')) {
         const course = game.scene.getScene('Course') as CourseScene;
-        if (scope === 'site' || scope === course.slug) course.scene.restart({ slug: course.slug });
+        if (scope === 'site' || scope === course.slug) course.scene.restart(course.restartData);
       } else if (game.scene.isActive('World')) {
         if (scope === 'site' || scope === world.slug) world.scene.restart({ slug: world.slug, x: world.playerX });
       } else if (game.scene.isActive('Overworld')) game.scene.getScene('Overworld').scene.restart();

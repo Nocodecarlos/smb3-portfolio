@@ -24,9 +24,10 @@ import { devBus } from './devBus';
 import { isTyping } from './typing';
 import { commitFiles, getToken, setToken } from './github';
 
-// Dev mode: enter the cheat code and the TV flips to a black-and-white editor.
-// Anyone can open it and poke around; only someone with a GitHub token that
-// can write to the repo can save.
+// Dev mode: enter the cheat code (or hold S on the tall white platform in a
+// felt course) and the TV flips to a black-and-white editor: the other side
+// of the world. Anyone can open it and poke around; only someone with a
+// GitHub token that can write to the repo can save.
 
 const CODE = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
 
@@ -74,8 +75,21 @@ export function initDevMode(g: Phaser.Game) {
 }
 
 function activeWorldSlug(): string | null {
-  if (!game.scene.isActive('World')) return null;
-  return (game.scene.getScene('World') as unknown as { slug: string }).slug;
+  for (const key of ['Course', 'World']) {
+    if (game.scene.isActive(key)) return (game.scene.getScene(key) as unknown as { slug: string }).slug;
+  }
+  return null;
+}
+
+/** The tile the player stands on in a felt course, for adding beats where they are. */
+function courseTile(): [number, number] | null {
+  if (!game.scene.isActive('Course')) return null;
+  return (game.scene.getScene('Course') as unknown as { playerTile: [number, number] }).playerTile;
+}
+
+/** Flip to (or back from) the other side. */
+export function setDevMode(on: boolean) {
+  if (ui.dev !== on) toggle();
 }
 
 function toggle() {
@@ -105,7 +119,7 @@ function render() {
   p.innerHTML = `
     <header>
       <h2>DEV MODE <button class="dev-btn small" data-act="exit" title="Exit (or type the code again)">✕</button></h2>
-      <p class="sub">You found the back of the TV. This is the CMS I use to edit this portfolio.</p>
+      <p class="sub">You found the other side. This is the CMS I use to edit this portfolio: click a story block or billboard in the game to edit it.</p>
       <div class="dev-tabs">
         ${(['edit', 'json', 'docs'] as const).map((t) => `<button data-act="tab" data-v="${t}" class="${tab === t ? 'on' : ''}">${{ edit: 'Edit', json: 'JSON', docs: 'How it works' }[t]}</button>`).join('')}
       </div>
@@ -162,6 +176,7 @@ function siteForm(s: Site): string {
 }
 
 function worldForm(w: World): string {
+  if (w.level) return courseForm(w);
   return `
     ${field('Title', 'title', w.title)}
     ${field('Tagline', 'tagline', w.tagline)}
@@ -226,6 +241,110 @@ function beatForm(b: Beat, i: number, n: number): string {
     </div>`;
 }
 
+/** A hand-built felt course: story blocks, billboards and chapters instead of generated beats. */
+function courseForm(w: World): string {
+  const here = courseTile();
+  return `
+    ${field('Title', 'title', w.title)}
+    ${field('Tagline', 'tagline', w.tagline)}
+    <div class="row"><div>${field('Role', 'role', w.role)}</div><div>${field('Timeline', 'timeline', w.timeline)}</div></div>
+    ${field('Platform', 'platform', w.platform)}
+    <label style="margin-top:20px">Chapters: the status bar</label>
+    ${(w.chapters ?? [])
+      .map(
+        (c, i) => `<div class="dev-beat">
+          <div class="row"><div>${field(`Chapter ${i + 1}`, `chapters.${i}.title`, c.title)}</div><div style="flex:0 0 80px">${field('Starts at tile', `chapters.${i}.at`, String(c.at), { kind: 'num' })}</div></div>
+          ${field('Subtitle', `chapters.${i}.subtitle`, c.subtitle)}
+        </div>`,
+      )
+      .join('')}
+    ${field('End card summary', 'summary', w.summary, { area: true })}
+    ${field('What happened (one per line)', 'outcomes', w.outcomes.join('\n'), { area: true, kind: 'lines' })}
+    ${field('What I learned (one per line)', 'lessons', (w.lessons ?? []).join('\n'), { area: true, kind: 'lines' })}
+    ${field('Links (Label | https://…, one per line)', 'links', w.links.map((l) => `${l.label} | ${l.url}`).join('\n'), { area: true, kind: 'links', rows: 2 })}
+    <label style="margin-top:20px">Story blocks and billboards, left to right</label>
+    ${w.beats.map((b, i) => courseBeatForm(w, b, i, w.beats.length)).join('')}
+    <div class="dev-add">
+      <button class="dev-btn" data-act="add-here" data-v="story" ${here ? '' : 'disabled'}>+ story block here</button>
+      <button class="dev-btn" data-act="add-here" data-v="sign" ${here ? '' : 'disabled'}>+ billboard here</button>
+    </div>
+    <p class="sub">"Here" is above wherever your hero is standing. Nudge it with the tile numbers.</p>`;
+}
+
+const WHERE: Record<string, string> = {
+  switch: 'Opens when the P-switch is pressed.',
+  room: 'Opens the first time you drop into the secret room.',
+  feather: 'Floats up when you grab the feather.',
+};
+
+function courseBeatForm(w: World, b: Beat, i: number, n: number): string {
+  const id = b.id;
+  const p = b.place;
+  const num = (label: string, f: string, v: number | undefined) => `<div>${field(label, f, String(v ?? 0), { beat: id, kind: 'num' })}</div>`;
+  const kind = !p ? 'quick view only' : p.as === 'sign' ? 'billboard' : p.as === 'story' ? 'story block' : p.as;
+  let where = '<p class="sub">Not in the course: it only shows in Quick View.</p>';
+  if (p?.as === 'story') where = `<div class="row">${num('Block x (tile)', 'place.x', p.x)}${num('Block y (tile)', 'place.y', p.y)}</div>`;
+  else if (p?.as === 'decision')
+    where = `<div class="row">${num('Block A x', 'place.a.0', p.a[0])}${num('Block A y', 'place.a.1', p.a[1])}${num('Block B x', 'place.b.0', p.b[0])}${num('Block B y', 'place.b.1', p.b[1])}</div>`;
+  else if (p?.as === 'sign') where = `<div class="row">${num('Billboard at tile', 'place.at', p.at)}${num('Raise by (px)', 'place.lift', p.lift)}</div>`;
+  else if (p) where = `<p class="sub">${WHERE[p.as]}</p>`;
+
+  let body = '';
+  switch (b.type) {
+    case 'copy':
+      body = field('Card title', 'headline', b.headline, { beat: id }) + field('Card text (blank line = new paragraph)', 'body', b.body, { beat: id, area: true, rows: 6 });
+      break;
+    case 'image':
+      body = picture(id, 'src', b.src, b.caption, b.alt);
+      break;
+    case 'decision':
+      body = `
+        ${field('Question', 'question', b.question, { beat: id })}
+        ${field('Option A: label', 'optionA.label', b.optionA.label, { beat: id })}
+        ${field('Option A: body', 'optionA.body', b.optionA.body, { beat: id, area: true, rows: 3 })}
+        ${field('Option B: label', 'optionB.label', b.optionB.label, { beat: id })}
+        ${field('Option B: body', 'optionB.body', b.optionB.body, { beat: id, area: true, rows: 3 })}
+        ${select('Chosen', 'chosen', b.chosen, [['A', 'A'], ['B', 'B']], id)}
+        ${field('Why', 'why', b.why, { beat: id, area: true, rows: 3 })}`;
+      break;
+    case 'metric':
+      body = field('Value', 'value', b.value, { beat: id }) + field('Label', 'label', b.label, { beat: id }) + field('Detail', 'body', b.body ?? '', { beat: id, area: true, rows: 3 });
+      break;
+  }
+  // story cards can carry a picture at the top; billboards are the picture
+  const card = b.type !== 'image' && p && p.as !== 'feather' ? `<label style="margin-top:14px">Card picture</label>${picture(id, 'image.src', b.image?.src ?? '', b.image?.caption ?? '', b.image?.alt)}` : '';
+  const wink = p?.as === 'feather' ? field('Wink text', 'lines', (b.lines ?? []).join('\n'), { beat: id, area: true, kind: 'lines', rows: 2 }) : '';
+  const chapters: [string, string][] = [['', 'no chapter'], ...(w.chapters ?? []).map((c): [string, string] => [c.id, c.title])];
+  return `
+    <div class="dev-beat ${selected === id ? 'sel' : ''}" data-beat="${id}">
+      <div class="dev-beat-head">
+        <b>#${i + 1} ${esc(kind)}</b>
+        <select data-f="chapter" data-b="${id}" title="Chapter" style="width:auto">
+          ${chapters.map(([v, l]) => `<option value="${esc(v)}" ${(b.chapter ?? '') === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}
+        </select>
+        <button class="dev-btn small" data-act="up" data-v="${id}" ${i === 0 ? 'disabled' : ''}>↑</button>
+        <button class="dev-btn small" data-act="down" data-v="${id}" ${i === n - 1 ? 'disabled' : ''}>↓</button>
+        <button class="dev-btn small" data-act="del" data-v="${id}">✕</button>
+      </div>
+      ${where}
+      ${body}
+      ${wink}
+      ${card}
+      ${field('Note to self (never shown)', 'note', b.note ?? '', { beat: id, area: true, rows: 2 })}
+    </div>`;
+}
+
+/** Picture fields: thumbnail, upload, src, caption and alt. `f` is the src field ("src" or "image.src"). */
+function picture(id: string, f: string, src: string, caption: string, alt?: string): string {
+  const pre = f.replace(/src$/, '');
+  return `
+    ${src ? `<img class="dev-thumb" src="${esc(resolveSrc(src))}" alt="">` : '<p class="sub">No picture yet: the game shows "image coming soon".</p>'}
+    <input type="file" accept="image/*" data-upload="${id}" data-into="${f}">
+    ${field('Src (path in /public)', f, src, { beat: id })}
+    ${field('Caption', `${pre}caption`, caption, { beat: id })}
+    ${field('Alt text', `${pre}alt`, alt ?? '', { beat: id })}`;
+}
+
 function jsonTab(): string {
   const data = scope === 'site' ? getSite() : getWorld(scope);
   return `
@@ -255,6 +374,8 @@ function docsTab(): string {
     <h3>THIS EDITOR</h3>
     <p>Every field you change rebuilds the level live. <b>Save</b> commits the changed JSON and any uploaded images to GitHub in one commit, and GitHub Pages redeploys in a minute or two.</p>
     <p>You can play with everything here. Your changes stay in this tab and disappear on reload, because saving needs a GitHub token with write access to the repo.</p>
+    <h3>THE OTHER SIDE</h3>
+    <p>In World 1-1, stand on the tall white platform and hold S (or ↓) for two seconds. The world flips to black and white: every story block and billboard gets an outline. Click one, or bump it, to edit it here. Hold S on the platform again to flip back.</p>
     <h3>THE CODE</h3>
     <p>↑ ↑ ↓ ↓ ← → ← → B A. Type it again to flip the TV back.</p>
   </div>`;
@@ -287,13 +408,15 @@ function setPath(obj: Record<string, unknown>, path: string, value: unknown) {
   let o = obj as Record<string, unknown>;
   for (const k of keys.slice(0, -1)) o = o[k] as Record<string, unknown>;
   const last = keys[keys.length - 1];
-  if (value === '' && (last === 'lens' || last === 'alt')) delete o[last];
+  if (value === '' && (last === 'lens' || last === 'alt' || last === 'note' || last === 'chapter')) delete o[last];
   else o[last] = value;
 }
 
 function parseValue(el: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement): unknown {
   const v = el.value;
   switch (el.dataset.kind) {
+    case 'num':
+      return Number(v) || 0;
     case 'lines':
       return v.split('\n').map((l) => l.trim()).filter(Boolean);
     case 'links':
@@ -319,9 +442,12 @@ function bind() {
     else
       updateWorld(scope, (w) => {
         const target = beatId ? w.beats.find((b) => b.id === beatId) : w;
-        if (target) setPath(target as unknown as Record<string, unknown>, f, value);
+        if (!target) return;
+        // a story card gets its picture slot the first time one of its fields is filled in
+        if (f.startsWith('image.') && !('image' in target && target.image)) (target as Beat).image = { src: '', caption: '' };
+        setPath(target as unknown as Record<string, unknown>, f, value);
       });
-    if (f === 'lens' || f === 'chosen') render();
+    if (f === 'lens' || f === 'chosen' || f === 'chapter') render();
   };
 
   p.onchange = async (e) => {
@@ -337,9 +463,12 @@ function bind() {
     if (beatId && file) {
       const dataUrl = await downscale(file);
       const src = addPendingAsset(scope, file.name.replace(/\.\w+$/, '') + '.jpg', dataUrl);
+      const into = (el as HTMLInputElement).dataset.into ?? 'src';
       updateWorld(scope, (w) => {
         const b = w.beats.find((x) => x.id === beatId);
-        if (b && b.type === 'image') b.src = src;
+        if (!b) return;
+        if (into === 'image.src') b.image = { caption: '', ...b.image, src };
+        else if (b.type === 'image') b.src = src;
       });
       render();
     }
@@ -373,6 +502,25 @@ function bind() {
         const beat = newBeat(v as BeatType);
         selected = beat.id;
         updateWorld(scope, (w) => w.beats.push(beat));
+        render();
+        return panel().querySelector(`[data-beat="${beat.id}"]`)?.scrollIntoView({ block: 'center' });
+      }
+      case 'add-here': {
+        const at = courseTile();
+        if (!at) return;
+        const [tx, ty] = at;
+        const chapter = [...(getWorld(scope)?.chapters ?? [])].reverse().find((c) => tx >= c.at)?.id;
+        // story blocks sit four tiles above the ground, in reach of a jump
+        const beat: Beat =
+          v === 'sign'
+            ? { id: newId('image'), type: 'image', src: '', caption: 'New picture', chapter, place: { as: 'sign', at: tx } }
+            : { id: newId('copy'), type: 'copy', headline: 'New story', body: 'Tell the story here.', chapter, place: { as: 'story', x: tx, y: ty - 4 } };
+        selected = beat.id;
+        updateWorld(scope, (w) => {
+          // keep the list in course order
+          const i = w.beats.findIndex((b) => placeX(b) > tx);
+          w.beats.splice(i < 0 ? w.beats.length : i, 0, beat);
+        });
         render();
         return panel().querySelector(`[data-beat="${beat.id}"]`)?.scrollIntoView({ block: 'center' });
       }
@@ -439,6 +587,16 @@ async function save() {
     saveMsg = `Save failed: ${(err as Error).message}. If GitHub says 401 or 403, the token is wrong or can't write to this repo.`;
   }
   render();
+}
+
+/** Left edge of a placed beat in tiles (unplaced beats sort last). */
+function placeX(b: Beat): number {
+  const p = b.place;
+  if (!p) return Infinity;
+  if (p.as === 'story') return p.x;
+  if (p.as === 'decision') return Math.min(p.a[0], p.b[0]);
+  if (p.as === 'sign') return p.at;
+  return Infinity;
 }
 
 function newBeat(type: BeatType): Beat {

@@ -1,18 +1,26 @@
 import Phaser from 'phaser';
-import { FELT, SKY, Z, feltImage, feltPlatform, feltSprite, preloadFelt, setupFelt } from '../art/felt';
+import { FELT, SKY, Z, feltImage, feltOnGround, feltPlatform, feltPost, feltSprite, preloadFelt, setupFelt } from '../art/felt';
+import { HeroRig, preloadHeroes } from '../art/hero';
 import { getWorld, getWorlds } from '../content/store';
 import type { World } from '../content/types';
+import { CourseStory, STORY_TEXTURE } from '../game/courseStory';
 import { FeltStatusBar } from '../game/feltHud';
-import { Player, createControls, type Controls } from '../game/Player';
+import { Player, createControls, held, type Controls } from '../game/Player';
+import { playMusic } from '../game/music';
 import { sfx } from '../game/sfx';
 import { BAR, HEIGHT, WIDTH, markCleared, progress, saveProgress, ui } from '../game/state';
-import { px } from '../game/text';
+import { px, wrapChars } from '../game/text';
+import { devBus } from '../ui/devBus';
+import { setDevMode } from '../ui/devmode';
 import { showEndCard } from '../ui/overlays';
 
 // A hand-built course loaded from content/levels/*.json (World 1-1 is
-// imported from the Figma reference). Content beats get attached to its
-// blocks in a later pass; for now it's the look and feel. Courses use the
+// imported from the Figma reference). The world's beats are placed in it by
+// CourseStory (captions, blocks, signs, chapter cards). Courses use the
 // felt art (src/art/felt.ts) and render at Z times the base resolution.
+// Holding S for two seconds on the tall white platform flips to the other side: the same
+// course in black and white, where story blocks and billboards are editable
+// in the dev panel (src/ui/devmode.ts).
 
 export interface CourseLevel {
   id: string;
@@ -45,11 +53,16 @@ export function getLevel(id: string): CourseLevel | undefined {
 }
 
 const T = 16;
-type Kind = 'q' | 'item' | 'brick' | 'note' | 'pswitch';
+/** How long S has to be held on the white platform to flip sides, in ms. */
+const DOOR_HOLD = 2000;
+type Kind = 'q' | 'item' | 'brick' | 'note' | 'pswitch' | 'story';
 interface Block {
   sprite: Phaser.GameObjects.Sprite;
   kind: Kind;
   used?: boolean;
+  /** Tile position, for beats placed behind blocks. */
+  tx: number;
+  ty: number;
 }
 interface Plant {
   sprite: Phaser.GameObjects.Sprite;
@@ -64,6 +77,7 @@ export class CourseScene extends Phaser.Scene {
   private player!: Player;
   private controls!: Controls;
   private hud!: FeltStatusBar;
+  private story!: CourseStory;
   private solids!: Phaser.Physics.Arcade.StaticGroup;
   private semis!: Phaser.Physics.Arcade.StaticGroup;
   private coins!: Phaser.Physics.Arcade.StaticGroup;
@@ -72,6 +86,16 @@ export class CourseScene extends Phaser.Scene {
   private plants: Plant[] = [];
   private feathers: Phaser.GameObjects.Sprite[] = [];
   private warp!: { x0: number; x1: number; top: number };
+  /** The tall white platform: S on top flips to the secret editor world. */
+  private door?: { x0: number; x1: number; top: number };
+  /** How long S has been held on the door, and a small bar that fills while it is. */
+  private doorHold = 0;
+  private doorBar!: Phaser.GameObjects.Graphics;
+  /** Set after a flip until S is let go, so holding it doesn't flip straight back. */
+  private doorLatch = false;
+  private devLayer?: Phaser.GameObjects.Container;
+  /** Where to put the player back after a live rebuild from the editor. */
+  private resumeAt?: { x: number; y: number; powered: boolean };
   private goal!: Phaser.GameObjects.Image;
   private heads: Block[] = [];
   private feet: Block[] = [];
@@ -88,8 +112,12 @@ export class CourseScene extends Phaser.Scene {
     super('Course');
   }
 
-  init(data: { slug: string }) {
+  init(data: { slug: string; at?: { x: number; y: number; powered: boolean } }) {
     this.world = getWorld(data.slug)!;
+    this.resumeAt = data.at;
+    this.door = this.devLayer = undefined;
+    this.doorHold = 0;
+    this.doorLatch = false;
     this.level = getLevel(this.world.level!)!;
     this.worldIndex = Math.max(0, getWorlds().findIndex((w) => w.slug === data.slug));
     this.blocks = new Map();
@@ -102,6 +130,8 @@ export class CourseScene extends Phaser.Scene {
 
   preload() {
     preloadFelt(this);
+    preloadHeroes(this);
+    CourseStory.preload(this, this.world);
   }
 
   create() {
@@ -117,9 +147,13 @@ export class CourseScene extends Phaser.Scene {
     this.scale.resize(WIDTH * Z, HEIGHT * Z);
     this.cameras.main.setSize(WIDTH * Z, HEIGHT * Z).setZoom(Z);
     document.body.classList.add('felt');
+    this.events.on(Phaser.Scenes.Events.POST_UPDATE, this.followRigs);
+    const offDev = devBus.on('dev', () => this.drawDevLayer());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.scale.resize(WIDTH, HEIGHT);
       document.body.classList.remove('felt');
+      this.events.off(Phaser.Scenes.Events.POST_UPDATE, this.followRigs);
+      offDev();
     });
     setupFelt(this);
     this.cameras.main.setBackgroundColor(L.sky);
@@ -142,8 +176,9 @@ export class CourseScene extends Phaser.Scene {
       this.tweens.add({ targets: g, alpha: 0.2, yoyo: true, repeat: -1, duration: 900 + ((x * 7) % 900), delay: (y * 13) % 1200 });
     }
     for (const [x, y, w] of L.scenery.clouds) feltImage(this, x, y, w > 50 ? 'cloud-l' : w > 40 ? 'cloud-m' : 'cloud-s').setOrigin(0).setDepth(-8);
-    for (const [x, y, w, h] of L.scenery.bushes) feltImage(this, x, y, `bush2-${w}x${h}`).setOrigin(0).setDepth(-6);
-    for (const [x, y] of L.scenery.shrubs) feltImage(this, x * T, y * T, 'shrub').setOrigin(0).setDepth(-6);
+    // Plants stand on the ground line (their felt art has empty rows underneath)
+    for (const [x, , w, h] of L.scenery.bushes) feltOnGround(this, x, G, `bush2-${w}x${h}`).setDepth(-6);
+    for (const [x] of L.scenery.shrubs) feltOnGround(this, x * T, G, 'shrub').setDepth(-6);
 
     // ---- Platforms: drawn back to front, tops are jump-through ----
     for (const p of L.platforms) {
@@ -152,6 +187,7 @@ export class CourseScene extends Phaser.Scene {
       const w = p.w * T;
       const h = p.h * T;
       feltPlatform(this, x, y, w, h, p.color);
+      if (p.color.toLowerCase() === '#f4faf4' && !this.door) this.door = { x0: x, x1: x + w, top: y };
       const top = this.add.rectangle(x + w / 2, y + 3, w, 6).setVisible(false);
       this.semis.add(top);
       const b = top.body as Phaser.Physics.Arcade.StaticBody;
@@ -188,14 +224,25 @@ export class CourseScene extends Phaser.Scene {
     }
     for (const pl of this.plants) this.cyclePlant(pl);
 
+    // ---- Status bar and story (story blocks replace level blocks on their tiles) ----
+    this.hud = new FeltStatusBar(this, `WORLD ${this.worldIndex + 1}-1`, this.world.title.toUpperCase().slice(0, 26));
+    this.story = new CourseStory(this, this.world, this.hud);
+    const storyCells = new Set(this.story.storyCells.map(([x, y]) => `${x},${y}`));
+
     // ---- Blocks ----
     const block = (kind: Kind, tx: number, ty: number, key: string, ox = 0, oy = 0) => {
-      const s = feltSprite(this, ox + tx * T + 8, oy + ty * T + 8, key).setDepth(3);
+      const s = (kind === 'story' ? this.add.sprite(0, 0, STORY_TEXTURE).setScale(T / 128) : feltSprite(this, 0, 0, key)).setPosition(ox + tx * T + 8, oy + ty * T + 8).setDepth(3);
+      if (kind === 'story') this.textures.get(STORY_TEXTURE).setFilter(Phaser.Textures.FilterMode.LINEAR);
       this.solids.add(s);
-      this.blocks.set(s, { sprite: s, kind });
+      this.blocks.set(s, { sprite: s, kind, tx, ty });
       return s;
     };
+    for (const [x, y] of this.story.storyCells) {
+      block('story', x, y, STORY_TEXTURE);
+      this.story.tagStoryBlock(x, y);
+    }
     for (const [k, x, y] of L.blocks) {
+      if (storyCells.has(`${x},${y}`)) continue;
       if (k === 'q') block('q', x, y, 'q2-0');
       else if (k === 'item') block('item', x, y, 'wood');
       else if (k === 'brick') block('brick', x, y, 'brick2');
@@ -212,9 +259,12 @@ export class CourseScene extends Phaser.Scene {
       const walker = k === 'walker';
       const e = this.enemies.create(x * T + 8, (y + 1) * T - (walker ? 10 : 8), FELT, walker ? 'hiker-0' : 'bug-0') as Phaser.Physics.Arcade.Sprite;
       e.setScale(1 / Z).setDepth(6);
-      // hikers have two walk frames; the plush bug waddles
-      if (walker) e.play('felt-hiker-walk');
-      else this.tweens.add({ targets: e, angle: { from: -6, to: 6 }, yoyo: true, repeat: -1, duration: 240, ease: 'Sine.easeInOut' });
+      // walkers are turtle puppets whose feet step; the plush bug waddles
+      if (walker) {
+        const rig = new HeroRig(this, 'turtle', 20);
+        rig.root.setDepth(6);
+        e.setVisible(false).setData('rig', rig);
+      } else this.tweens.add({ targets: e, angle: { from: -6, to: 6 }, yoyo: true, repeat: -1, duration: 240, ease: 'Sine.easeInOut' });
       (e.body as Phaser.Physics.Arcade.Body).setSize(12 * Z, (walker ? 18 : 12) * Z).setOffset(2 * Z, (walker ? 2 : 4) * Z);
       e.setVelocityX(-24);
       e.setData('walker', walker);
@@ -223,14 +273,18 @@ export class CourseScene extends Phaser.Scene {
     // ---- Goal: black end zone with the spinning card box ----
     const gx = L.goal * T;
     this.add.rectangle(gx - 6 * T, 0, this.W - (gx - 6 * T), this.H, 0x000000).setOrigin(0).setDepth(-9);
-    this.goal = feltImage(this, gx, G - 5 * T, `icon-${this.world.card}`).setDepth(5);
-    this.add.graphics().setDepth(4).lineStyle(2, 0xffffff).strokeRect(gx - 14, G - 5 * T - 14, 28, 28);
+    // low enough to reach with a hop from the ground
+    const goalY = G - 2.5 * T;
+    this.goal = feltImage(this, gx, goalY, `icon-${this.world.card}`).setDepth(5);
+    this.add.graphics().setDepth(4).lineStyle(2, 0xffffff).strokeRect(gx - 14, goalY - 14, 28, 28);
 
     this.buildRoom();
 
     // ---- Player ----
     const [sx, sy] = L.spawn;
-    this.player = new Player(this, sx * T + 8, sy * T, this.controls, true);
+    const at = this.resumeAt;
+    this.player = new Player(this, at ? at.x : sx * T + 8, at ? at.y : sy * T, this.controls, progress.hero);
+    this.player.powered = !!at?.powered;
     this.safe = { x: this.player.x, y: this.player.y };
     this.physics.world.setBounds(0, -64, this.RX + 32 * T, this.H + 128);
     this.physics.world.setBoundsCollision(true, true, false, false);
@@ -244,9 +298,100 @@ export class CourseScene extends Phaser.Scene {
     this.physics.add.overlap(this.player, this.coins, (_p, c) => this.collect(c as Phaser.GameObjects.Image));
 
     this.useMainCamera();
-    this.hud = new FeltStatusBar(this, `WORLD ${this.worldIndex + 1}-1`, this.world.title.toUpperCase().slice(0, 26));
+    this.introSign(G);
+    this.story.buildSigns(G);
     this.input.keyboard!.on('keydown-ESC', () => !ui.blocking && this.exitToMap());
-    this.cameras.main.fadeIn(250);
+    this.drawDevLayer();
+    this.doorBar = this.add.graphics().setDepth(30);
+    // a rebuild from the editor picks up where the player was, without the intro
+    if (at) this.story.resume(at.x);
+    else {
+      this.hud.showTip('AWSD to move • K to run • L to jump');
+      this.cameras.main.fadeIn(250);
+    }
+    playMusic(this, 'world-1-1');
+  }
+
+  /** The world billboard at the start of the course (Figma: screen/gameplay · world 1 start). */
+  private introSign(groundY: number) {
+    const w = this.world;
+    const x = 40;
+    const y = this.H + BAR - HEIGHT + 4; // near the top of the first screen, clear of the story block below
+    const sign = this.add.graphics().setDepth(-2);
+    feltPost(this, x + 20, y + 92, 6, groundY - y - 92).setDepth(-2.1);
+    feltPost(this, x + 150, y + 92, 6, groundY - y - 92).setDepth(-2.1);
+    sign.fillStyle(0x000000).fillRect(x, y, 176, 96);
+    sign.fillStyle(0xfcfcfc).fillRect(x + 2, y + 2, 172, 92);
+    sign.fillStyle(0x000000).fillRect(x + 4, y + 4, 168, 88);
+    sign.fillStyle(0xfce4a0).fillRect(x + 5, y + 5, 166, 86);
+    px(this, x + 12, y + 12, `WORLD ${this.worldIndex + 1}`, { color: '#d82800' }).setDepth(-1);
+    const titleLines = wrapChars(w.title.toUpperCase(), 19, 2);
+    px(this, x + 12, y + 26, titleLines.join('\n'), { color: '#000' }).setDepth(-1);
+    const subY = y + 28 + titleLines.length * 10 + 2;
+    px(this, x + 12, subY, wrapChars(w.tagline, 26, titleLines.length > 1 ? 2 : 3).join('\n'), { color: '#5c2800', size: 6 }).setDepth(-1);
+    px(this, x + 12, y + 73, w.platform.slice(0, 26), { color: '#2038a0', size: 6 }).setDepth(-1);
+    px(this, x + 12, y + 82, `${w.role}`.slice(0, 26), { color: '#2038a0', size: 6 }).setDepth(-1);
+  }
+
+  // ---------- Secret world ----------
+
+  /** Holding S on the white platform fills a bar over the hero; when it's full the world flips. */
+  private holdDoor(p: Player): boolean {
+    const d = this.door;
+    const down = held(this.controls.down);
+    if (!down) this.doorLatch = false;
+    const onDoor = !!d && !this.inRoom && p.body.blocked.down && p.x > d.x0 + 2 && p.x < d.x1 - 2 && Math.abs(p.body.bottom - d.top) < 3;
+    this.doorHold = onDoor && down && !this.doorLatch ? this.doorHold + this.game.loop.delta : 0;
+    const k = Math.min(1, this.doorHold / DOOR_HOLD);
+    this.doorBar.clear();
+    // a short tap shows nothing, so the door stays a secret
+    if (this.doorHold > 250) {
+      const x = p.x - 9;
+      const y = p.body.top - 12;
+      this.doorBar.fillStyle(0x000000, 0.6).fillRoundedRect(x, y, 18, 4, 2);
+      this.doorBar.fillStyle(0xffffff, 1).fillRoundedRect(x + 1, y + 1, Math.max(2, 16 * k), 2, 1);
+    }
+    if (k < 1) return false;
+    this.doorHold = 0;
+    this.doorLatch = true;
+    this.doorBar.clear();
+    return true;
+  }
+
+  /** The TV flips and the course turns black and white (or back). */
+  private async flipSides() {
+    this.busy = true;
+    this.physics.pause();
+    setDevMode(!ui.dev);
+    await new Promise((r) => this.time.delayedCall(900, r));
+    this.physics.resume();
+    this.input.keyboard!.resetKeys();
+    this.busy = false;
+  }
+
+  /** On the other side every story block and billboard is outlined; click one (or bump it) to edit it. */
+  private drawDevLayer() {
+    this.devLayer?.destroy();
+    this.devLayer = undefined;
+    if (!ui.dev) return;
+    const c = this.add.container(0, 0).setDepth(90);
+    const tag = (x: number, y: number, s: string) => {
+      const t = px(this, x, y, s, { size: 6, color: '#000' }).setOrigin(0.5, 1);
+      return t.setBackgroundColor('#ffffff').setPadding(2, 2, 2, 1);
+    };
+    for (const e of this.story.editables) {
+      const g = this.add.graphics().lineStyle(1, 0xffffff, 0.9).strokeRect(e.x - 1, e.y - 1, e.w + 2, e.h + 2);
+      const hit = this.add.zone(e.x, e.y, e.w, e.h).setOrigin(0).setInteractive({ cursor: 'pointer' });
+      hit.on('pointerdown', () => this.select(e.id));
+      c.add([g, tag(e.x + e.w / 2, e.y - 2, e.label), hit]);
+    }
+    if (this.door) c.add(tag((this.door.x0 + this.door.x1) / 2, this.door.top - 4, 'HOLD S: FLIP BACK'));
+    this.devLayer = c;
+  }
+
+  /** Open a beat in the editor panel. */
+  private select(beatId: string) {
+    devBus.emit('select', { slug: this.world.slug, beatId });
   }
 
   // ---------- Areas ----------
@@ -301,6 +446,8 @@ export class CourseScene extends Phaser.Scene {
     p.body.enable = true;
     this.cameras.main.fadeIn(150);
     this.busy = false;
+    const numbers = this.story.room();
+    if (numbers) this.time.delayedCall(500, () => void this.read(numbers));
   }
 
   private async exitRoom() {
@@ -317,6 +464,17 @@ export class CourseScene extends Phaser.Scene {
     await this.tweenTo(p, { y: this.warp.top - 10 }, 400);
     p.body.reset(p.x, p.y);
     p.body.enable = true;
+    this.busy = false;
+  }
+
+  /** Open a dialog or picture with the game paused, then hand the keys back. */
+  private async read(open: () => Promise<void>) {
+    if (this.busy || ui.blocking) return;
+    this.busy = true;
+    this.physics.pause();
+    await open();
+    this.physics.resume();
+    this.input.keyboard!.resetKeys();
     this.busy = false;
   }
 
@@ -347,6 +505,22 @@ export class CourseScene extends Phaser.Scene {
       return;
     }
 
+    // The white platform is the door to the other side
+    if (this.holdDoor(p)) {
+      void this.flipSides();
+      return;
+    }
+
+    // Felt signposts: press S in front of one to look at its picture
+    if (!this.inRoom && p.downPressed) {
+      const look = this.story.signAt(p.x);
+      if (look) {
+        if (ui.dev) this.select(this.story.signFor(p.x)!.beat.id);
+        void this.read(look);
+        return;
+      }
+    }
+
     if (this.inRoom && p.x > this.RX + this.level.room.tiles[0].length * T - 4) {
       void this.exitRoom();
       return;
@@ -361,6 +535,8 @@ export class CourseScene extends Phaser.Scene {
       p.hurt(p.x + 1);
     }
 
+    if (this.hud.tipShown && p.x > 12 * T) this.hud.hideTip();
+    this.story.update(p.x, this.inRoom);
     this.updateEnemies();
     this.updateFeathers();
     for (const pl of this.plants) {
@@ -388,9 +564,22 @@ export class CourseScene extends Phaser.Scene {
         if (!ahead.length) dir = -dir;
       }
       e.setVelocityX(dir * 24);
-      e.setFlipX(dir > 0);
+      e.setFlipX(dir < 0); // felt art faces right
+      const rig = e.getData('rig') as HeroRig | undefined;
+      if (rig) {
+        rig.setFacing(dir < 0);
+        rig.animate(this.game.loop.delta / 1000, 0.45, !b.blocked.down);
+      }
     }
   }
+
+  /** Puppets follow their physics bodies every frame, also while update() is paused. */
+  private followRigs = () => {
+    for (const e of this.enemies.getChildren() as Phaser.Physics.Arcade.Sprite[]) {
+      const rig = e.getData('rig') as HeroRig | undefined;
+      if (rig && e.body) rig.root.setPosition(e.x, (e.body as Phaser.Physics.Arcade.Body).bottom);
+    }
+  };
 
   // ---------- Collisions ----------
 
@@ -406,6 +595,17 @@ export class CourseScene extends Phaser.Scene {
     const s = b.sprite;
     sfx.bump();
     if (b.kind !== 'pswitch') this.tweens.add({ targets: s, y: s.y - 5, duration: 70, yoyo: true });
+    // Story blocks open their reading card on every bump (so they can be re-read); read ones dim a little.
+    if (b.kind === 'story') {
+      const open = this.story.storyAt(b.tx, b.ty);
+      if (open) {
+        sfx.select();
+        // on the other side the card is a preview of what you're editing
+        if (ui.dev) this.select(this.story.idAt(b.tx, b.ty)!);
+        this.time.delayedCall(150, () => void this.read(open).then(() => s.setTint(0xd2d2d2)));
+      }
+      return;
+    }
     if (b.used) return;
     if (b.kind === 'q') {
       b.used = true;
@@ -446,6 +646,8 @@ export class CourseScene extends Phaser.Scene {
       this.coins.add(c);
       swapped.push([b, c]);
     }
+    const twist = this.story.switchPressed();
+    if (twist) this.time.delayedCall(900, () => void this.read(twist));
     this.time.delayedCall(8000, () => {
       for (const [b, c] of swapped) {
         if (!c.active) continue;
@@ -464,7 +666,9 @@ export class CourseScene extends Phaser.Scene {
       e.setData('dead', true);
       e.anims.stop();
       this.tweens.killTweensOf(e);
-      e.setAngle(0).setTexture(FELT, e.getData('walker') ? 'hiker-flat' : 'bug-flat');
+      (e.getData('rig') as HeroRig | undefined)?.root.destroy();
+      e.setData('rig', undefined);
+      e.setVisible(true).setAngle(0).setTexture(FELT, e.getData('walker') ? 'hiker-flat' : 'bug-flat');
       eb.enable = false;
       sfx.stomp();
       this.player.bounce();
@@ -518,7 +722,12 @@ export class CourseScene extends Phaser.Scene {
         f.destroy();
         p.powered = true;
         sfx.clear();
-        const t = px(this, p.x, p.y - 20, 'FEATHER! RUN + JUMP TO FLY', { size: 6, shadow: true }).setOrigin(0.5).setDepth(20);
+        const power = this.story.feather();
+        const t = this.add
+          .text(p.x, p.y - 22, `${power ?? 'FEATHER!'}\nRUN + JUMP TO FLY`, { fontFamily: '"Luckiest Guy", sans-serif', fontSize: '8px', color: '#ffffff', stroke: '#5a3518', strokeThickness: 2, align: 'center' })
+          .setOrigin(0.5)
+          .setResolution(Z)
+          .setDepth(20);
         this.tweens.add({ targets: t, y: t.y - 16, alpha: 0, delay: 1200, duration: 800, onComplete: () => t.destroy() });
       }
     }
@@ -563,5 +772,16 @@ export class CourseScene extends Phaser.Scene {
 
   get slug() {
     return this.world.slug;
+  }
+
+  /** Restart data that keeps the player where they are (live rebuilds while editing). */
+  get restartData() {
+    const p = this.player;
+    return { slug: this.world.slug, at: this.inRoom || !p?.active ? undefined : { x: p.x, y: p.y, powered: p.powered } };
+  }
+
+  /** The tile the player stands on, for adding beats "here" from the editor. */
+  get playerTile(): [number, number] {
+    return [Math.floor(this.player.x / T), Math.floor((this.player.body.bottom - 1) / T)];
   }
 }

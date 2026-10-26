@@ -10,10 +10,15 @@ export const BAR = 32; // SMB3-style status bar at the bottom
 export const FIELD = HEIGHT - BAR; // 208px playfield = 13 tiles
 export const GROUND_Y = FIELD - TILE * 2; // top of the ground
 
+/** The character picked on the title screen: one wears a cap, the other a bike helmet. */
+export type Hero = 'hat' | 'helmet';
+
 interface Progress {
   cleared: string[];
   coins: number;
   mapNode: string;
+  /** Picked on the title screen. */
+  hero: Hero;
 }
 
 const KEY = 'smb3.progress';
@@ -21,9 +26,10 @@ const KEY = 'smb3.progress';
 function load(): Progress {
   try {
     const p = JSON.parse(localStorage.getItem(KEY) ?? '');
-    if (p && Array.isArray(p.cleared)) return { cleared: p.cleared, coins: p.coins ?? 0, mapNode: p.mapNode ?? 'start' };
+    // 'female' is the helmet hero's id from before the heroes were renamed
+    if (p && Array.isArray(p.cleared)) return { cleared: p.cleared, coins: p.coins ?? 0, mapNode: p.mapNode ?? 'start', hero: p.hero === 'helmet' || p.hero === 'female' ? 'helmet' : 'hat' };
   } catch {}
-  return { cleared: [], coins: 0, mapNode: 'start' };
+  return { cleared: [], coins: 0, mapNode: 'start', hero: 'hat' };
 }
 
 export const progress: Progress = load();

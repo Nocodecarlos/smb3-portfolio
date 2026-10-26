@@ -3,10 +3,38 @@
 
 export type Lens = 'design' | 'build';
 
+/** The three case-study chapters; each lights a card in the status bar (bug, pencil, star). */
+export type Chapter = 'problem' | 'design' | 'results';
+
+/**
+ * Where a beat lives in a hand-built course (tile coordinates of
+ * content/levels/*.json). Beats without one only show in Quick View.
+ */
+export type Placement =
+  /** A story block at (x, y): bumping it pauses the game and opens the beat as a reading card. */
+  | { as: 'story'; x: number; y: number }
+  /** Decision: two story blocks; bumping `a` or `b` reads that option. */
+  | { as: 'decision'; a: [number, number]; b: [number, number] }
+  /** Image beat on a felt billboard at tile `at` (raised `lift` px on taller posts); press S in front of it to see it full size. */
+  | { as: 'sign'; at: number; lift?: number }
+  /** Stepping on the P-switch / first entering the secret room opens the beat. */
+  | { as: 'switch' | 'room' }
+  /** Picking up the feather floats `lines[0]` (a wink, not content). */
+  | { as: 'feather' };
+
 interface BeatBase {
   id: string;
   /** Only show in one title-screen mode. Untagged beats show in both. */
   lens?: Lens;
+  /** Chapter this beat belongs to in a hand-built course. */
+  chapter?: Chapter;
+  place?: Placement;
+  /** Picture shown at the top of the reading card; an empty `src` shows a placeholder. */
+  image?: { src: string; caption: string; alt?: string };
+  /** Short lines for game moments (the feather's wink). */
+  lines?: string[];
+  /** Reminder for the author (open questions, numbers to update). Never shown. */
+  note?: string;
 }
 
 /** A row of bricks with the headline painted on it, plus a ? block holding the body. */
@@ -62,19 +90,39 @@ export interface World {
   links: { label: string; url: string }[];
   /** Hand-built course in content/levels (e.g. "world-1-1"). When set, it replaces the generated level. */
   level?: string;
+  /** Chapters of the hand-built course, in order: where each starts and what the status bar says. */
+  chapters?: { id: Chapter; at: number; title: string; subtitle: string }[];
+  /** Short takeaways for the end card. */
+  lessons?: string[];
   beats: Beat[];
 }
 
-export type MapNodeType = 'start' | 'world' | 'house' | 'castle';
+/**
+ * Felt overworld stops. `step` is a plain stop on the road; `house` is a
+ * mushroom house, `spade` the card panel, `fortress` the mini castle,
+ * `lock` a door that opens once its `requires` worlds are cleared.
+ */
+export type MapNodeType = 'start' | 'world' | 'step' | 'house' | 'spade' | 'fortress' | 'lock' | 'castle';
 
 export interface MapNode {
   id: string;
   type: MapNodeType;
+  /** Centre of the stop on the felt map art (public/felt/map-bg.jpg), in Figma pixels of the 2000x1384 map. */
   x: number;
   y: number;
-  /** World slug for type 'world'. */
+  /** World slug for type 'world'. Leave empty for a world that isn't ready yet. */
   world?: string;
+  /** Tile number for type 'world'. */
+  number?: number;
+  /** Short name for the status bar and the sign above the stop. */
   label?: string;
+  /** Dialog shown on ENTER for stops without a world (houses, spade, fortress, unfinished worlds). */
+  title?: string;
+  body?: string;
+  /** Show the About text from this file on ENTER. */
+  about?: boolean;
+  /** For a lock: world slugs that must be cleared before it opens. */
+  requires?: string[];
 }
 
 export interface Site {

@@ -123,11 +123,53 @@ export function showDialog(title: string, body: string, kicker?: string): Promis
   }).finally(() => window.clearInterval(typing));
 }
 
+export interface StoryCard {
+  /** Chapter name or the decision's question. */
+  kicker: string;
+  title: string;
+  body: string;
+  image?: { src: string; caption: string; alt?: string };
+  /** e.g. "3 / 11 stories". */
+  progress?: string;
+}
+
+/**
+ * Felt reading card for a story block (Figma: ui-felt/dialog-box). The game
+ * is paused underneath; one idea per card, no typing effect, closes on
+ * Space / Enter / L / Esc or a click.
+ */
+export function showStory(c: StoryCard): Promise<void> {
+  const img = c.image;
+  const node = el(`
+    <div class="ov ov-story" role="dialog" aria-label="${esc(c.title)}">
+      <article class="story ${img ? 'has-img' : ''}">
+        <header class="story-head"><span>${esc(c.kicker)}</span>${c.progress ? `<span class="story-progress">${esc(c.progress)}</span>` : ''}</header>
+        ${
+          img
+            ? `<figure class="story-img">${img.src ? `<img src="${esc(resolveSrc(img.src))}" alt="${esc(img.alt || img.caption)}">` : placeholder(img.caption)}${img.src ? `<figcaption>${esc(img.caption)}</figcaption>` : ''}</figure>`
+            : ''
+        }
+        <div class="story-text">
+          <h2 class="story-title">${esc(c.title)}</h2>
+          <div class="story-body">${richText(c.body)}</div>
+        </div>
+        <footer class="story-foot">SPACE or L to keep playing</footer>
+      </article>
+    </div>`);
+  node.addEventListener('click', () => node.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
+  return open<void>(node, (e, close) => {
+    if (CLOSE_KEYS.has(e.key) || e.key === 'l' || e.key === 'L') close();
+  });
+}
+
+/** Stand-in for an image that hasn't been added yet (empty `src`). */
+const placeholder = (caption: string) => `<div class="img-placeholder" role="img" aria-label="${esc(caption)}"><span>IMAGE COMING SOON</span>${esc(caption)}</div>`;
+
 export function showImage(src: string, caption: string, alt = ''): Promise<void> {
   const node = el(`
     <div class="ov ov-image" role="dialog" aria-label="${esc(caption)}">
       <figure>
-        <img src="${esc(resolveSrc(src))}" alt="${esc(alt || caption)}">
+        ${src ? `<img src="${esc(resolveSrc(src))}" alt="${esc(alt || caption)}">` : placeholder(caption)}
         <figcaption>${esc(caption)}</figcaption>
       </figure>
       <div class="hint">Press SPACE to close</div>
@@ -141,16 +183,20 @@ export function showImage(src: string, caption: string, alt = ''): Promise<void>
 export function showEndCard(world: World, iconUrl: string): Promise<void> {
   sfx.clear();
   const node = el(`
-    <div class="ov ov-end" role="dialog" aria-label="Course clear">
-      <div class="dlg end">
-        <div class="end-banner">COURSE CLEAR!</div>
-        <img class="end-icon" src="${iconUrl}" alt="">
-        <div class="dlg-title">${esc(world.title)}</div>
-        <div class="end-summary">${richText(world.summary)}</div>
-        ${world.outcomes.length ? `<ul class="end-outcomes">${world.outcomes.map((o) => `<li>${esc(o)}</li>`).join('')}</ul>` : ''}
-        ${world.links.length ? `<div class="end-links">${world.links.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>`).join('')}</div>` : ''}
-        <button class="pixel-btn" data-close="map">Back to map ▶</button>
-      </div>
+    <div class="ov ov-end ov-story" role="dialog" aria-label="Course clear">
+      <article class="story end-story">
+        <header class="story-head"><span>COURSE CLEAR!</span><img class="end-icon" src="${iconUrl}" alt=""></header>
+        <div class="story-text">
+          <h2 class="story-title">${esc(world.title)}</h2>
+          <div class="story-body">
+            ${richText(world.summary)}
+            ${world.outcomes.length ? `<h3>What happened</h3><ul>${world.outcomes.map((o) => `<li>${esc(o)}</li>`).join('')}</ul>` : ''}
+            ${world.lessons?.length ? `<h3>What I learned</h3><ul>${world.lessons.map((o) => `<li>${esc(o)}</li>`).join('')}</ul>` : ''}
+          </div>
+          ${world.links.length ? `<div class="end-links">${world.links.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>`).join('')}</div>` : ''}
+        </div>
+        <footer class="story-foot"><button class="story-btn" data-close="map">Back to map ›</button></footer>
+      </article>
     </div>`);
   return open<void>(node, (e, close) => {
     if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') close();
@@ -183,7 +229,7 @@ function beatHtml(b: Beat): string {
     case 'copy':
       return `<section><h3>${esc(b.headline)}</h3>${richText(b.body)}</section>`;
     case 'image':
-      return `<figure><img loading="lazy" src="${esc(resolveSrc(b.src))}" alt="${esc(b.alt || b.caption)}"><figcaption>${esc(b.caption)}</figcaption></figure>`;
+      return `<figure>${b.src ? `<img loading="lazy" src="${esc(resolveSrc(b.src))}" alt="${esc(b.alt || b.caption)}">` : placeholder(b.caption)}<figcaption>${esc(b.caption)}</figcaption></figure>`;
     case 'decision': {
       const pick = b.chosen === 'A' ? b.optionA : b.optionB;
       return `<section class="qv-decision"><h3>Decision: ${esc(b.question)}</h3>
