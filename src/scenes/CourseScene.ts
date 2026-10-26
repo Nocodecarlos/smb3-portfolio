@@ -88,9 +88,8 @@ export class CourseScene extends Phaser.Scene {
   private warp!: { x0: number; x1: number; top: number };
   /** The tall white platform: S on top flips to the secret editor world. */
   private door?: { x0: number; x1: number; top: number };
-  /** How long S has been held on the door, and a small bar that fills while it is. */
+  /** How long S has been held on the door. */
   private doorHold = 0;
-  private doorBar!: Phaser.GameObjects.Graphics;
   /** Set after a flip until S is let go, so holding it doesn't flip straight back. */
   private doorLatch = false;
   private devLayer?: Phaser.GameObjects.Container;
@@ -302,7 +301,6 @@ export class CourseScene extends Phaser.Scene {
     this.story.buildSigns(G);
     this.input.keyboard!.on('keydown-ESC', () => !ui.blocking && this.exitToMap());
     this.drawDevLayer();
-    this.doorBar = this.add.graphics().setDepth(30);
     // a rebuild from the editor picks up where the player was, without the intro
     if (at) this.story.resume(at.x);
     else {
@@ -335,26 +333,16 @@ export class CourseScene extends Phaser.Scene {
 
   // ---------- Secret world ----------
 
-  /** Holding S on the white platform fills a bar over the hero; when it's full the world flips. */
+  /** Holding S on the white platform long enough flips the world. No hint: it's for those who know. */
   private holdDoor(p: Player): boolean {
     const d = this.door;
     const down = held(this.controls.down);
     if (!down) this.doorLatch = false;
     const onDoor = !!d && !this.inRoom && p.body.blocked.down && p.x > d.x0 + 2 && p.x < d.x1 - 2 && Math.abs(p.body.bottom - d.top) < 3;
     this.doorHold = onDoor && down && !this.doorLatch ? this.doorHold + this.game.loop.delta : 0;
-    const k = Math.min(1, this.doorHold / DOOR_HOLD);
-    this.doorBar.clear();
-    // a short tap shows nothing, so the door stays a secret
-    if (this.doorHold > 250) {
-      const x = p.x - 9;
-      const y = p.body.top - 12;
-      this.doorBar.fillStyle(0x000000, 0.6).fillRoundedRect(x, y, 18, 4, 2);
-      this.doorBar.fillStyle(0xffffff, 1).fillRoundedRect(x + 1, y + 1, Math.max(2, 16 * k), 2, 1);
-    }
-    if (k < 1) return false;
+    if (this.doorHold < DOOR_HOLD) return false;
     this.doorHold = 0;
     this.doorLatch = true;
-    this.doorBar.clear();
     return true;
   }
 
