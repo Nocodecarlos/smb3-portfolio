@@ -272,8 +272,8 @@
         "y": 21
       },
       "image": {
-        "src": "",
-        "caption": "The new onboarding"
+        "caption": "The new onboarding",
+        "src": "content/pause/mvqlc97p-screenshot-2026-10-27-at-6.16.29-am.jpg"
       },
       "headline": "Onboarding fixes",
       "body": "Onboarding lost people at permissions and at the app picker.\n\n- Try Again after a denied permission\n- A Choose Apps screen before the picker\n- Fewer, reordered steps\n- A Heads up box before iOS asks\n- Honest trial copy: 7 days free · Cancel anytime",
@@ -287,7 +287,7 @@
         "as": "sign",
         "at": 116
       },
-      "src": "",
+      "src": "content/pause/mvqlboxq-screenshot-2026-10-27-at-6.16.29-am.jpg",
       "caption": "The new onboarding",
       "note": "Image still to add (Notion §5): the onboarding screenshot. Placeholder for now."
     },
