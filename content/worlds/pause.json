@@ -141,11 +141,11 @@
         "y": 22
       },
       "image": {
-        "src": "",
-        "caption": "Word Jumble, after the fixes"
+        "caption": "Word Jumble, after the fixes",
+        "src": "content/pause/mvql5muo-screenshot-2026-10-27-at-6.11.40-am.jpg"
       },
       "headline": "No more dead ends",
-      "body": "The first Word Jumble trapped people after a wrong answer, right when they were already frustrated. Analytics confirmed the drop-off.\n\n- Free retries\n- Show word after a miss\n- Anagrams count\n- A Mix letters button",
+      "body": "The first, free puzzle, Word Jumble trapped people after a wrong answer, right when they were already frustrated. Analytics confirmed the drop-off.\n\nHow I fixed it:\n\n- Free retries\n- Show word after a miss\n- Anagrams count\n- A Mix letters button",
       "note": "Image still to add (Notion §3.3): IMG_0368, Word Jumble after the fixes. Placeholder for now."
     },
     {
