@@ -79,6 +79,10 @@ export interface World {
   slug: string;
   title: string;
   tagline: string;
+  /** One-line teaser in the overworld status bar while the hero stands on this world. */
+  headline?: string;
+  /** App icon (path in /public) shown next to the headline. */
+  icon?: string;
   role: string;
   timeline: string;
   platform: string;

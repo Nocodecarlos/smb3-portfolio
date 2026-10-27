@@ -2,6 +2,8 @@
   "slug": "mustard-seed",
   "title": "Mustard Seed",
   "tagline": "Sunday readings and activities for Catholic families, in English and Spanish.",
+  "headline": "Three apps, one backend, and a new Sunday every week with no release.",
+  "icon": "content/mustard-seed/icon.png",
   "role": "Product designer & builder",
   "timeline": "2025–2026",
   "platform": "iOS · Web · Admin",

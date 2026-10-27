@@ -180,6 +180,7 @@ function worldForm(w: World): string {
   return `
     ${field('Title', 'title', w.title)}
     ${field('Tagline', 'tagline', w.tagline)}
+    ${field('Map headline (teaser in the overworld status bar)', 'headline', w.headline ?? '')}
     <div class="row"><div>${field('Role', 'role', w.role)}</div><div>${field('Timeline', 'timeline', w.timeline)}</div></div>
     ${field('Platform', 'platform', w.platform)}
     <div class="row">
@@ -247,6 +248,7 @@ function courseForm(w: World): string {
   return `
     ${field('Title', 'title', w.title)}
     ${field('Tagline', 'tagline', w.tagline)}
+    ${field('Map headline (teaser in the overworld status bar)', 'headline', w.headline ?? '')}
     <div class="row"><div>${field('Role', 'role', w.role)}</div><div>${field('Timeline', 'timeline', w.timeline)}</div></div>
     ${field('Platform', 'platform', w.platform)}
     <label style="margin-top:20px">Chapters: the status bar</label>

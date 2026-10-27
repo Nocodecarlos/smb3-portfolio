@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { ART, FELT, Z, preloadFelt, setupFelt } from '../art/felt';
 import { heroFront, preloadHeroes } from '../art/hero';
-import { getSite, getWorld, getWorlds } from '../content/store';
+import { getSite, getWorld, getWorlds, resolveSrc } from '../content/store';
 import type { MapNode } from '../content/types';
 import { FeltStatusBar } from '../game/feltHud';
 import { playMusic } from '../game/music';
@@ -48,6 +48,10 @@ export class OverworldScene extends Phaser.Scene {
     preloadHeroes(this);
     if (!this.textures.exists('felt-map')) this.load.image('felt-map', asset('felt/map-bg.jpg'));
     if (!this.textures.exists('felt-map-lock')) this.load.image('felt-map-lock', asset('felt/map-lock.png'));
+    // app icons for the status bar's teaser
+    for (const w of getWorlds()) {
+      if (w.icon && !this.textures.exists(`icon:${w.icon}`)) this.load.image(`icon:${w.icon}`, resolveSrc(w.icon));
+    }
   }
 
   create() {
@@ -158,7 +162,7 @@ export class OverworldScene extends Phaser.Scene {
     if (!this.isOpen(next.node)) {
       sfx.bump();
       const need = (next.node.requires ?? []).map((slug) => getWorlds().findIndex((w) => w.slug === slug) + 1).filter(Boolean);
-      this.hud.setLine2(`LOCKED » CLEAR WORLD ${need.join(' + ') || '?'}`);
+      this.hud.setStop('WORLD 1', 'LOCKED', `Clear World ${need.join(' + ') || '?'} to open this road.`);
       this.tweens.add({ targets: this.lockArt, angle: { from: -6, to: 6 }, yoyo: true, repeat: 2, duration: 60, onComplete: () => this.lockArt?.setAngle(0) });
       return;
     }
@@ -184,18 +188,20 @@ export class OverworldScene extends Phaser.Scene {
   private updateLabel() {
     const n = this.current;
     const name = (n.label ?? n.title ?? '').toUpperCase();
-    let world = 'WORLD 1';
-    let label = 'START  »  PICK A WORLD';
     if (n.type === 'world') {
+      // a world teases its story: app icon, name and headline
       const w = n.world ? getWorld(n.world) : undefined;
-      world = `WORLD ${n.number ?? '?'}`;
-      label = w ? w.title.toUpperCase() : 'COMING SOON';
-    } else if (n.type === 'house') label = `${name || 'HOUSE'}  »  ENTER`;
+      const world = `WORLD ${n.number ?? '?'}`;
+      if (w) this.hud.setStop(world, w.title.toUpperCase(), w.headline || w.tagline, w.icon && `icon:${w.icon}`);
+      else this.hud.setStop(world, 'COMING SOON', n.body);
+      return;
+    }
+    let label = 'START  »  PICK A WORLD';
+    if (n.type === 'house') label = `${name || 'HOUSE'}  »  ENTER`;
     else if (n.type === 'castle') label = `${name || 'CASTLE'}  »  READ LETTER`;
     else if (n.type === 'spade' || n.type === 'fortress') label = `${name || n.type.toUpperCase()}  »  ENTER`;
     else if (n.type !== 'start') label = '';
-    this.hud.setWorld(world);
-    this.hud.setLine2(label.slice(0, 30));
+    this.hud.setStop('WORLD 1', label.slice(0, 30));
   }
 
   private async enter() {

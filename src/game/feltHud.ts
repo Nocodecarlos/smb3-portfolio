@@ -6,6 +6,9 @@ import { FIELD, WIDTH, progress } from './state';
 /** Extra width over the 320px bar the art was drawn for: the panel stretches, the card slots move right. */
 const EXTRA = WIDTH - 320;
 const CARD_X = 230 + EXTRA;
+const COIN_X = 179 + EXTRA;
+/** The app icon on a map stop: nearly the bar's full height. */
+const STOP_ICON = 22;
 import { px } from './text';
 
 // The felt status bar (Figma: ui-felt/status-bar) for courses that render
@@ -25,6 +28,7 @@ export class FeltStatusBar {
   private root: Phaser.GameObjects.Container;
   private tip?: Phaser.GameObjects.Container;
   private subtitle: Phaser.GameObjects.Text;
+  private headline: Phaser.GameObjects.Text;
   private storiesText: Phaser.GameObjects.Text;
   private chapterIcon?: Phaser.GameObjects.Image;
   private cards: Phaser.GameObjects.Image[] = [];
@@ -57,12 +61,16 @@ export class FeltStatusBar {
     const y2 = FIELD + 14;
     this.worldText = text(10, y1, worldLabel, NAVY);
     this.meter = text(75, y1, '', NAVY);
-    this.coinText = text(179 + EXTRA, y1, '', NAVY);
+    this.coinText = text(COIN_X, y1, '', NAVY);
     this.line2 = text(10, y2, line2, BROWN);
-    this.subtitle = scene.add
-      .text(10, y2 + 1.5, '', { fontFamily: '"Fredoka", sans-serif', fontStyle: '600', fontSize: '6.5px', color: BROWN })
+    const fredoka = { fontFamily: '"Fredoka", sans-serif', fontStyle: '600', fontSize: '6.5px', color: BROWN };
+    this.subtitle = scene.add.text(10, y2 + 1.5, '', fredoka).setResolution(Z);
+    // the map's headline: up to two lines, centred on the bar
+    this.headline = scene.add
+      .text(0, FIELD + 14.5, '', { ...fredoka, maxLines: 2, lineSpacing: 1, wordWrap: { width: 200 } })
+      .setOrigin(0, 0.5)
       .setResolution(Z);
-    root.add(this.subtitle);
+    root.add([this.subtitle, this.headline]);
     this.storiesText = text(126, y1, '', NAVY).setFontSize('7px').setY(y1 + 1);
 
     // Card slots are part of the background; cleared worlds show their plush card
@@ -93,6 +101,30 @@ export class FeltStatusBar {
 
   setLine2(s: string) {
     this.line2.setText(s);
+  }
+
+  /**
+   * A stop on the map (Figma: Second Round Feedback / feedback 1): the app
+   * icon fills the bar's height, the world and title stack beside it, and
+   * the headline wraps to two lines in the middle. No P-meter on the map.
+   * Without an icon (`icon` is a loaded texture key) the text slides left.
+   */
+  setStop(world: string, title: string, headline = '', icon?: string) {
+    this.meter.setVisible(false);
+    this.chapterIcon?.destroy();
+    this.chapterIcon = undefined;
+    let x = 10;
+    if (icon && this.scene.textures.exists(icon)) {
+      const img = this.scene.add.image(8 + STOP_ICON / 2, FIELD + 15, roundedIcon(this.scene, icon)).setDisplaySize(STOP_ICON, STOP_ICON);
+      this.root.add(img);
+      this.chapterIcon = img;
+      this.scene.tweens.add({ targets: img, scale: { from: img.scale * 1.25, to: img.scale }, duration: 320, ease: 'Back.easeOut' });
+      x = 8 + STOP_ICON + 6;
+    }
+    this.worldText.setText(world).setX(x);
+    this.line2.setText(title).setX(x);
+    const hx = x + Math.max(this.worldText.width, this.line2.width) + 10;
+    this.headline.setText(headline).setX(hx).setWordWrapWidth(COIN_X - 10 - hx);
   }
 
   /**
@@ -183,4 +215,21 @@ export class FeltStatusBar {
   get tipShown() {
     return !!this.tip;
   }
+}
+
+/** The texture with iOS-style rounded corners, made once per icon. */
+function roundedIcon(scene: Phaser.Scene, key: string) {
+  const out = `${key}:rounded`;
+  if (scene.textures.exists(out)) return out;
+  const src = scene.textures.get(key).getSourceImage() as HTMLImageElement;
+  const s = src.width;
+  const tex = scene.textures.createCanvas(out, s, s)!;
+  const ctx = tex.context;
+  ctx.beginPath();
+  ctx.roundRect(0, 0, s, s, s * 0.225);
+  ctx.clip();
+  ctx.drawImage(src, 0, 0, s, s);
+  tex.refresh();
+  tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
+  return out;
 }
