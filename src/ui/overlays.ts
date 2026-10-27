@@ -246,8 +246,9 @@ function articleHtml(md: string): string {
       const first = lines[0];
       if (first.startsWith('### ')) return `<h4>${inline(first.slice(4))}</h4>`;
       if (first.startsWith('## ')) return `<h3>${inline(first.slice(3))}</h3>`;
-      const img = /^!\[(.*)\]\((.+)\)$/.exec(first);
-      if (img) return `<figure><img loading="lazy" src="${esc(resolveSrc(img[2]))}" alt="${esc(img[1])}"><figcaption>${inline(img[1])}</figcaption></figure>`;
+      const img = /^!\[(.*)\]\((.*)\)$/.exec(first);
+      // an empty path is a picture that isn't added yet
+      if (img) return `<figure>${img[2] ? `<img loading="lazy" src="${esc(resolveSrc(img[2]))}" alt="${esc(img[1])}">` : placeholder(img[1])}<figcaption>${inline(img[1])}</figcaption></figure>`;
       if (lines.every((l) => l.startsWith('>'))) return `<blockquote>${inline(lines.map((l) => l.replace(/^>\s?/, '')).join(' '))}</blockquote>`;
       if (lines.every((l) => /^\s*[-•]\s+/.test(l))) return `<ul>${lines.map((l) => `<li>${inline(l.replace(/^\s*[-•]\s+/, ''))}</li>`).join('')}</ul>`;
       if (lines.every((l) => /^\d+\.\s+/.test(l))) return `<ol>${lines.map((l) => `<li>${inline(l.replace(/^\d+\.\s+/, ''))}</li>`).join('')}</ol>`;

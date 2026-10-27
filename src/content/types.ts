@@ -101,7 +101,8 @@ export interface World {
   /**
    * The full case study, read on the Quick View page in place of the beats
    * (the game tells the short version). A Markdown subset: ## headings,
-   * "- " lists, "> " quotes, | tables |, ![caption](path) images, **bold**.
+   * "- " lists, "> " quotes, | tables |, ![caption](path) images (an empty
+   * path shows "image coming soon"), **bold**.
    */
   article?: string;
   beats: Beat[];

@@ -4,7 +4,7 @@
   "roles": ["Product Designer", "Product Builder"],
   "about": {
     "title": "Hi, I'm Carlos.",
-    "body": "I'm a product designer who builds what he designs. I take ideas from a sketch to a shipped app: research, flows, UI, and then the Swift, Next.js and Supabase to make it real.\n\nEvery world on this map is a product I designed and shipped. The bricks are the story, the billboards are the work, and the pipes are the decisions I had to make.\n\nPick 1 PRODUCT DESIGNER on the title screen for the design story, or 2 PRODUCT BUILDER to see more of how it was built."
+    "body": "I'm a product designer who builds what he designs. I take ideas from a sketch, a napkin drawing, to a shipped app: research, flows, UI, and then the Swift, Next.js and Supabase to make it real.\n\nEvery world in this map is a product I designed and shipped. The bricks are the story, the billboards are the work, and the pipes are the decisions I had to make.\n\nPick 1 PRODUCT DESIGNER on the title screen for the design story, or 2 PRODUCT BUILDER to see more of how it was built."
   },
   "contact": {
     "letter": "Thank you for playing!\n\nIf you made it to the castle, we should talk. I'm looking for a team where design and building happen in the same room.\n\nSend me a note and tell me what you're working on.",
