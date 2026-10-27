@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ART, FELT, Z, preloadFelt, setupFelt } from '../art/felt';
+import { Z, preloadFelt, setupFelt } from '../art/felt';
 import { heroFront, preloadHeroes } from '../art/hero';
 import { getSite, getWorld, getWorlds, resolveSrc } from '../content/store';
 import type { MapNode } from '../content/types';
@@ -27,6 +27,16 @@ const MAP_TEX = 1.25;
 
 const at = (n: MapNode) => ({ x: n.x * K, y: n.y * K });
 
+/**
+ * World tiles for the flip, cut from the map art (felt/map-cards.webp): one
+ * column per world, each cell centred on its stop. Rows: the ground under the
+ * tile, the numbered tile, and the white check card a cleared world shows.
+ */
+const CARDS = 'felt-map-cards';
+const CARD_W = 260;
+const CARD_H = 240;
+const card = (world: number, row: 'ground' | 'tile' | 'check') => ['ground', 'tile', 'check'].indexOf(row) * 6 + world - 1;
+
 /** The hero on the map covers most of a world tile (about 25x23 game px): its height, and how far below a stop's centre its feet stand. */
 const MARKER_H = 24;
 const MARKER_FEET = 10;
@@ -48,6 +58,7 @@ export class OverworldScene extends Phaser.Scene {
     preloadHeroes(this);
     if (!this.textures.exists('felt-map')) this.load.image('felt-map', asset('felt/map-bg.jpg'));
     if (!this.textures.exists('felt-map-lock')) this.load.image('felt-map-lock', asset('felt/map-lock.png'));
+    if (!this.textures.exists(CARDS)) this.load.spritesheet(CARDS, asset('felt/map-cards.webp'), { frameWidth: CARD_W, frameHeight: CARD_H });
     // app icons for the status bar's teaser
     for (const w of getWorlds()) {
       if (w.icon && !this.textures.exists(`icon:${w.icon}`)) this.load.image(`icon:${w.icon}`, resolveSrc(w.icon));
@@ -69,7 +80,7 @@ export class OverworldScene extends Phaser.Scene {
       document.body.classList.remove('felt');
     });
     setupFelt(this);
-    for (const key of ['felt-map', 'felt-map-lock']) this.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR);
+    for (const key of ['felt-map', 'felt-map-lock', CARDS]) this.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR);
 
     this.add.image(0, 0, 'felt-map').setOrigin(0).setDisplaySize(WIDTH, MAP_H);
 
@@ -79,13 +90,9 @@ export class OverworldScene extends Phaser.Scene {
       const p = at(lock);
       this.lockArt = this.add.image(p.x, p.y, 'felt-map-lock').setScale(K / MAP_TEX);
     }
-    const worlds = getWorlds();
     for (const n of nodes) {
       const p = at(n);
-      if (n.type === 'world' && n.world && progress.cleared.includes(n.world)) {
-        const card = worlds.find((w) => w.slug === n.world)?.card ?? 'star';
-        this.add.image(p.x + 9, p.y - 9, FELT, `icon-${card}`).setScale(0.45 / ART);
-      }
+      if (n.type === 'world' && n.world && n.number && progress.cleared.includes(n.world)) this.checkCard(n.world, n.number, p);
       if ((n.type === 'house' || n.type === 'castle') && n.label) {
         const sign = px(this, p.x, p.y - (n.type === 'castle' ? 30 : 16), n.label, { size: 6, color: '#000' }).setOrigin(0.5);
         sign.setBackgroundColor('#ffffff').setPadding(2, 2, 2, 1).setDepth(5);
@@ -133,6 +140,42 @@ export class OverworldScene extends Phaser.Scene {
   update(_time: number, delta: number) {
     const t = this.time.now;
     this.markerImg.y = this.moving ? -Math.abs(Math.sin(t / 85)) * 2.5 : Math.sin(t / 420) * 0.35;
+  }
+
+  /**
+   * A cleared world shows a white check card in place of its number (it can
+   * still be entered). The first time back on the map the tile flips over to
+   * it, like SMB3's cleared panels.
+   */
+  private checkCard(slug: string, world: number, p: { x: number; y: number }) {
+    const s = K / MAP_TEX;
+    // the ground under the tile covers the map's own numbered tile while it turns
+    this.add.image(p.x, p.y, CARDS, card(world, 'ground')).setScale(s);
+    const check = this.add.image(p.x, p.y, CARDS, card(world, 'check')).setScale(s);
+    if (progress.flipped.includes(slug)) return;
+    progress.flipped.push(slug);
+    saveProgress();
+    // you come back standing on it, so it turns above the hero, then settles under
+    const tile = this.add.image(p.x, p.y, CARDS, card(world, 'tile')).setScale(s).setDepth(11);
+    check.setScale(0, s).setDepth(11).setY(p.y - 4);
+    this.tweens.chain({
+      tweens: [
+        { targets: tile, y: p.y - 4, delay: 550, duration: 140, ease: 'Sine.easeOut' },
+        { targets: tile, scaleX: 0, scaleY: s * 1.08, duration: 150, ease: 'Sine.easeIn', onComplete: () => sfx.coin() },
+        { targets: check, scaleX: s, scaleY: { from: s * 1.08, to: s }, duration: 220, ease: 'Back.easeOut' },
+        {
+          targets: check,
+          y: p.y,
+          delay: 250,
+          duration: 160,
+          ease: 'Sine.easeIn',
+          onComplete: () => {
+            tile.destroy();
+            check.setDepth(0);
+          },
+        },
+      ],
+    });
   }
 
   private isOpen(n: MapNode) {

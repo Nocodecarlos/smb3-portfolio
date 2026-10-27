@@ -20,6 +20,8 @@ interface Progress {
   mapNode: string;
   /** Picked on the title screen. */
   hero: Hero;
+  /** Cleared worlds whose map tile has already flipped to the check card. */
+  flipped: string[];
 }
 
 const KEY = 'smb3.progress';
@@ -28,9 +30,12 @@ function load(): Progress {
   try {
     const p = JSON.parse(localStorage.getItem(KEY) ?? '');
     // 'female' is the helmet hero's id from before the heroes were renamed
-    if (p && Array.isArray(p.cleared)) return { cleared: p.cleared, coins: p.coins ?? 0, mapNode: p.mapNode ?? 'start', hero: p.hero === 'helmet' || p.hero === 'female' ? 'helmet' : 'hat' };
+    if (p && Array.isArray(p.cleared)) {
+      const hero = p.hero === 'helmet' || p.hero === 'female' ? 'helmet' : 'hat';
+      return { cleared: p.cleared, coins: p.coins ?? 0, mapNode: p.mapNode ?? 'start', hero, flipped: Array.isArray(p.flipped) ? p.flipped : [] };
+    }
   } catch {}
-  return { cleared: [], coins: 0, mapNode: 'start', hero: 'hat' };
+  return { cleared: [], coins: 0, mapNode: 'start', hero: 'hat', flipped: [] };
 }
 
 export const progress: Progress = load();

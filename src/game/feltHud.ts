@@ -7,8 +7,9 @@ import { FIELD, WIDTH, progress } from './state';
 const EXTRA = WIDTH - 320;
 const CARD_X = 230 + EXTRA;
 const COIN_X = 179 + EXTRA;
-/** The app icon on a map stop: nearly the bar's full height. */
-const STOP_ICON = 22;
+/** The app icon on a map stop: as tall as the two text rows beside it, inside the dashed outline. */
+const STOP_ICON = 16;
+const STOP_ICON_Y = FIELD + 14.25;
 import { px } from './text';
 
 // The felt status bar (Figma: ui-felt/status-bar) for courses that render
@@ -115,11 +116,11 @@ export class FeltStatusBar {
     this.chapterIcon = undefined;
     let x = 10;
     if (icon && this.scene.textures.exists(icon)) {
-      const img = this.scene.add.image(8 + STOP_ICON / 2, FIELD + 15, roundedIcon(this.scene, icon)).setDisplaySize(STOP_ICON, STOP_ICON);
+      const img = this.scene.add.image(10 + STOP_ICON / 2, STOP_ICON_Y, roundedIcon(this.scene, icon)).setDisplaySize(STOP_ICON, STOP_ICON);
       this.root.add(img);
       this.chapterIcon = img;
       this.scene.tweens.add({ targets: img, scale: { from: img.scale * 1.25, to: img.scale }, duration: 320, ease: 'Back.easeOut' });
-      x = 8 + STOP_ICON + 6;
+      x = 10 + STOP_ICON + 5;
     }
     this.worldText.setText(world).setX(x);
     this.line2.setText(title).setX(x);
