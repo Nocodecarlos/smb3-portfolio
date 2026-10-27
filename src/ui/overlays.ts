@@ -224,6 +224,45 @@ export function showLetter(): Promise<void> {
 
 // ---------- Quick view: the whole portfolio as a plain readable page ----------
 
+/** **bold**, `code` and [links](https://…) inside a line of article text. */
+function inline(s: string): string {
+  return esc(s)
+    .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1 ↗</a>');
+}
+
+/**
+ * A world's full case study (`World.article`): a small Markdown subset.
+ * Blocks are separated by blank lines: ## and ### headings, "> " quotes,
+ * "- " and "1. " lists, a "| a | b |" table, and ![caption](path) images.
+ */
+function articleHtml(md: string): string {
+  return md
+    .trim()
+    .split(/\n{2,}/)
+    .map((block) => {
+      const lines = block.split('\n');
+      const first = lines[0];
+      if (first.startsWith('### ')) return `<h4>${inline(first.slice(4))}</h4>`;
+      if (first.startsWith('## ')) return `<h3>${inline(first.slice(3))}</h3>`;
+      const img = /^!\[(.*)\]\((.+)\)$/.exec(first);
+      if (img) return `<figure><img loading="lazy" src="${esc(resolveSrc(img[2]))}" alt="${esc(img[1])}"><figcaption>${inline(img[1])}</figcaption></figure>`;
+      if (lines.every((l) => l.startsWith('>'))) return `<blockquote>${inline(lines.map((l) => l.replace(/^>\s?/, '')).join(' '))}</blockquote>`;
+      if (lines.every((l) => /^\s*[-•]\s+/.test(l))) return `<ul>${lines.map((l) => `<li>${inline(l.replace(/^\s*[-•]\s+/, ''))}</li>`).join('')}</ul>`;
+      if (lines.every((l) => /^\d+\.\s+/.test(l))) return `<ol>${lines.map((l) => `<li>${inline(l.replace(/^\d+\.\s+/, ''))}</li>`).join('')}</ol>`;
+      if (lines.every((l) => l.startsWith('|'))) {
+        const cells = (l: string) => l.replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
+        const [head, , ...rows] = lines;
+        return `<div class="qv-table"><table><thead><tr>${cells(head).map((c) => `<th>${inline(c)}</th>`).join('')}</tr></thead><tbody>${rows
+          .map((r) => `<tr>${cells(r).map((c) => `<td>${inline(c)}</td>`).join('')}</tr>`)
+          .join('')}</tbody></table></div>`;
+      }
+      return `<p>${lines.map(inline).join('<br>')}</p>`;
+    })
+    .join('');
+}
+
 function beatHtml(b: Beat): string {
   switch (b.type) {
     case 'copy':
@@ -264,11 +303,17 @@ export function showQuickView(focus?: string) {
           <h2>${esc(w.title)}</h2>
           <p class="qv-tagline">${esc(w.tagline)}</p>
           <p class="qv-role"><b>Role:</b> ${esc(w.role)}</p>
-          ${w.beats.map(beatHtml).join('')}
+          ${
+            // the full case study when there is one; otherwise the game's beats, read in order
+            w.article
+              ? `<div class="qv-article">${articleHtml(w.article)}</div>
+          <section class="qv-summary">${w.links.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>`).join(' ')}</section>`
+              : `${w.beats.map(beatHtml).join('')}
           <section class="qv-summary"><h3>Outcome</h3>${richText(w.summary)}
             ${w.outcomes.length ? `<ul>${w.outcomes.map((o) => `<li>${esc(o)}</li>`).join('')}</ul>` : ''}
             ${w.links.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>`).join(' ')}
-          </section>
+          </section>`
+          }
         </article>`,
         )
         .join('')}

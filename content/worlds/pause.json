@@ -9,17 +9,18 @@
   "platform": "iOS · Screen Time API",
   "theme": "sky",
   "card": "star",
-  "summary": "I designed, shipped and iterated a screen-time app that puts a short puzzle in front of distracting apps. Solo, with Claude Code as my engineering partner, and analytics to find where the design was losing people.",
+  "summary": "I built Pause, an iOS app that puts a short puzzle in front of the apps you scroll on autopilot. Solo, with Claude Code as my engineering partner and analytics to show me where people quit.",
   "outcomes": [
-    "10+ puzzle types on one shared design system, plus seasonal themes",
-    "Downloads +170% after a metadata update, then a funnel analysis that moved the focus to week-one retention",
-    "Dead ends and onboarding drop-offs fixed; D7 gate retention 16% now, 30% is the target"
+    "10+ puzzles on one shared shell, plus seasonal themes",
+    "Downloads up 170%, mostly from a $500 Apple Search Ads test",
+    "Found the real leak: week one. D7 gate retention is 16%, the target is 30%"
   ],
   "lessons": [
     "Design the failure state first",
-    "Systems beat screens",
-    "AI changes the bottleneck, not the job"
+    "One system beats ten screens",
+    "AI made building cheap. Knowing what's right is still the job"
   ],
+  "article": "I was spending 9 hours a day on Instagram. Screen Time limits got me down to one, but the limit sheet always had an \"Ignore Limit\" button, and one tap put me right back in the feed.\n\nSo I built Pause. It puts a short puzzle in front of the apps you choose. Solve it and you're in. You can still scroll; you just have to decide to.\n\nI designed it, built it with Claude Code as my engineering partner, shipped it, and I'm still iterating. Downloads went up 170%. Then I found out people were quitting in week one. This is how I got from one to the other.\n\n**Tools:** Figma, Claude Code, PostHog, App Store Connect, Applyra\n\n## 1. The problem\n\nScreen Time limits work right up until you need them. The pull is strongest exactly when you're worst at holding your own line, and the way out is one tap away. I knew I was doomscrolling and I did it anyway.\n\n![One tap to bypass: the iOS Time Limit screen](content/pause/easy-to-bypass.jpg)\n\nThe question I kept coming back to:\n\n> How much friction is enough to break autopilot, without making people feel punished or locked out of their own phone?\n\nToo little and it's a toothless timer. Too much and people delete the app.\n\n## 2. The first call: block it or slow it down\n\nThe obvious version of this app is a hard block: a timer that locks the app until it runs out. It's strong, but it feels like punishment, and people delete apps that punish them.\n\nI went with a quick puzzle instead. It's enough to interrupt autopilot without locking anyone out. Opening Instagram becomes a choice you make, not a reflex.\n\n## 3. Four rules I used to say yes or no\n\n1. **A pause, not a punishment.** Warm gradients, soft glass and calm copy. No red warning screens.\n2. **Not every app needs the same speed bump.** You set the difficulty per app, so the ones that pull hardest get a longer slowdown.\n3. **One shell, many games.** The puzzles change and everything around them stays the same, so you learn it once.\n4. **Don't collect what I don't need.** Analytics are counts only. Which apps you block and anything you type stay on your phone.\n\n![Friction per app: the apps that pull hardest get the harder puzzle](content/pause/puzzle-difficulty.jpg)\n\n## 4. The puzzle gate\n\nThis is where I spent most of my design time. The gate has to slow you down without turning into one more thing to fight.\n\n### One shell for every puzzle\n\nI started with Word Jumble and kept at it until it felt right. Then I wrote down what made it work and made that the rule for every puzzle after it:\n\n- A blue to warm amber gradient with a faint scribble texture\n- A top bar with the puzzle name and a close button\n- A Young Serif title at 24pt with a quiet subtitle like \"Round 1 of 3\"\n- 56×56 glass tiles with a 4pt radius, and a dark overlay on the active one\n- A success haptic when you're right, an error haptic and a shake when you're wrong\n\nOnly the game area changes. That's why Sixdoku makes sense in a few seconds even the first time you see it, and it's how I got to 10+ puzzles without the app turning into a mess.\n\n![Every puzzle in the same shell](content/pause/all-puzzles-same-shell.jpg)\n\n### Cutting the Mini Crossword\n\nThe first lineup had a Mini Crossword. It showed the same clue every time, with no hints. A real crossword needs a fill algorithm and a clue database, and that's too much for one person.\n\nSo I cut it and put Word Search in its place: a new 8×8 board every time from a list of calm words, four directions, no timer and no way to fail. The gate can show up many times a day, and a puzzle that repeats is worse than no puzzle.\n\n### Designing the failure state\n\nThe first Word Jumble could trap you. Get the word wrong and there was no way out, right when you were already annoyed. I wasn't logging wrong answers yet, so I only found it when the analytics showed a drop-off there.\n\n![PostHog: the Word Jumble funnel](content/pause/mvql5muo-screenshot-2026-10-27-at-6.11.40-am.jpg)\n\nWhat I changed:\n\n- Retries are free\n- After the first miss, \"Show word\" gives you the answer and then a new word\n- Anagrams count as correct\n- A \"Mix letters\" button to shuffle\n\nIf someone is going to get stuck, it'll be when they're frustrated. That's the screen I design first now.\n\n![Word Jumble after the fixes, with Mix letters and Show word](content/pause/mvqlktxv-screenshot-2026-10-27-at-6.22.49-am.jpg)\n\n### Working with what Apple gives you\n\nApple's Screen Time API is locked down on purpose. App names and icons come back as private tokens, categories can't be opened up to show the apps inside, and the system label ignores custom fonts.\n\nInstead of faking a clean list, the dashboard shows app tiles and category tiles side by side. I found a layout order that gets the system title to match my caption size (give it room, scale it, then constrain it) and wrote the rule down in the code so a later change doesn't break it.\n\n## 5. Seasonal themes\n\nI wanted the app to feel alive and give people a reason to come back, without building a new app every season. The brief to myself: change the accent, not the app.\n\nSo I built a SeasonalTheme system (gradients, accent colors, fonts and decor) that resolves once on launch.\n\n- **Halloween:** purple gradients, the Metal Mania display font, a moon, bats and webs, a new splash and puzzle thumbnails, and a Memory Match puzzle with a seasonal deck.\n- **Thanksgiving:** a new theme and app icon, an embossed splash wordmark, and a Gratitude puzzle.\n\n![The dashboard in its default, Halloween and Thanksgiving themes](content/pause/apps-season-theme.jpg)\n\nGratitude asks for three things you're grateful for, each at least 5 characters and all different. The answers stay on your phone, and later reminders quote one back to you. Analytics only log that you finished, never what you wrote. It's the puzzle where the pause is supposed to feel good.\n\nA few rules kept it consistent: text on the gradient is white, cards keep dark text, and the code is the source of truth. The Figma puzzles are approximations.\n\n## 6. Onboarding and the paywall\n\nOnboarding is where my idea of the flow and what people actually got through were furthest apart.\n\nThe ads made it obvious. Most of my first downloads came from a $500 Apple Search Ads campaign, and PostHog showed where those people stopped:\n\n- If you denied Screen Time or Notifications, you got stuck. Screen Time had no way back, because iOS doesn't put a Screen Time switch on the app's Settings page.\n- A lot of people dropped at app selection, a system picker with no context at all.\n\nWhat I changed:\n\n- A \"Try Again\" button after a denied permission, and \"Open Settings\" where iOS allows it\n- A Choose Apps screen before the picker: \"Pick the apps that take up your screen time. Pause steps in before you open them.\"\n- A shorter order: a primer, Screen Time (Step 1 of 2), Notifications (Step 2 of 2), then app selection\n- A \"Heads up\" box that explains why Screen Time access matters before iOS asks\n- Trial first: 7 days free, a reminder on day 5 (two days before it renews) that I disclose during the notifications step, and a free tier after the trial ends\n\n![The new onboarding](content/pause/mvqlboxq-screenshot-2026-10-27-at-6.16.29-am.jpg)\n\nSwitching to trial first meant \"No credit card\" wasn't true anymore. It was in the Figma hero pills, the screenshot headlines and the end card of the preview video. I changed every one to \"7 days free · Cancel anytime.\" A change isn't done if the screenshots still say something else.\n\n## 7. How I work with AI\n\nI built Pause solo, with Claude Code as my engineering partner. I own the problem, the taste and what ships. Claude turns my Figma frames into SwiftUI, reviews the code for risk, tech debt and drift from the design system, sets up the analytics, and checks that builds pass. I test everything on my phone.\n\nThe loop:\n\n1. **Design it in Figma first.** Claude reads the exact frame through the Figma MCP, so nothing gets rebuilt from my memory of it.\n2. **One thing at a time.** One puzzle, one screen, one detail per pass, so my review stays sharp.\n3. **Test on my phone.** I send back how it feels (\"too clunky\", \"looks great\") with screenshots, and I make the call.\n4. **Write the decision down,** so the next session starts with context instead of a re-explanation.\n\n![Working alongside the simulator, with design feedback](content/pause/emulator-and-design-feedback.jpg)\n\nTwice it changed what I did:\n\n- I asked it to check my analytics and it found I was tracking the wrong things. `puzzle_reset` meant someone tapped Reset, not that they got the answer wrong. `upgraded_to_premium` fired when someone started a trial and never on a real payment. I would've planned the roadmap on bad data.\n- When I moved to trial first, it pointed out that \"No credit card\" would be false everywhere it appeared. That's where the cleanup in section 6 came from.\n\nAI made it cheap to act on my judgment. It didn't replace it. The question used to be whether I could build something. Now it's whether I know what's worth building and can tell when it's right, and that's still the design job.\n\n## 8. Getting it in front of people\n\nI also own everything that gets people to the app:\n\n- **try-pause.com,** designed and built from scratch after I left Webflow, hosted on GitHub Pages. It's written in first person (\"I built\") on purpose. It's one person, and I didn't want it to pretend to be a team.\n- **The App Store listing:** screenshot sets and a preview video for each seasonal release, plus keyword research.\n- **Paid:** a $500 Apple Search Ads campaign.\n- **SEO:** GA4 and Search Console, a canonical fix, an internal-linking pass, and blog posts comparing Pause with other screen time apps.\n- **A public roadmap** where people vote on what I build next.\n\n![try-pause.com in its Halloween theme](content/pause/marketing-site-halloween.jpg)\n\n![The public roadmap, with votes](content/pause/public-roadmap-votes.jpg)\n\n## 9. Results\n\nPause is early and the numbers are small. What matters is what they changed.\n\n### Downloads went up, but not from keywords\n\nThree weeks before and after v1.3, which changed the title and keywords:\n\n| Metric | Before | After | Change |\n|---|---|---|---|\n| Impressions | 775 | 1,840 | +137% |\n| Product page views | 124 | 323 | +160% |\n| Conversion rate | 5.67% | 6.45% | +0.78 pts |\n| First-time downloads | 27 | 73 | +170% |\n\nI wanted to credit the new metadata. But most of those downloads came from the Apple Search Ads campaign, and Applyra showed only 1 of my 13 tracked keywords ranking at all. So I stopped working on metadata and moved on.\n\nI also noticed Web Referrer traffic showing zero while the site was live, so that tracking needs fixing.\n\n![App Store Connect: acquisition, the latest view (newer than the three weeks in the table)](content/pause/appstore-connect-data.jpg)\n\n![Applyra: keyword ranks stayed flat](content/pause/applyra.jpg)\n\n### The real problem was week one\n\nThe paid installs made the math clear. It cost about $4.33 to get an install, and each download was worth about $1.14, so every paid install lost about $3. Paying subscribers were still in single digits. Buying more installs would only lose more money.\n\nMarketing wasn't the leak. Week one was.\n\nThe number I watch now is D7 gate retention: people who open a puzzle 7 or more days after their first one. It's 16%. The target is 30%.\n\n![PostHog: weekly retention by cohort](content/pause/posthog-roadmap.jpg)\n\n### What I changed\n\n- Removed the Word Jumble dead ends (section 4)\n- Fixed the onboarding drop-offs (section 6)\n- Cleaned up the data: an `is_internal` flag so my own testing doesn't count, a `first_launch` property, and subscription events that come from StoreKit instead of guesses in the app\n- Set up the trial-first pricing test and wrote down what a win looks like before launch, so I can't explain the result away afterward\n- Added onboarding session replay with text, images and the app picker masked, and updated the privacy policy and App Privacy label before it shipped\n\n### What's next\n\nRelease 1.7 on Nov 1 is the test: do the Word Jumble fixes and the new onboarding move D7 gate retention? I'll update this with the numbers, even if they barely move.\n\n## 10. What I learned\n\n- **Design the failure state first.** That's where people are when they quit.\n- **One system beats ten screens.** The shell is why 10+ puzzles still feel like one app.\n- **Cut early.** Pause is better without the crossword.\n- **Measure what you design.** Without onboarding data I'd still think marketing was the problem.\n- **Stop when the data says stop.** The keywords didn't move, so I moved on.\n- **AI made building cheap.** Knowing what's right is still the job.",
   "links": [
     {
       "label": "try-pause.com",
@@ -63,7 +64,7 @@
         "alt": "iOS Time Limit screen with an Ignore Limit button"
       },
       "headline": "One tap to bypass",
-      "body": "Screen Time limits are easy to bypass by simply tapping “Ignore Limit.” Temptation hits when people are least able to enforce their own rules, so people know they're doomscrolling and do it anyway."
+      "body": "I was spending 9 hours a day on Instagram. Screen Time got me down to one, but every limit came with an \"Ignore Limit\" button. One tap and I was back in the feed."
     },
     {
       "id": "p-hmw",
@@ -75,7 +76,7 @@
         "y": 19
       },
       "headline": "How might we...",
-      "body": "…add enough friction to interrupt autopilot, without making people feel punished or locked out of their own phone?\n\nToo little friction is a toothless timer. Too much and people delete the app."
+      "body": "...add enough friction to break autopilot, without making people feel punished or locked out of their own phone?\n\nToo little and it's a toothless timer. Too much and people delete the app."
     },
     {
       "id": "p-friction",
@@ -92,17 +93,17 @@
           15
         ]
       },
-      "question": "How much friction is the right amount?",
+      "question": "Block it or slow it down?",
       "optionA": {
         "label": "Hard block",
-        "body": "Lock the app behind a timer. Strong, but it feels like punishment, and people delete apps that punish them."
+        "body": "A timer that locks the app. Strong, but it feels like punishment, and people delete apps that punish them."
       },
       "optionB": {
         "label": "Quick puzzle",
-        "body": "A short puzzle before the app opens: enough to interrupt autopilot, without locking anyone out."
+        "body": "A short puzzle before the app opens. Enough to break autopilot, and you're still in charge."
       },
       "chosen": "B",
-      "why": "A puzzle turns the scroll into a choice."
+      "why": "Opening Instagram becomes a choice you make, not a reflex."
     },
     {
       "id": "p-principles",
@@ -117,8 +118,8 @@
         "src": "content/pause/all-puzzles-same-shell.jpg",
         "caption": "Every puzzle, one shared shell"
       },
-      "headline": "One shell, many games",
-      "body": "- A pause, not a punishment: warm gradients, glass, calm copy\n- Varied difficulty: a speed bump for some apps, a longer slowdown for others\n- One aesthetic for every puzzle, so you learn it once\n- Dont collect any data I don't need"
+      "headline": "Four rules",
+      "body": "- A pause, not a punishment\n- The apps that pull hardest get the harder puzzle\n- One shell, many games: learn it once\n- Don't collect what I don't need"
     },
     {
       "id": "p-principles-img",
@@ -129,7 +130,7 @@
         "at": 46
       },
       "src": "content/pause/puzzle-difficulty.jpg",
-      "caption": "Friction per app: pick the difficulty"
+      "caption": "Friction per app: the apps that pull hardest get the harder puzzle"
     },
     {
       "id": "p-deadends",
@@ -141,11 +142,11 @@
         "y": 22
       },
       "image": {
-        "caption": "Word Jumble, after the fixes",
+        "caption": "PostHog: the Word Jumble funnel",
         "src": "content/pause/mvql5muo-screenshot-2026-10-27-at-6.11.40-am.jpg"
       },
       "headline": "No more dead ends",
-      "body": "The first, free puzzle, Word Jumble trapped people after a wrong answer, right when they were already frustrated. Analytics confirmed the drop-off.\n\nHow I fixed it:\n\n- Free retries\n- Show word after a miss\n- Anagrams count\n- A Mix letters button",
+      "body": "The first Word Jumble trapped you after a wrong answer, right when you were already annoyed. The analytics showed people dropping right there.\n\nThe fix:\n\n- Free retries\n- Show word after a miss\n- Anagrams count\n- A Mix letters button",
       "note": "Image still to add (Notion §3.3): IMG_0368, Word Jumble after the fixes. Placeholder for now."
     },
     {
@@ -178,14 +179,14 @@
       "question": "Kill or keep the Mini Crossword?",
       "optionA": {
         "label": "Mini Crossword",
-        "body": "Same clue every time, no hints. A real one needs a fill algorithm and a clue database, out of scope solo."
+        "body": "Same clue every time, no hints. A real one needs a fill algorithm and a clue database. Too much for one person."
       },
       "optionB": {
         "label": "Word Search",
-        "body": "A fresh 8×8 board on every gate from a calming-word list. No timer, no fail state."
+        "body": "A fresh 8×8 board every time from a list of calm words. No timer, no way to fail."
       },
       "chosen": "B",
-      "why": "The gate fires many times a day, so a puzzle that repeats is worse than no puzzle."
+      "why": "The gate shows up many times a day. A puzzle that repeats is worse than no puzzle."
     },
     {
       "id": "p-ai",
@@ -201,7 +202,7 @@
         "caption": "Design feedback, built with Claude Code"
       },
       "headline": "How I work with AI",
-      "body": "I own the problem, the taste and every go/no-go. Claude Code turns Figma frames into SwiftUI, audits code and analytics, and checks builds. I test everything on my phone.\n\nAI didn't replace design judgment. It made it cheaper to act on."
+      "body": "I own the problem, the taste and what ships. Claude Code turns my Figma frames into SwiftUI, checks the code and the analytics, and makes sure builds pass. I test everything on my phone.\n\nAI made it cheap to act on my judgment. It didn't replace it."
     },
     {
       "id": "p-ai-img",
@@ -226,7 +227,7 @@
         "POWER-UP: AI PARTNER"
       ],
       "headline": "The working loop",
-      "body": "- Design in Figma first\n- Build one thing at a time\n- Test on my phone\n- Write the decision down\n\nIt even caught bugs in my own analytics: puzzle_reset meant a tap on Reset, not a wrong answer."
+      "body": "- Design it in Figma first\n- One thing at a time\n- Test it on my phone\n- Write the decision down\n\nIt even caught my analytics lying: puzzle_reset meant someone tapped Reset, not that they got it wrong."
     },
     {
       "id": "p-themes",
@@ -242,7 +243,7 @@
         "caption": "Default, Halloween and Thanksgiving themes"
       },
       "headline": "Seasonal themes",
-      "body": "An accent layer, not a re-skin: one set of tokens for gradients, accents, fonts and decor. Halloween added Memory Match. Thanksgiving added Gratitude, where answers never leave the phone."
+      "body": "Change the accent, not the app. One theme system for gradients, colors, fonts and decor. Halloween brought Memory Match. Thanksgiving brought Gratitude, where your answers never leave your phone."
     },
     {
       "id": "p-themes-img",
@@ -260,7 +261,7 @@
       "type": "copy",
       "chapter": "design",
       "headline": "Inside platform constraints",
-      "body": "Screen Time keeps app names and icons as private tokens, and categories can't be expanded. Instead of hiding that, I showed app and category tiles side by side, sized the system title to match my type, and documented the rule in the code."
+      "body": "Apple's Screen Time API hides app names and icons and won't open up categories. Instead of faking a clean list, I show app and category tiles side by side, got the system title to match my type, and wrote the rule down in the code."
     },
     {
       "id": "p-onboarding",
@@ -276,7 +277,7 @@
         "src": "content/pause/mvqlc97p-screenshot-2026-10-27-at-6.16.29-am.jpg"
       },
       "headline": "Onboarding fixes",
-      "body": "Onboarding lost people at permissions and at the app picker.\n\n- Try Again after a denied permission\n- A Choose Apps screen before the picker\n- Fewer, reordered steps\n- A Heads up box before iOS asks\n- Honest trial copy: 7 days free · Cancel anytime",
+      "body": "A $500 Apple Search Ads test brought people in, and PostHog showed where they stopped: a denied permission with no way back, and a system app picker with no context.\n\n- Try Again after a denied permission\n- A Choose Apps screen before the picker\n- Fewer steps, in a better order\n- A Heads up before iOS asks\n- Honest copy: 7 days free · Cancel anytime",
       "note": "Image still to add (Notion §5): the onboarding screenshot. Placeholder for now."
     },
     {
@@ -299,7 +300,7 @@
         "as": "switch"
       },
       "headline": "Plot twist: week one",
-      "body": "Marketing wasn't the leak. Week one was.\n\n- D7 gate retention: 16% now, 30% is the target\n- About $4.33 to get an install, about $1.14 of value per download\n- Paying subscribers: still single digits",
+      "body": "Marketing wasn't the leak. Week one was.\n\n- Each paid install cost $4.33 and was worth $1.14\n- Paying subscribers: still single digits\n- D7 gate retention: 16% now, 30% is the target",
       "note": "Notion 8.4: update the results with the latest numbers once 1.7 ships (Nov 1).",
       "image": {
         "src": "content/pause/free-vs-premium-starts.jpg",
@@ -320,8 +321,8 @@
         "caption": "App Store Connect: acquisition"
       },
       "value": "+170%",
-      "label": "downloads after new metadata",
-      "body": "The large majority of first time downloads once form a $500 AppStore Ads campaign. From which I learned that people are dropping at the choose app screen, led me to correct onboarding and copy.",
+      "label": "downloads in three weeks",
+      "body": "Most of them came from a $500 Apple Search Ads test, not the new keywords. The ads also showed me where people dropped: the Choose Apps screen.",
       "note": "Notion 8.4: update the results with the latest numbers once 1.7 ships (Nov 1)."
     },
     {
@@ -343,7 +344,7 @@
         "as": "room"
       },
       "headline": "Bonus: the honest numbers",
-      "body": "- Impressions 775 → 1,840\n- Page views 124 → 323\n- Conversion 5.67% → 6.45%\n- Downloads 27 → 73\n\nOnly 1 of 13 tracked keywords ranked at all, so I stopped optimising keywords.",
+      "body": "- Impressions 775 → 1,840\n- Page views 124 → 323\n- Conversion 5.67% → 6.45%\n- Downloads 27 → 73\n\nOnly 1 of 13 tracked keywords ranked at all, so I stopped working on keywords.",
       "note": "Notion 8.4: update the results with the latest numbers once 1.7 ships (Nov 1).",
       "image": {
         "src": "content/pause/applyra.jpg",
@@ -362,7 +363,7 @@
       "type": "copy",
       "chapter": "results",
       "headline": "Beyond the app",
-      "body": "- try-pause.com, designed and built from scratch\n- App Store screenshots and a preview video per season\n- GA4, Search Console and comparison posts\n- A roadmap page with a live vote"
+      "body": "- try-pause.com, designed and built from scratch\n- App Store screenshots and a preview video every season\n- A $500 Apple Search Ads test\n- GA4, Search Console and comparison posts\n- A public roadmap people vote on"
     },
     {
       "id": "p-surface-img",
@@ -397,7 +398,7 @@
       "type": "copy",
       "chapter": "results",
       "headline": "What I'd tell another designer",
-      "body": "- Design the failure state first\n- Systems beat screens\n- Cut early\n- Instrument what you design\n- Stay honest with the data\n- AI changes the bottleneck, not the job"
+      "body": "- Design the failure state first\n- One system beats ten screens\n- Cut early\n- Measure what you design\n- Stop when the data says stop\n- AI made building cheap. Knowing what's right is still the job"
     }
   ]
 }

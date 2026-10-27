@@ -397,6 +397,17 @@ body.dev #legend { display: none; }
 .qv-metric > span { font: 800 32px Inter, sans-serif; color: #1878f8; min-width: 120px; }
 .qv-metric p { margin: 2px 0 0; }
 .qv-summary { background: #fff; border-radius: 12px; padding: 4px 20px 16px; margin-top: 28px; }
+/* the long-form case study (World.article) */
+.qv-article h3 { font-size: 22px; margin: 40px 0 8px; letter-spacing: -0.01em; }
+.qv-article h4 { font-size: 17px; margin: 26px 0 4px; }
+.qv-article ul, .qv-article ol { padding-left: 22px; }
+.qv-article li { margin-bottom: 4px; }
+.qv-article blockquote { margin: 18px 0; padding: 2px 0 2px 16px; border-left: 3px solid #1878f8; font-size: 19px; font-weight: 600; color: #222; }
+.qv-article code { font: 0.88em ui-monospace, Menlo, monospace; background: #ebe5d8; padding: 1px 5px; border-radius: 4px; }
+.qv-table { overflow-x: auto; margin: 8px 0 16px; }
+.qv-table table { border-collapse: collapse; width: 100%; font-size: 15px; font-variant-numeric: tabular-nums; }
+.qv-table th, .qv-table td { text-align: left; padding: 7px 10px; border-bottom: 1px solid #ddd5c6; }
+.qv-table th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #666; }
 body.qv-open #stage, body.qv-open #dev-panel { visibility: hidden; }
 
 /* ---------- Dev panel (black and white on purpose) ---------- */

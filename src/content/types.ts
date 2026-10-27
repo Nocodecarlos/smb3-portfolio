@@ -98,6 +98,12 @@ export interface World {
   chapters?: { id: Chapter; at: number; title: string; subtitle: string }[];
   /** Short takeaways for the end card. */
   lessons?: string[];
+  /**
+   * The full case study, read on the Quick View page in place of the beats
+   * (the game tells the short version). A Markdown subset: ## headings,
+   * "- " lists, "> " quotes, | tables |, ![caption](path) images, **bold**.
+   */
+  article?: string;
   beats: Beat[];
 }
 

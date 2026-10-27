@@ -190,6 +190,7 @@ function worldForm(w: World): string {
     ${field('End card summary', 'summary', w.summary, { area: true })}
     ${field('Outcomes (one per line)', 'outcomes', w.outcomes.join('\n'), { area: true, kind: 'lines' })}
     ${field('Links (Label | https://…, one per line)', 'links', w.links.map((l) => `${l.label} | ${l.url}`).join('\n'), { area: true, kind: 'links', rows: 2 })}
+    ${field('Full case study for the Quick View page (## heading, - list, > quote, ![caption](content/…), **bold**; empty = the beats)', 'article', w.article ?? '', { area: true, rows: 14 })}
     <label style="margin-top:20px">Beats: the level, left to right</label>
     ${w.beats.map((b, i) => beatForm(b, i, w.beats.length)).join('')}
     <div class="dev-add">
@@ -264,6 +265,7 @@ function courseForm(w: World): string {
     ${field('What happened (one per line)', 'outcomes', w.outcomes.join('\n'), { area: true, kind: 'lines' })}
     ${field('What I learned (one per line)', 'lessons', (w.lessons ?? []).join('\n'), { area: true, kind: 'lines' })}
     ${field('Links (Label | https://…, one per line)', 'links', w.links.map((l) => `${l.label} | ${l.url}`).join('\n'), { area: true, kind: 'links', rows: 2 })}
+    ${field('Full case study for the Quick View page (## heading, - list, > quote, ![caption](content/…), **bold**; empty = the beats)', 'article', w.article ?? '', { area: true, rows: 14 })}
     <label style="margin-top:20px">Story blocks and billboards, left to right</label>
     ${w.beats.map((b, i) => courseBeatForm(w, b, i, w.beats.length)).join('')}
     <div class="dev-add">
