@@ -9,7 +9,7 @@ import { Player, createControls, held, type Controls } from '../game/Player';
 import { playMusic } from '../game/music';
 import { sfx } from '../game/sfx';
 import { BAR, HEIGHT, WIDTH, markCleared, progress, saveProgress, ui } from '../game/state';
-import { px, wrapChars } from '../game/text';
+import { px } from '../game/text';
 import { devBus } from '../ui/devBus';
 import { setDevMode } from '../ui/devmode';
 import { showEndCard } from '../ui/overlays';
@@ -64,6 +64,10 @@ interface Block {
   tx: number;
   ty: number;
 }
+/** A stomped turtle's shell: resting where it was stomped, or kicked and sliding. */
+type Shell = 'still' | 'slide';
+/** How fast a kicked shell slides, in px/s (the walkers stroll at 24). */
+const SHELL_SPEED = 150;
 interface Plant {
   sprite: Phaser.GameObjects.Sprite;
   top: number;
@@ -294,8 +298,9 @@ export class CourseScene extends Phaser.Scene {
 
     this.physics.add.collider(this.player, this.solids, (_p, o) => this.touchSolid(o as Phaser.GameObjects.GameObject));
     this.physics.add.collider(this.player, this.semis);
-    this.physics.add.collider(this.enemies, this.solids);
+    this.physics.add.collider(this.enemies, this.solids, undefined, (e, o) => this.shellHits(e as Phaser.Physics.Arcade.Sprite, o as Phaser.GameObjects.GameObject));
     this.physics.add.collider(this.enemies, this.semis);
+    this.physics.add.overlap(this.enemies, this.enemies, (a, b) => this.shellMeets(a as Phaser.Physics.Arcade.Sprite, b as Phaser.Physics.Arcade.Sprite));
     this.physics.add.overlap(this.player, this.enemies, (_p, e) => this.touchEnemy(e as Phaser.Physics.Arcade.Sprite));
     this.physics.add.overlap(this.player, this.coins, (_p, c) => this.collect(c as Phaser.GameObjects.Image));
 
@@ -325,13 +330,29 @@ export class CourseScene extends Phaser.Scene {
     sign.fillStyle(0xfcfcfc).fillRect(x + 2, y + 2, 172, 92);
     sign.fillStyle(0x000000).fillRect(x + 4, y + 4, 168, 88);
     sign.fillStyle(0xfce4a0).fillRect(x + 5, y + 5, 166, 86);
-    px(this, x + 12, y + 12, `WORLD ${this.worldIndex + 1}`, { color: '#d82800' }).setDepth(-1);
-    const titleLines = wrapChars(w.title.toUpperCase(), 19, 2);
-    px(this, x + 12, y + 26, titleLines.join('\n'), { color: '#000' }).setDepth(-1);
-    const subY = y + 28 + titleLines.length * 10 + 2;
-    px(this, x + 12, subY, wrapChars(w.tagline, 26, titleLines.length > 1 ? 2 : 3).join('\n'), { color: '#5c2800', size: 6 }).setDepth(-1);
-    px(this, x + 12, y + 73, w.platform.slice(0, 26), { color: '#2038a0', size: 6 }).setDepth(-1);
-    px(this, x + 12, y + 82, `${w.role}`.slice(0, 26), { color: '#2038a0', size: 6 }).setDepth(-1);
+    // same type as the felt status bar: Luckiest Guy for the heading, Fredoka for the rest
+    const left = x + 12;
+    const width = 150;
+    const text = (ty: number, s: string, font: 'heading' | 'body', size: number, color: string, lines = 1) =>
+      this.add
+        .text(left, ty, s, {
+          fontFamily: font === 'heading' ? '"Luckiest Guy", sans-serif' : '"Fredoka", sans-serif',
+          fontStyle: font === 'heading' ? '' : '600',
+          fontSize: `${size}px`,
+          color,
+          lineSpacing: font === 'heading' ? -1 : 0,
+          wordWrap: { width },
+          maxLines: lines,
+        })
+        .setResolution(Z)
+        .setDepth(-1);
+    const world = text(y + 11, `WORLD ${this.worldIndex + 1}`, 'heading', 10, '#d82800');
+    const title = text(world.y + world.height, w.title.toUpperCase(), 'heading', 13, '#000000', 2);
+    // platform and role sit on the bottom edge; the tagline gets whatever room is left between
+    const role = text(y + 88, w.role, 'body', 7, '#2038a0').setOrigin(0, 1);
+    const platform = text(role.y - role.height, w.platform, 'body', 7, '#2038a0').setOrigin(0, 1);
+    const tagline = text(title.y + title.height + 1, w.tagline, 'body', 7.5, '#5c2800', 4);
+    while (tagline.getBottomLeft().y! > platform.getTopLeft().y! - 3 && tagline.style.maxLines > 1) tagline.setMaxLines(tagline.style.maxLines - 1);
   }
 
   // ---------- Secret world ----------
@@ -546,6 +567,17 @@ export class CourseScene extends Phaser.Scene {
     for (const e of this.enemies.getChildren() as Phaser.Physics.Arcade.Sprite[]) {
       if (!e.active || e.getData('dead')) continue;
       const b = e.body as Phaser.Physics.Arcade.Body;
+      const shell = e.getData('shell') as Shell | undefined;
+      if (shell) {
+        // a kicked shell bounces off walls and pipes and falls off ledges; a resting one stays put
+        if (e.y > this.H + 32) e.destroy();
+        else if (shell === 'still') e.setVelocityX(0);
+        else {
+          const dir = b.blocked.left ? 1 : b.blocked.right ? -1 : (e.getData('dir') as number);
+          e.setData('dir', dir).setVelocityX(dir * SHELL_SPEED);
+        }
+        continue;
+      }
       let dir = Math.sign(b.velocity.x) || -1;
       if (b.blocked.left) dir = 1;
       else if (b.blocked.right) dir = -1;
@@ -585,7 +617,7 @@ export class CourseScene extends Phaser.Scene {
   private bumpFromBelow(b: Block) {
     const s = b.sprite;
     sfx.bump();
-    if (b.kind !== 'pswitch') this.tweens.add({ targets: s, y: s.y - 5, duration: 70, yoyo: true });
+    this.tweens.add({ targets: s, y: s.y - 5, duration: 70, yoyo: true });
     // Story blocks open their reading card on every bump (so they can be re-read); read ones dim a little.
     if (b.kind === 'story') {
       const open = this.story.storyAt(b.tx, b.ty);
@@ -607,6 +639,11 @@ export class CourseScene extends Phaser.Scene {
       s.setTexture(FELT, 'empty');
       if (this.player.powered) this.popCoin(s.x, s.y - 12);
       else this.spawnFeather(s.x, s.y - 8, true);
+    } else if (b.kind === 'pswitch') {
+      // the P block only works from below: the bricks turn to coins
+      b.used = true;
+      s.setTexture(FELT, 'empty');
+      this.pressSwitch();
     }
   }
 
@@ -616,11 +653,6 @@ export class CourseScene extends Phaser.Scene {
       this.player.spring(300, 470);
       sfx.select();
       this.tweens.add({ targets: s, y: s.y + 4, duration: 60, yoyo: true });
-    } else if (b.kind === 'pswitch' && !b.used) {
-      b.used = true;
-      s.setTexture(FELT, 'pswitch-flat');
-      (s.body as Phaser.Physics.Arcade.StaticBody).enable = false;
-      this.pressSwitch();
     }
   }
 
@@ -653,18 +685,107 @@ export class CourseScene extends Phaser.Scene {
     if (e.getData('dead') || this.busy) return;
     const pb = this.player.body;
     const eb = e.body as Phaser.Physics.Arcade.Body;
+    const shell = e.getData('shell') as Shell | undefined;
+    // one stomp per landing: the shell shrinks under you, so the next physics step can still overlap it
+    if (this.time.now - (e.getData('stompedAt') ?? -1e9) < 200) return;
     if (pb.velocity.y > 0 && pb.bottom - eb.top < 10) {
-      e.setData('dead', true);
-      e.anims.stop();
-      this.tweens.killTweensOf(e);
-      (e.getData('rig') as HeroRig | undefined)?.root.destroy();
-      e.setData('rig', undefined);
-      e.setVisible(true).setAngle(0).setTexture(FELT, e.getData('walker') ? 'hiker-flat' : 'bug-flat');
-      eb.enable = false;
+      e.setData('stompedAt', this.time.now);
       sfx.stomp();
       this.player.bounce();
-      this.time.delayedCall(500, () => e.destroy());
-    } else this.player.hurt(e.x);
+      if (!e.getData('walker')) {
+        e.setData('dead', true);
+        e.anims.stop();
+        this.tweens.killTweensOf(e);
+        e.setAngle(0).setTexture(FELT, 'bug-flat');
+        eb.enable = false;
+        this.time.delayedCall(500, () => e.destroy());
+      } else if (!shell) this.hideInShell(e);
+      // stomp the left side and it slides right, the right side and it slides left
+      else if (shell === 'still') this.kickShell(e, this.player.x < e.x ? 1 : -1);
+      else this.stopShell(e);
+      return;
+    }
+    // a resting shell is harmless, and a kicked one gives you a moment to get clear
+    if (shell === 'still' || (shell === 'slide' && this.time.now - e.getData('kickedAt') < 250)) return;
+    this.player.hurt(e.x);
+  }
+
+  /** First stomp: the turtle pulls into its shell and stays put. */
+  private hideInShell(e: Phaser.Physics.Arcade.Sprite) {
+    const eb = e.body as Phaser.Physics.Arcade.Body;
+    const bottom = eb.bottom;
+    (e.getData('rig') as HeroRig | undefined)?.root.destroy();
+    e.setData('rig', undefined).setData('shell', 'still');
+    e.setVisible(true).setFlipX(false).setTexture(FELT, 'hiker-flat');
+    // the felt shell's dome fills about 13x8.5 px of its 16px frame, sitting 3.5px above the bottom edge
+    eb.setSize(13 * ART, 8.5 * ART).setOffset(1.5 * ART, 4 * ART);
+    e.setY(bottom - 4.5);
+    eb.reset(e.x, e.y);
+    eb.setVelocity(0, 0);
+  }
+
+  private kickShell(e: Phaser.Physics.Arcade.Sprite, dir: 1 | -1) {
+    e.setData('shell', 'slide').setData('dir', dir).setData('kickedAt', this.time.now);
+    e.setVelocityX(dir * SHELL_SPEED);
+  }
+
+  private stopShell(e: Phaser.Physics.Arcade.Sprite) {
+    e.setData('shell', 'still');
+    e.setVelocityX(0);
+  }
+
+  /**
+   * A sliding shell against a block (the process callback of the enemy-solid
+   * collider). Bricks it meets side-on break and it keeps going; ? and item
+   * blocks give up what they hold and it bounces back. Returns whether to collide.
+   */
+  private shellHits(e: Phaser.Physics.Arcade.Sprite, o: Phaser.GameObjects.GameObject) {
+    const b = this.blocks.get(o);
+    if (!b || e.getData('shell') !== 'slide') return true;
+    const eb = e.body as Phaser.Physics.Arcade.Body;
+    const ob = b.sprite.body as Phaser.Physics.Arcade.StaticBody;
+    // riding along the top of a row of blocks isn't a hit
+    if (eb.bottom <= ob.top + 3 || eb.top >= ob.bottom - 3) return true;
+    if (b.kind === 'brick') {
+      this.breakBrick(b);
+      return false;
+    }
+    if (b.kind === 'q' || b.kind === 'item') this.bumpFromBelow(b);
+    return true;
+  }
+
+  /** A brick smashed by a shell: four felt pieces fly off and it's gone for good. */
+  private breakBrick(b: Block) {
+    const s = b.sprite;
+    this.blocks.delete(s);
+    (s.body as Phaser.Physics.Arcade.StaticBody).enable = false;
+    s.setVisible(false);
+    // the physics step is mid-collision here: let it finish before removing the sprite
+    this.time.delayedCall(0, () => s.destroy());
+    sfx.bump();
+    for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+      const piece = feltImage(this, s.x + dx * 4, s.y + dy * 4, 'brick2').setScale(0.4 / ART).setDepth(8);
+      this.tweens.add({ targets: piece, x: piece.x + dx * 18, y: piece.y + 40, angle: dx * 200, duration: 600, ease: 'Quad.easeIn', onComplete: () => piece.destroy() });
+      this.tweens.add({ targets: piece, y: piece.y - 18 + dy * 6, duration: 220, ease: 'Quad.easeOut' });
+    }
+  }
+
+  /** A sliding shell knocks other enemies off the course. */
+  private shellMeets(a: Phaser.Physics.Arcade.Sprite, b: Phaser.Physics.Arcade.Sprite) {
+    if (a.getData('dead') || b.getData('dead')) return;
+    const victim = a.getData('shell') === 'slide' ? b : b.getData('shell') === 'slide' ? a : undefined;
+    if (!victim) return;
+    victim.setData('dead', true);
+    sfx.stomp();
+    this.tweens.killTweensOf(victim);
+    const rig = victim.getData('rig') as HeroRig | undefined;
+    // a turtle tumbles off as its shell, like the rest
+    rig?.root.destroy();
+    if (rig) victim.setTexture(FELT, 'hiker-flat');
+    (victim.body as Phaser.Physics.Arcade.Body).enable = false;
+    victim.setVisible(true).setFlipY(true);
+    this.tweens.add({ targets: victim, y: victim.y - 20, duration: 220, ease: 'Quad.easeOut' });
+    this.tweens.add({ targets: victim, y: this.H + 40, delay: 220, duration: 700, ease: 'Quad.easeIn', onComplete: () => victim.destroy() });
   }
 
   private collect(c: Phaser.GameObjects.Image) {
