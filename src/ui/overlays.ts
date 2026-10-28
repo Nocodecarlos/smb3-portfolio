@@ -203,6 +203,32 @@ export function showEndCard(world: World, iconUrl: string): Promise<void> {
   });
 }
 
+/**
+ * The welcome card: who I am and how the portfolio works. Shown over the map
+ * when a session starts, and again from the About house. Its text is the
+ * site's `about`.
+ */
+export function showIntro(): Promise<void> {
+  const about = getSite().about;
+  const node = el(`
+    <div class="ov ov-story" role="dialog" aria-label="${esc(about.title)}">
+      <article class="story intro-story">
+        <header class="story-head"><span>WELCOME</span></header>
+        <div class="story-text">
+          <h2 class="story-title">${esc(about.title)}</h2>
+          <div class="story-body">${richText(about.body)}</div>
+        </div>
+        <footer class="story-foot"><button class="story-btn" data-close="">ok let's a-go</button></footer>
+      </article>
+    </div>`);
+  const shown = performance.now();
+  return open<void>(node, (e, close) => {
+    // the Enter that left the title screen can still be repeating: ignore keys for a moment
+    if (performance.now() - shown < 500) return;
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') close();
+  });
+}
+
 export function showLetter(): Promise<void> {
   const c = getSite().contact;
   const node = el(`
@@ -310,7 +336,6 @@ export function showQuickView(focus?: string) {
       </div>
     </header>
     <div class="qv-inner">
-      <section class="qv-about"><h2>${esc(site.about.title)}</h2>${richText(site.about.body)}</section>
       ${worlds
         .map((w, i) => {
           const article = w.article ? articleHtml(w.article, w.slug) : null;

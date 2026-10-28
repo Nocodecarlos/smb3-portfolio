@@ -166,8 +166,8 @@ function siteForm(s: Site): string {
     <div class="row"><div>${field('Menu option 1', 'roles.0', s.roles[0])}</div><div>${field('Menu option 2', 'roles.1', s.roles[1])}</div></div>
     ${field('Case studies header: title (under the name; empty = both menu options)', 'title', s.title ?? '')}
     ${field('Year', 'year', s.year)}
-    ${field('About house: title', 'about.title', s.about.title)}
-    ${field('About house: body (blank line = new page)', 'about.body', s.about.body, { area: true, rows: 6 })}
+    ${field('Welcome card and About house: title', 'about.title', s.about.title)}
+    ${field('Welcome card and About house: body (blank line = new paragraph)', 'about.body', s.about.body, { area: true, rows: 8 })}
     ${field('Castle letter (blank line = new paragraph)', 'contact.letter', s.contact.letter, { area: true, rows: 6 })}
     ${field('Sign-off', 'contact.signoff', s.contact.signoff)}
     ${field('Email', 'contact.email', s.contact.email)}

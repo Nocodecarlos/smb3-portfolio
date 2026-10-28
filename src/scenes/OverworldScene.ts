@@ -8,7 +8,7 @@ import { playMusic } from '../game/music';
 import { sfx } from '../game/sfx';
 import { BAR, HEIGHT, WIDTH, progress, saveProgress, ui } from '../game/state';
 import { px } from '../game/text';
-import { showDialog, showLetter, showQuickView } from '../ui/overlays';
+import { showDialog, showIntro, showLetter, showQuickView } from '../ui/overlays';
 import { devBus } from '../ui/devBus';
 import { asset } from '../assets';
 
@@ -26,6 +26,9 @@ const MAP_H = 1384 * K;
 const MAP_TEX = 1.25;
 
 const at = (n: MapNode) => ({ x: n.x * K, y: n.y * K });
+
+/** sessionStorage flag: the welcome card has been shown in this browser session. */
+const INTRO_KEY = 'smb3.intro';
 
 /**
  * World tiles for the flip, cut from the map art (felt/map-cards.webp): one
@@ -129,11 +132,38 @@ export class OverworldScene extends Phaser.Scene {
     cam.fadeIn(250);
     playMusic(this, 'overworld');
 
-    if (!progress.cleared.length && this.current.type === 'start' && !this.registry.get('mapHintShown')) {
-      this.registry.set('mapHintShown', true);
-      const hint = px(this, start.x, start.y + 12, 'WASD + ENTER', { size: 6, color: '#000' }).setOrigin(0.5, 0).setDepth(20);
-      hint.setBackgroundColor('#ffffff').setPadding(2, 2, 2, 1);
-      this.time.delayedCall(4000, () => hint.destroy());
+    const mapHint = () => {
+      if (!progress.cleared.length && this.current.type === 'start' && !this.registry.get('mapHintShown')) {
+        this.registry.set('mapHintShown', true);
+        const hint = px(this, start.x, start.y + 12, 'WASD + ENTER', { size: 6, color: '#000' }).setOrigin(0.5, 0).setDepth(20);
+        hint.setBackgroundColor('#ffffff').setPadding(2, 2, 2, 1);
+        this.time.delayedCall(4000, () => hint.destroy());
+      }
+    };
+    // a new session opens with a welcome card; the controls hint waits until it's dismissed
+    if (this.introDue()) {
+      this.registry.set('introShown', true);
+      try {
+        sessionStorage.setItem(INTRO_KEY, '1');
+      } catch {}
+      // a beat after the map fades in, so the card lands on a visible map
+      this.time.delayedCall(600, () =>
+        void showIntro().then(() => {
+          this.input.keyboard!.resetKeys();
+          mapHint();
+        }),
+      );
+    } else mapHint();
+  }
+
+  /** Once per browser session (a new tab or visit shows it again); `?intro` in the address shows it on every page load. */
+  private introDue() {
+    if (ui.dev || this.registry.get('introShown')) return false;
+    if (new URLSearchParams(location.search).has('intro')) return true;
+    try {
+      return sessionStorage.getItem(INTRO_KEY) !== '1';
+    } catch {
+      return true;
     }
   }
 
@@ -258,7 +288,7 @@ export class OverworldScene extends Phaser.Scene {
     }
     if (n.type === 'step' || n.type === 'lock') return;
     if (n.type === 'castle') await showLetter();
-    else if (n.about) await showDialog(getSite().about.title, getSite().about.body);
+    else if (n.about) await showIntro();
     else if (n.title || n.body) await showDialog(n.title ?? '', n.body ?? '');
     else if (n.type === 'start') {
       await showDialog('Welcome!', 'Walk the roads with WASD and press ENTER on a numbered panel to play that project. Mushroom houses, the bonus panel and the fortress open up as they are built.\n\nIn a hurry? Press Q for Quick View, a plain case-study page.');
