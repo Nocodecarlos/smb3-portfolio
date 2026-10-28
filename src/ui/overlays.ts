@@ -237,18 +237,27 @@ function inline(s: string): string {
  * Blocks are separated by blank lines: ## and ### headings, "> " quotes,
  * "- " and "1. " lists, a "| a | b |" table, and ![caption](path) images.
  */
-function articleHtml(md: string): string {
-  return md
+function articleHtml(md: string, slug: string): { html: string; toc: { id: string; label: string }[] } {
+  const toc: { id: string; label: string }[] = [];
+  const html = md
     .trim()
     .split(/\n{2,}/)
     .map((block) => {
       const lines = block.split('\n');
       const first = lines[0];
       if (first.startsWith('### ')) return `<h4>${inline(first.slice(4))}</h4>`;
-      if (first.startsWith('## ')) return `<h3>${inline(first.slice(3))}</h3>`;
+      if (first.startsWith('## ')) {
+        // every section heading is a stop in the jump links: "3. Designing the happy path" → "Designing the happy path"
+        const text = first.slice(3);
+        const label = text.replace(/^\d+\.\s*/, '').split(':')[0];
+        const id = `qv-${slug}-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
+        toc.push({ id, label });
+        return `<h3 id="${esc(id)}">${inline(text)}</h3>`;
+      }
       const img = /^!\[(.*)\]\((.*)\)$/.exec(first);
       // an empty path is a picture that isn't added yet
-      if (img) return `<figure>${img[2] ? `<img loading="lazy" src="${esc(resolveSrc(img[2]))}" alt="${esc(img[1])}">` : placeholder(img[1])}<figcaption>${inline(img[1])}</figcaption></figure>`;
+      // loaded up front: pictures that pop in later would push the jump-link targets out of place
+      if (img) return `<figure>${img[2] ? `<img src="${esc(resolveSrc(img[2]))}" alt="${esc(img[1])}">` : placeholder(img[1])}<figcaption>${inline(img[1])}</figcaption></figure>`;
       if (lines.every((l) => l.startsWith('>'))) return `<blockquote>${inline(lines.map((l) => l.replace(/^>\s?/, '')).join(' '))}</blockquote>`;
       if (lines.every((l) => /^\s*[-•]\s+/.test(l))) return `<ul>${lines.map((l) => `<li>${inline(l.replace(/^\s*[-•]\s+/, ''))}</li>`).join('')}</ul>`;
       if (lines.every((l) => /^\d+\.\s+/.test(l))) return `<ol>${lines.map((l) => `<li>${inline(l.replace(/^\d+\.\s+/, ''))}</li>`).join('')}</ol>`;
@@ -262,6 +271,7 @@ function articleHtml(md: string): string {
       return `<p>${lines.map(inline).join('<br>')}</p>`;
     })
     .join('');
+  return { html, toc };
 }
 
 function beatHtml(b: Beat): string {
@@ -288,26 +298,31 @@ export function showQuickView(focus?: string) {
   const root = document.getElementById('quickview')!;
   const worlds = getWorlds();
   root.innerHTML = `
+    <div class="qv-band" aria-hidden="true"></div>
     <div class="qv-inner">
       <header>
-        <button class="qv-close" aria-label="Close">✕ Back to the game</button>
-        <h1>${esc(site.name)}</h1>
+        <div class="qv-head-row">
+          <h1>${esc(site.name)}</h1>
+          <button class="qv-close" aria-label="Close">✕ Back to the game</button>
+        </div>
         <p class="qv-roles">${site.roles.map(esc).join(' · ')}</p>
-        <nav>${worlds.map((w, i) => `<a href="#qv-${esc(w.slug)}">W${i + 1} · ${esc(w.title)}</a>`).join('')}</nav>
+        <nav aria-label="Case studies">${worlds.map((w, i) => `<a href="#qv-${esc(w.slug)}">W${i + 1} · ${esc(w.title)}</a>`).join('')}</nav>
       </header>
       <section class="qv-about"><h2>${esc(site.about.title)}</h2>${richText(site.about.body)}</section>
       ${worlds
-        .map(
-          (w, i) => `
+        .map((w, i) => {
+          const article = w.article ? articleHtml(w.article, w.slug) : null;
+          return `
         <article id="qv-${esc(w.slug)}">
           <p class="qv-kicker">World ${i + 1} · ${esc(w.platform)} · ${esc(w.timeline)}</p>
           <h2>${esc(w.title)}</h2>
           <p class="qv-tagline">${esc(w.tagline)}</p>
           <p class="qv-role"><b>Role:</b> ${esc(w.role)}</p>
+          ${article ? `<nav class="qv-toc" aria-label="${esc(w.title)} sections">${article.toc.map((t) => `<a href="#${esc(t.id)}">${esc(t.label)}</a>`).join('')}</nav>` : ''}
           ${
             // the full case study when there is one; otherwise the game's beats, read in order
-            w.article
-              ? `<div class="qv-article">${articleHtml(w.article)}</div>
+            article
+              ? `<div class="qv-article">${article.html}</div>
           <section class="qv-summary">${w.links.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>`).join(' ')}</section>`
               : `${w.beats.map(beatHtml).join('')}
           <section class="qv-summary"><h3>Outcome</h3>${richText(w.summary)}
@@ -315,8 +330,8 @@ export function showQuickView(focus?: string) {
             ${w.links.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>`).join(' ')}
           </section>`
           }
-        </article>`,
-        )
+        </article>`;
+        })
         .join('')}
       <section class="qv-contact"><h2>Say hi</h2>${richText(site.contact.letter)}
         ${site.contact.email ? `<p><a href="mailto:${esc(site.contact.email)}">${esc(site.contact.email)}</a></p>` : ''}
@@ -340,6 +355,22 @@ export function showQuickView(focus?: string) {
   };
   window.addEventListener('keydown', onKey, true);
   root.querySelector('.qv-close')!.addEventListener('click', close);
+  // the jump links scroll this page smoothly (and don't touch the address bar)
+  root.onclick = (e) => {
+    const a = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#"]');
+    const target = a && document.getElementById(a.getAttribute('href')!.slice(1));
+    if (!target) return;
+    e.preventDefault();
+    // stop just under the sticky header, whatever height it has at this width
+    const header = root.querySelector('header')!;
+    const gap = () => header.getBoundingClientRect().bottom + 16;
+    const go = (smooth: boolean) => root.scrollTo({ top: root.scrollTop + target.getBoundingClientRect().top - gap(), behavior: smooth ? 'smooth' : 'auto' });
+    go(!window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    // a picture finishing its load mid-scroll can move the target: land exactly once it settles
+    window.setTimeout(() => {
+      if (Math.abs(target.getBoundingClientRect().top - gap()) > 6) go(false);
+    }, 900);
+  };
   if (focus) requestAnimationFrame(() => document.getElementById(`qv-${focus}`)?.scrollIntoView());
   else root.scrollTop = 0;
 }
