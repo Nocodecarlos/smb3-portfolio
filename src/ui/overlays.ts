@@ -299,15 +299,17 @@ export function showQuickView(focus?: string) {
   const worlds = getWorlds();
   root.innerHTML = `
     <div class="qv-band" aria-hidden="true"></div>
-    <div class="qv-inner">
-      <header>
+    <header class="qv-top">
+      <div class="qv-top-in">
         <div class="qv-head-row">
           <h1>${esc(site.name)}</h1>
           <button class="qv-close" aria-label="Close">✕ Back to the game</button>
         </div>
-        <p class="qv-roles">${site.roles.map(esc).join(' · ')}</p>
+        <p class="qv-roles">${esc(site.title || site.roles.join(' · '))}</p>
         <nav aria-label="Case studies">${worlds.map((w, i) => `<a href="#qv-${esc(w.slug)}">W${i + 1} · ${esc(w.title)}</a>`).join('')}</nav>
-      </header>
+      </div>
+    </header>
+    <div class="qv-inner">
       <section class="qv-about"><h2>${esc(site.about.title)}</h2>${richText(site.about.body)}</section>
       ${worlds
         .map((w, i) => {

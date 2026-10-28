@@ -139,6 +139,8 @@ export interface MapNode {
 export interface Site {
   name: string;
   year: string;
+  /** Shown under the name in the case studies header. Falls back to the two roles. */
+  title?: string;
   roles: [string, string];
   about: { title: string; body: string };
   contact: { letter: string; email: string; linkedin: string; signoff: string };
