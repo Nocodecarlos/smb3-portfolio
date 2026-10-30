@@ -79,7 +79,8 @@ export function getLevel(id: string): CourseLevel | undefined {
 const T = 16;
 /** How long S has to be held on the white platform to flip sides, in ms. */
 const DOOR_HOLD = 2000;
-type Kind = 'q' | 'item' | 'brick' | 'note' | 'super' | 'pswitch' | 'story';
+/** `coin` is a brick hiding a coin: a shell can't break it, it bounces back. `wood` is a plain solid block (stairs). */
+type Kind = 'q' | 'item' | 'brick' | 'coin' | 'wood' | 'note' | 'super' | 'pswitch' | 'story';
 interface Block {
   sprite: Phaser.GameObjects.Sprite;
   kind: Kind;
@@ -322,6 +323,8 @@ export class CourseScene extends Phaser.Scene {
       if (k === 'q') block('q', x, y, 'q2-0');
       else if (k === 'item') block('item', x, y, 'wood');
       else if (k === 'brick') block('brick', x, y, 'brick2');
+      else if (k === 'coin') block('coin', x, y, 'brick2');
+      else if (k === 'wood') block('wood', x, y, 'wood');
       else if (k === 'pswitch') block('pswitch', x, y, 'pswitch');
       else if (k === 'super') {
         // a super note starts hidden: invisible, and only there for a head coming up from below
@@ -893,7 +896,7 @@ export class CourseScene extends Phaser.Scene {
       return;
     }
     if (b.used) return;
-    if (b.kind === 'q') {
+    if (b.kind === 'q' || b.kind === 'coin') {
       b.used = true;
       s.setTexture(FELT, 'empty');
       this.popCoin(s.x, s.y - 12);
@@ -1005,8 +1008,8 @@ export class CourseScene extends Phaser.Scene {
 
   /**
    * A sliding shell against a block (the process callback of the enemy-solid
-   * collider). Bricks it meets side-on break and it keeps going; ? and item
-   * blocks give up what they hold and it bounces back. Returns whether to collide.
+   * collider). Bricks it meets side-on break and it keeps going; ?, item and
+   * coin-brick blocks give up what they hold and it bounces back. Returns whether to collide.
    */
   private shellHits(e: Phaser.Physics.Arcade.Sprite, o: Phaser.GameObjects.GameObject) {
     const b = this.blocks.get(o);
@@ -1019,7 +1022,7 @@ export class CourseScene extends Phaser.Scene {
       this.breakBrick(b);
       return false;
     }
-    if (b.kind === 'q' || b.kind === 'item') this.bumpFromBelow(b);
+    if (b.kind === 'q' || b.kind === 'item' || b.kind === 'coin') this.bumpFromBelow(b);
     return true;
   }
 
