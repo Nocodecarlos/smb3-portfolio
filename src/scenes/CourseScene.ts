@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { ART, FELT, PIPE_INSET, PIPE_RUN, SKY, Z, feltImage, feltOnGround, feltPlatform, feltPost, feltSprite, haze, preloadFelt, setupFelt } from '../art/felt';
 import { HeroRig, preloadHeroes } from '../art/hero';
+import { CAPY, preloadCapy, setupCapy } from '../art/capy';
 import { drawKnit, preloadKnit } from '../art/knit';
 import { getWorld, getWorlds } from '../content/store';
 import type { World } from '../content/types';
@@ -32,6 +33,10 @@ export interface CourseLevel {
   sky: string;
   spawn: [number, number];
   goal: number;
+  /** Tile row of the goal card's centre, when it's set high (default: a hop off the ground). */
+  goalRow?: number;
+  /** A Capy slingshot on the ground, centred on this tile x: hold S on it to pull back, let go to fly straight up. */
+  slingshot?: number;
   ground: [number, number][];
   /** Knit ground with slopes (in place of `ground`): each piece's top edge as [tile x, tiles above the ground row]. */
   terrain?: [number, number][][];
@@ -42,7 +47,8 @@ export interface CourseLevel {
   coins: [number, number][];
   /**
    * Upright pipes are `h` tiles tall; sideways ones (`side` is where the mouth faces) are `w` tiles long and 2 tall.
-   * `warp` drops into the room, `exit` is where you come back out (the warp pipe when there's none).
+   * `warp` drops into the room; `exit` ("room" or "sky") is where you come back out of that area (the warp pipe
+   * when a room has none). A hanging exit pipe drops you out of its mouth.
    */
   pipes: { x: number; y: number; h?: number; w?: number; side?: 'left' | 'right'; capless?: boolean; plant?: boolean; hanging?: boolean; warp?: string; exit?: string }[];
   enemies: [string, number, number][];
@@ -56,7 +62,13 @@ export interface CourseLevel {
    * The secret room: the entry pipe hangs from the ceiling at column `pipe` (row `pipeY`). With `exit`, the way
    * out is a sideways pipe in the left wall at that tile; without, it's off the right edge.
    */
-  room: { id: string; pipe: number; pipeY?: number; exit?: [number, number]; tiles: string[]; coins: [number, number][] };
+  room?: { id: string; pipe: number; pipeY?: number; exit?: [number, number]; tiles: string[]; coins: [number, number][] };
+  /**
+   * A night sky above it all (World 1-3, in Launch the Capy's art), `width` x `height` tiles. A super note block
+   * launches you up into it at column `entry`, through the cloud floor on row `floor`; the pipe at column `pipe`
+   * takes you back down. `moon` is [x, y, size in px].
+   */
+  skySection?: { width: number; height: number; floor: number; entry: number; pipe: number; coins: [number, number][]; moon: [number, number, number] };
 }
 
 const levels = import.meta.glob<CourseLevel>('../../content/levels/*.json', { eager: true, import: 'default' });
@@ -67,11 +79,13 @@ export function getLevel(id: string): CourseLevel | undefined {
 const T = 16;
 /** How long S has to be held on the white platform to flip sides, in ms. */
 const DOOR_HOLD = 2000;
-type Kind = 'q' | 'item' | 'brick' | 'note' | 'pswitch' | 'story';
+type Kind = 'q' | 'item' | 'brick' | 'note' | 'super' | 'pswitch' | 'story';
 interface Block {
   sprite: Phaser.GameObjects.Sprite;
   kind: Kind;
   used?: boolean;
+  /** A super note that hasn't been found: invisible, and only solid from below. */
+  hidden?: boolean;
   /** Tile position, for beats placed behind blocks. */
   tx: number;
   ty: number;
@@ -101,9 +115,18 @@ export class CourseScene extends Phaser.Scene {
   private blocks = new Map<Phaser.GameObjects.GameObject, Block>();
   private plants: Plant[] = [];
   private feathers: Phaser.GameObjects.Sprite[] = [];
-  private warp!: { x0: number; x1: number; top: number };
-  /** Where the room lets you out, when it isn't back up the warp pipe. */
-  private exitPipe?: { x0: number; x1: number; top: number };
+  private warp?: { x0: number; x1: number; top: number };
+  /** Where the room or the sky lets you out (the room's defaults to its warp pipe). */
+  private exits: Partial<Record<'room' | 'sky', { x0: number; x1: number; top: number; bottom: number; hanging: boolean }>> = {};
+  /** The sky section's pipe down. */
+  private skyPipe?: { x0: number; x1: number; top: number };
+  /** Left edge of the sky section, in world px (past the course and any room). */
+  private SX = 0;
+  private inSky = false;
+  /** Shot up by a super note: the sky takes over once you leave the top of the screen. */
+  private skyBound = false;
+  /** The slingshot: where it stands, how far it's pulled back (0..1) and its prompt. */
+  private sling?: { x: number; pull: number; band: Phaser.GameObjects.Graphics; hint: Phaser.GameObjects.Text; art: Phaser.GameObjects.Image };
   private terrain?: Terrain;
   /** The tall white platform: S on top flips to the secret editor world. */
   private door?: { x0: number; x1: number; top: number };
@@ -143,13 +166,15 @@ export class CourseScene extends Phaser.Scene {
     this.feathers = [];
     this.heads = [];
     this.feet = [];
-    this.busy = this.finished = this.inRoom = false;
-    this.exitPipe = this.terrain = undefined;
+    this.busy = this.finished = this.inRoom = this.inSky = this.skyBound = false;
+    this.exits = {};
+    this.warp = this.skyPipe = this.sling = this.terrain = undefined;
   }
 
   preload() {
     preloadFelt(this);
     if (this.level.terrain) preloadKnit(this);
+    if (this.level.skySection || this.level.slingshot !== undefined) preloadCapy(this);
     preloadHeroes(this);
     CourseStory.preload(this, this.world);
   }
@@ -160,6 +185,8 @@ export class CourseScene extends Phaser.Scene {
     this.W = L.width * T;
     this.H = L.height * T;
     this.RX = this.W + 8 * T;
+    // the sky section sits past the course and any room, 8 tiles clear
+    this.SX = (L.room ? this.RX + L.room.tiles[0].length * T : this.W) + 8 * T;
     const G = L.groundRow * T;
 
     // Felt needs more pixels than the pixel-art scenes: render this scene
@@ -176,6 +203,7 @@ export class CourseScene extends Phaser.Scene {
       offDev();
     });
     setupFelt(this);
+    setupCapy(this);
     this.cameras.main.setBackgroundColor(L.sky);
     this.add.image(0, 0, SKY).setOrigin(0).setDisplaySize(this.W, this.H).setDepth(-20);
 
@@ -193,8 +221,9 @@ export class CourseScene extends Phaser.Scene {
     // Sloped knit ground (World 1-2): its pieces' top edges in game px
     const terrain = L.terrain?.map((top) => top.map(([x, h]) => [x * T, G - h * T] as [number, number]));
     if (terrain) this.terrain = new Terrain(terrain);
-    /** Where things stand at x: the slope there, or the flat ground row. */
-    const groundAt = (x: number) => this.terrain?.surface(x) ?? G;
+    /** Where things stand at x: the sky section's cloud floor, the slope there, or the flat ground row. */
+    const sky = L.skySection;
+    const groundAt = (x: number) => (sky && x >= this.SX ? sky.floor * T : (this.terrain?.surface(x) ?? G));
 
     // ---- Scenery ----
     for (const [x, y, s] of L.scenery.glints) {
@@ -265,7 +294,7 @@ export class CourseScene extends Phaser.Scene {
         this.plants.push({ sprite: s, top, cx: x + 16 });
       }
       if (p.warp) this.warp = { x0: x, x1: x + 32, top };
-      if (p.exit) this.exitPipe = { x0: x, x1: x + 32, top };
+      if (p.exit === 'room' || p.exit === 'sky') this.exits[p.exit] = { x0: x, x1: x + 32, top, bottom: top + h, hanging: !!p.hanging };
     }
     for (const pl of this.plants) this.cyclePlant(pl);
 
@@ -294,6 +323,13 @@ export class CourseScene extends Phaser.Scene {
       else if (k === 'item') block('item', x, y, 'wood');
       else if (k === 'brick') block('brick', x, y, 'brick2');
       else if (k === 'pswitch') block('pswitch', x, y, 'pswitch');
+      else if (k === 'super') {
+        // a super note starts hidden: invisible, and only there for a head coming up from below
+        const s = block('super', x, y, 'note').setVisible(false);
+        const body = s.body as Phaser.Physics.Arcade.StaticBody;
+        body.checkCollision.up = body.checkCollision.left = body.checkCollision.right = false;
+        this.blocks.get(s)!.hidden = true;
+      }
     }
     for (const [x, y] of L.notes) block('note', x, y, 'note');
 
@@ -320,12 +356,14 @@ export class CourseScene extends Phaser.Scene {
     // ---- Goal: black end zone with the spinning card box ----
     const gx = L.goal * T;
     this.add.rectangle(gx - 6 * T, 0, this.W - (gx - 6 * T), this.H, 0x000000).setOrigin(0).setDepth(-9);
-    // low enough to reach with a hop from the ground
-    const goalY = G - 2.5 * T;
+    // low enough to reach with a hop from the ground, unless the level sets it high (World 1-3: up the slingshot)
+    const goalY = L.goalRow !== undefined ? L.goalRow * T : G - 2.5 * T;
     this.goal = feltImage(this, gx, goalY, `icon-${this.world.card}`).setDepth(5);
     this.add.graphics().setDepth(4).lineStyle(2, 0xffffff).strokeRect(gx - 14, goalY - 14, 28, 28);
+    if (L.slingshot !== undefined) this.buildSlingshot(L.slingshot * T, G);
 
-    this.buildRoom();
+    if (L.room) this.buildRoom();
+    this.buildSky();
 
     // ---- Player ----
     const [sx, sy] = L.spawn;
@@ -333,7 +371,7 @@ export class CourseScene extends Phaser.Scene {
     this.player = new Player(this, at ? at.x : sx * T + 8, at ? at.y : sy * T, this.controls, progress.hero);
     this.player.powered = !!at?.powered;
     this.safe = { x: this.player.x, y: this.player.y };
-    this.physics.world.setBounds(0, -64, this.RX + 32 * T, this.H + 128);
+    this.physics.world.setBounds(0, -64, Math.max(this.RX, this.SX) + 80 * T, this.H + 128);
     this.physics.world.setBoundsCollision(true, true, false, false);
     this.player.setCollideWorldBounds(true);
 
@@ -456,7 +494,7 @@ export class CourseScene extends Phaser.Scene {
   // ---------- Areas ----------
 
   private buildRoom() {
-    const R = this.level.room;
+    const R = this.level.room!;
     const w = R.tiles[0].length * T;
     const h = R.tiles.length * T;
     this.add.rectangle(this.RX - this.roomMargin, 0, Math.max(w, WIDTH), Math.max(h, HEIGHT), 0x000000).setOrigin(0).setDepth(-9);
@@ -493,6 +531,125 @@ export class CourseScene extends Phaser.Scene {
     for (const [x, y] of R.coins) this.coins.add(feltImage(this, this.RX + x * T + 8, y * T + 8, 'coin').setDepth(4));
   }
 
+  /**
+   * The sky section (World 1-3): Launch the Capy's night sky and yarn moon, a floor of its yarn clouds
+   * you can jump up through, coins, and a pipe back down. Its billboards and story blocks are beats.
+   */
+  private buildSky() {
+    const S = this.level.skySection;
+    if (!S) return;
+    const x0 = this.SX;
+    const w = S.width * T;
+    const h = S.height * T;
+    const floor = S.floor * T;
+    // the stars art is four texture px to a game px, as tall as the section, and tiles sideways
+    this.add.tileSprite(x0, 0, w, h, CAPY.stars).setOrigin(0).setDepth(-20).setTileScale(h / this.textures.get(CAPY.stars).getSourceImage().height);
+    const [mx, my, size] = S.moon;
+    this.add.image(x0 + mx * T, my * T, CAPY.moon).setOrigin(0).setDisplaySize(size, size).setDepth(-19);
+    // yarn clouds overlap along the floor; the floor itself is a jump-through top, like the platforms
+    for (let x = -15; x < w; x += 65) this.add.image(x0 + x, floor - 17.5, CAPY.cloud).setOrigin(0).setDisplaySize(96, 48).setDepth(3);
+    const top = this.add.rectangle(x0 + w / 2, floor + 3, w, 6).setVisible(false);
+    this.semis.add(top);
+    const tb = top.body as Phaser.Physics.Arcade.StaticBody;
+    tb.checkCollision.down = tb.checkCollision.left = tb.checkCollision.right = false;
+    for (const [x, y] of S.coins) this.coins.add(feltImage(this, x0 + x * T + 8, y * T + 8, 'coin').setDepth(4));
+    // the pipe down stands on the floor and runs down out of sight
+    const cap = 14;
+    const px0 = x0 + S.pipe * T;
+    const ptop = floor - 2 * T;
+    this.add.tileSprite(px0, ptop + cap - 4, 32, h - ptop - cap + 4, FELT, PIPE_RUN).setOrigin(0).setDepth(2.5).setTileScale(1 / ART);
+    feltImage(this, px0, ptop, 'pipe2-top').setOrigin(0).setDisplaySize(32, cap).setDepth(2.5);
+    this.solids.add(this.add.rectangle(px0 + 16, ptop + T, 32, 2 * T).setVisible(false));
+    this.skyPipe = { x0: px0, x1: px0 + 32, top: ptop };
+  }
+
+  /** The Capy slingshot by the goal: stand on it and hold S to pull back, let go to fly. */
+  private buildSlingshot(x: number, ground: number) {
+    const art = this.add.image(x, ground + 2, CAPY.slingshot).setOrigin(0.5, 1).setDisplaySize(40, 40).setDepth(-2);
+    const band = this.add.graphics().setDepth(11);
+    const hint = px(this, x, ground - 44, 'HOLD S: PULL BACK', { size: 6, color: '#000' }).setOrigin(0.5).setDepth(20).setVisible(false);
+    hint.setBackgroundColor('#ffffff').setPadding(2, 2, 2, 1);
+    this.tweens.add({ targets: hint, y: hint.y - 2, yoyo: true, repeat: -1, duration: 450 });
+    this.sling = { x, pull: 0, band, hint, art };
+  }
+
+  /** Per frame: pull back while S is held on the slingshot, fly when it's let go. */
+  private updateSlingshot(p: Player) {
+    const s = this.sling;
+    if (!s || this.inRoom || this.inSky) return;
+    const G = this.level.groundRow * T;
+    const on = p.body.blocked.down && Math.abs(p.x - s.x) < 12 && Math.abs(p.body.bottom - G) < 3;
+    s.hint.setVisible(on && s.pull === 0 && !ui.dev);
+    s.band.clear();
+    if (on && held(this.controls.down)) {
+      s.pull = Math.min(1, s.pull + this.game.loop.delta / 900);
+      // the band stretches from the fork tips down to the hero, and the slingshot leans back a touch
+      const forkY = G - 30;
+      s.band.lineStyle(1.5, 0x5a3518).lineBetween(s.x - 13, forkY, p.x, p.body.bottom - 4 + s.pull * 3).lineBetween(s.x + 13, forkY, p.x, p.body.bottom - 4 + s.pull * 3);
+      s.art.setAngle(Math.sin(this.time.now / 40) * s.pull * 2);
+      return;
+    }
+    if (s.pull > 0) {
+      // full pull carries you just past the goal card; less, proportionally lower
+      const rise = G - this.goal.y + 28;
+      const speed = Math.sqrt(2 * this.physics.world.gravity.y * rise) * (0.55 + 0.45 * s.pull);
+      s.pull = 0;
+      s.art.setAngle(0);
+      if (on) {
+        p.setVelocityX(0);
+        p.launch(speed);
+        sfx.jump();
+        this.tweens.add({ targets: s.art, scaleY: { from: s.art.scaleY * 0.9, to: s.art.scaleY }, duration: 200, ease: 'Back.easeOut' });
+      }
+    }
+  }
+
+  private useSkyCamera() {
+    const S = this.level.skySection!;
+    const cam = this.cameras.main;
+    cam.setBackgroundColor(0x111622);
+    cam.setBounds(this.SX, 0, Math.max(S.width * T, WIDTH), S.height * T + BAR);
+  }
+
+  /** Off the top of the screen from a super note: come up through the sky section's cloud floor. */
+  private async enterSky() {
+    const S = this.level.skySection!;
+    this.busy = true;
+    this.skyBound = false;
+    sfx.secret();
+    const p = this.player;
+    this.cameras.main.fadeOut(200, 255, 255, 255);
+    await new Promise((r) => this.cameras.main.once('camerafadeoutcomplete', r));
+    this.inSky = true;
+    this.useSkyCamera();
+    p.setPosition(this.SX + S.entry * T + 8, S.floor * T + 40);
+    p.body.reset(p.x, p.y);
+    p.launch(420);
+    this.cameras.main.fadeIn(250, 255, 255, 255);
+    this.busy = false;
+  }
+
+  /** Down the sky's pipe: drop out of the hanging pipe back on the course. */
+  private async exitSky() {
+    this.busy = true;
+    sfx.pipe();
+    const p = this.player;
+    p.body.enable = false;
+    p.setX((this.skyPipe!.x0 + this.skyPipe!.x1) / 2);
+    await this.tweenTo(p, { y: p.y + 24 }, 500);
+    this.cameras.main.fadeOut(150);
+    await new Promise((r) => this.cameras.main.once('camerafadeoutcomplete', r));
+    this.inSky = false;
+    const out = this.exits.sky!;
+    p.setPosition((out.x0 + out.x1) / 2, out.bottom - 12);
+    this.useMainCamera();
+    this.cameras.main.fadeIn(150);
+    await this.tweenTo(p, { y: out.bottom + 10 }, 400);
+    p.body.reset(p.x, p.y);
+    p.body.enable = true;
+    this.busy = false;
+  }
+
   private useMainCamera() {
     const cam = this.cameras.main;
     cam.setBackgroundColor(this.level.sky);
@@ -504,7 +661,7 @@ export class CourseScene extends Phaser.Scene {
   }
 
   private useRoomCamera() {
-    const R = this.level.room;
+    const R = this.level.room!;
     const cam = this.cameras.main;
     cam.setBackgroundColor(0x000000);
     cam.setBounds(this.RX - this.roomMargin, 0, Math.max(R.tiles[0].length * T, WIDTH), Math.max(R.tiles.length * T + BAR, HEIGHT));
@@ -512,7 +669,7 @@ export class CourseScene extends Phaser.Scene {
 
   /** A room narrower than the screen sits in the middle of it, with this much black either side. */
   private get roomMargin() {
-    return Math.max(0, (WIDTH - this.level.room.tiles[0].length * T) / 2);
+    return Math.max(0, (WIDTH - this.level.room!.tiles[0].length * T) / 2);
   }
 
   private async enterRoom() {
@@ -520,13 +677,13 @@ export class CourseScene extends Phaser.Scene {
     sfx.pipe();
     const p = this.player;
     p.body.enable = false;
-    p.setX((this.warp.x0 + this.warp.x1) / 2);
+    p.setX((this.warp!.x0 + this.warp!.x1) / 2);
     await this.tweenTo(p, { y: p.y + 24 }, 500);
     this.cameras.main.fadeOut(150);
     await new Promise((r) => this.cameras.main.once('camerafadeoutcomplete', r));
     this.inRoom = true;
     this.useRoomCamera();
-    const R = this.level.room;
+    const R = this.level.room!;
     p.setPosition(this.RX + R.pipe * T + 16, R.pipeY === undefined ? 40 : (R.pipeY + 2) * T + 10);
     p.body.reset(p.x, p.y);
     p.body.enable = true;
@@ -544,7 +701,7 @@ export class CourseScene extends Phaser.Scene {
     this.cameras.main.fadeOut(150);
     await new Promise((r) => this.cameras.main.once('camerafadeoutcomplete', r));
     this.inRoom = false;
-    const out = this.exitPipe ?? this.warp;
+    const out = this.exits.room ?? this.warp!;
     p.setPosition((out.x0 + out.x1) / 2, out.top + 8);
     this.useMainCamera();
     this.cameras.main.fadeIn(150);
@@ -586,11 +743,22 @@ export class CourseScene extends Phaser.Scene {
     for (const b of this.feet) this.landOn(b);
     this.feet = [];
 
-    // Secret pipe
-    if (!this.inRoom && p.downPressed && p.x > this.warp.x0 + 4 && p.x < this.warp.x1 - 4 && Math.abs(p.body.bottom - this.warp.top) < 3) {
+    // Pipes: down into the secret room, or down out of the sky
+    const onPipe = (q?: { x0: number; x1: number; top: number }) => !!q && p.downPressed && p.x > q.x0 + 4 && p.x < q.x1 - 4 && Math.abs(p.body.bottom - q.top) < 3;
+    if (!this.inRoom && !this.inSky && onPipe(this.warp)) {
       void this.enterRoom();
       return;
     }
+    if (this.inSky && onPipe(this.skyPipe)) {
+      void this.exitSky();
+      return;
+    }
+    // shot up by the super note: the sky takes over once you're off the top of the screen
+    if (this.skyBound && p.y < -24) {
+      void this.enterSky();
+      return;
+    }
+    this.updateSlingshot(p);
 
     // The white platform is the door to the other side
     if (this.holdDoor(p)) {
@@ -609,17 +777,19 @@ export class CourseScene extends Phaser.Scene {
     }
 
     const R = this.level.room;
-    const leaving = R.exit
-      ? // walk into the sideways pipe's mouth
-        p.body.blocked.left && held(this.controls.left) && p.x < this.RX + (R.exit[0] + 2) * T + 10 && p.body.bottom > R.exit[1] * T + 16
-      : p.x > this.RX + R.tiles[0].length * T - 4;
+    const leaving =
+      R &&
+      (R.exit
+        ? // walk into the sideways pipe's mouth
+          p.body.blocked.left && held(this.controls.left) && p.x < this.RX + (R.exit[0] + 2) * T + 10 && p.body.bottom > R.exit[1] * T + 16
+        : p.x > this.RX + R.tiles[0].length * T - 4);
     if (this.inRoom && leaving) {
       void this.exitRoom();
       return;
     }
 
     // Pits
-    if (p.body.blocked.down && !this.inRoom) this.safe = { x: p.x, y: p.y };
+    if (p.body.blocked.down && !this.inRoom && !this.inSky) this.safe = { x: p.x, y: p.y };
     if (p.y > this.H + 24) {
       sfx.hurt();
       p.setPosition(this.safe.x - 12, this.safe.y - 24);
@@ -710,6 +880,18 @@ export class CourseScene extends Phaser.Scene {
       }
       return;
     }
+    if (b.kind === 'super') {
+      // found it: the hidden note shows itself and becomes solid all round; land on it to go up
+      if (b.hidden) {
+        b.hidden = false;
+        const body = s.body as Phaser.Physics.Arcade.StaticBody;
+        body.checkCollision.up = body.checkCollision.left = body.checkCollision.right = true;
+        s.setVisible(true).setTint(0xfff6d8);
+        sfx.secret();
+        this.tweens.add({ targets: s, scale: { from: s.scale * 1.3, to: s.scale }, duration: 300, ease: 'Back.easeOut' });
+      }
+      return;
+    }
     if (b.used) return;
     if (b.kind === 'q') {
       b.used = true;
@@ -734,6 +916,12 @@ export class CourseScene extends Phaser.Scene {
       this.player.spring(300, 470);
       sfx.select();
       this.tweens.add({ targets: s, y: s.y + 4, duration: 60, yoyo: true });
+    } else if (b.kind === 'super' && !b.hidden && this.level.skySection) {
+      // straight up and off the top of the screen, into the sky section
+      this.player.launch(900);
+      this.skyBound = true;
+      sfx.select();
+      this.tweens.add({ targets: s, y: s.y + 6, duration: 80, yoyo: true });
     }
   }
 
@@ -977,7 +1165,7 @@ export class CourseScene extends Phaser.Scene {
   /** Restart data that keeps the player where they are (live rebuilds while editing). */
   get restartData() {
     const p = this.player;
-    return { slug: this.world.slug, at: this.inRoom || !p?.active ? undefined : { x: p.x, y: p.y, powered: p.powered } };
+    return { slug: this.world.slug, at: this.inRoom || this.inSky || !p?.active ? undefined : { x: p.x, y: p.y, powered: p.powered } };
   }
 
   /** The tile the player stands on, for adding beats "here" from the editor. */

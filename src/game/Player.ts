@@ -10,6 +10,8 @@ const DECEL = 640;
 const JUMP = 330;
 const RUN_JUMP = 365;
 const JUMP_CUT = 120;
+/** Top falling (and rising) speed, except during a launch. */
+const FALL = 600;
 
 export interface Controls {
   left: Phaser.Input.Keyboard.Key[];
@@ -74,7 +76,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       scene.events.on(Phaser.Scenes.Events.POST_UPDATE, follow);
       this.once(Phaser.GameObjects.Events.DESTROY, () => scene.events.off(Phaser.Scenes.Events.POST_UPDATE, follow));
     }
-    this.body.setMaxVelocity(RUN, 600);
+    this.body.setMaxVelocity(RUN, FALL);
     this.setDepth(10);
   }
 
@@ -99,6 +101,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   spring(low: number, high: number) {
     this.jumping = false;
     this.setVelocityY(held(this.controls.jump) ? -high : -low);
+  }
+
+  /** Shot straight up (the super note, the slingshot): faster than the usual speed cap, until it peaks. */
+  launch(speed: number) {
+    this.jumping = false;
+    this.body.maxVelocity.y = Math.max(FALL, speed);
+    this.setVelocityY(-speed);
   }
 
   get flying() {
@@ -152,7 +161,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       } else this.floatUntil = now + 260;
       sfx.jump();
     }
-    if (b.velocity.y >= 0) this.jumping = false;
+    if (b.velocity.y >= 0) {
+      this.jumping = false;
+      b.maxVelocity.y = FALL; // a launch is over once it peaks
+    }
     if (this.jumping && !held(c.jump) && b.velocity.y < -JUMP_CUT) b.velocity.y = -JUMP_CUT;
     if (now < this.floatUntil && b.velocity.y > 50) b.velocity.y = 50;
     if (this.flying) this.pMeter = 1;

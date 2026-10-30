@@ -9,40 +9,289 @@
   "platform": "iOS · SpriteKit",
   "theme": "sunset",
   "card": "heart",
-  "summary": "A vertical arcade game I designed and built end to end in SpriteKit, live on the App Store. The loop is launch, fly, fall, upgrade, launch again.",
+  "level": "world-1-3",
+  "summary": "A vertical arcade game I designed and built solo in about 60 days, live on the App Store. Slingshot a capybara through seven zones to the moon, then past it, where the ads are billboards you can jump on.",
   "outcomes": [
-    "Shipped solo, from game design to App Store submission",
-    "7 hand-designed zones from meadow to deep space",
-    "Ads that live on in-world billboards instead of covering the game"
+    "Shipped solo in about 60 days, from idea to the App Store",
+    "7 sky zones, from the ground to the moon",
+    "Ads that are platforms in the world, not banners on top of it"
   ],
   "links": [],
+  "article": "I've always wanted to make a video game, and I always wondered if I could ship one on the App Store. Launch the Capy is that game: you pull back a slingshot, launch a capybara into the sky, and bounce from cloud to cloud all the way to the moon.\n\nI started at the end of March and released it in late April. About 60 days, solo: the game design, the art direction, the music and the build.\n\n**Tools:** Claude Code, Xcode, SpriteKit, ChatGPT, Nano Banana, Flux, Canva, Suno, ElevenLabs, Google AdMob\n\n![The first seconds of a run: pull back, launch, and up past the clouds](content/capy/gameplay.gif)\n\n## 1. A game I'd wanted to make for years\n\nThe idea came from an old online game I used to play, Launch the Hedgehog. A hedgehog in a slingshot: the higher it goes, the more coins it collects, and the more coins it collects, the more equipment it can buy. I've always thought it was a really good game, and the mechanics seemed simple enough. So I wanted to see if I could recreate it for the iPhone.\n\n![Launch the Hedgehog, the game that started it](content/capy/launch-the-hedgehog.png)\n\n## 2. Mechanics first\n\nThe first thing I did was test the mechanics. No textures, no character, nothing. I wanted to see if Claude Code could help me turn the idea into an actual product.\n\nSo we built a wireframe: a slingshot you pull down and release to launch an object. It worked, and it worked really well. I could also use the phone's gyroscope to tilt and move the character around, or slide a finger instead.\n\nRealizing the power I had, I figured I might as well go all in and build the whole game.\n\n![The first test: mechanics only, no art](content/capy/mechanics-test.png)\n\n## 3. A sky in seven zones\n\nI started with the background, and it was probably the hardest thing to nail down. I tried many tools: AI image generators, ChatGPT, Canva. None of them could make one very tall image that ran continuously from the ground all the way to the top.\n\nSo I divided the sky into seven zones. It starts on the ground, moves up through the clouds, and gets darker and darker until you reach space and the moon. Reach the moon and you beat the game.\n\nGetting the zones to line up was hard. AI decides things for you, and it doesn't always continue the design from the image below. Even when I got very precise, there was always some kind of cutoff where two images met. So in Figma I made transition frames between the zones, and added extra cloud assets over the seams to hide where the stitching happened.\n\n![The seven sky zones, stitched together with background transition frames in Figma](content/capy/sky-zones.png)\n\n## 4. A paper-craft world\n\nNext was the slingshot. I wanted it to evolve visually as you earn coins and buy upgrades. I knew going in that I wanted a crafty, paper-world style, like the one in this portfolio. I'm fascinated by that art style, and I wanted to see how far I could push it.\n\nThen came the character, the cosmetics you can buy in the store, the power-ups, the power-downs, the hazards along the way, and the coins. I made them with ChatGPT image generation, Nano Banana and Flux, and between them I got the things I envisioned.\n\nThe power-downs are where the fun is: a thundercloud, birds that slow your rise to the moon when you hit them, fake balloons that look like the real power-up but hurt you, gusts of wind, icicles and airplanes.\n\nI also drew what losing looks like: Capy falling, and Capy hitting the ground with his eyes crossed.\n\n![Slingshot exploration: early options, then six phases as you upgrade](content/capy/slingshot-phases.webp)\n\n![Capy, mid-launch with a jetpack](content/capy/capy-jetpack.png)\n\n![Capy falling, and Capy after the crash](content/capy/capy-fall-crash.jpg)\n\n![Clouds and power-ups: crate, dynamite, air bubble, feathers, life ring, jetpack and balloon](content/capy/powerups.webp)\n\n![Power-downs: thundercloud, birds, fake balloon, wind gust, icicle and airplane](content/capy/powerdowns.jpg)\n\n## 5. The clouds are the challenge\n\nYou launch Capy, but then Capy bounces from cloud to cloud, platforming all the way up. That's the challenge: how do I get from one cloud to the next?\n\nThe large white clouds you see at the start are easy to land on, but they don't give you much of a jump. The small dark clouds give you a higher jump, but they're smaller, so they're harder to hit. The higher you go, the fewer large white clouds you see and the more small dark ones. The game gets harder, and the target gets smaller.\n\n![The three clouds: big and easy, smaller and bouncier, small and dark](content/capy/clouds.jpg)\n\n## 6. Capy's Garage\n\nAfter a run, you spend your coins. I wanted that screen to feel like Capy's garage, where he invents and crafts everything he needs to get higher and reach the moon.\n\nIt was one of the most difficult parts to design. A game's screens don't follow a typical structure the way an app's UI does. There's a lot more freedom, so I spent a lot of time nailing down what it should look like.\n\nThe other hard part was the economy: what the power-ups cost, and the balance between the coins you collect and the price of things. Prices have to be high enough that there's always a reason to play another run, but not so high that they feel impossible to reach.\n\n![Capy's Garage](content/capy/garage.png)\n\n## 7. Easy and hard\n\nAt first I wanted the game to be tilt only. Testing it, tilt felt a little too hard to maneuver. So I added two options: an easy mode, where you move Capy with your finger, and a hard mode, which is tilt.\n\nI released with hard mode as the default and immediately got feedback that it was too hard. So I shipped a second version with easy mode as the default. People can still pick hard if they want it.\n\n## 8. Sound that tells you what happened\n\nWhile I was testing, I realized the game felt too empty. It needed music. What does the garage sound like? What does a run sound like?\n\nI made the music in Suno, describing how I wanted each place to feel: slow-tempo jazz for the garage, fast jazz for the game. I made three versions of the in-game jazz. It starts slow, and as you go up, it gets frantically faster and more chaotic, to match the feeling that you're climbing and things are getting harder. I really like how that turned out.\n\nThen the sound effects, made in ElevenLabs. I described each one: jumping on a cloud, grabbing an air bubble, getting dynamite or a feather, crashing into a thundercloud. Every power-up has its own sound, and so do some of the power-downs. For the coins, I asked: what does a big pile of coins jingling sound like? That's what you hear.\n\n## 9. Ads that are part of the world\n\nI knew early on I wanted to see if this was marketable, but I wasn't going to spend much time marketing it. I did want to learn what it takes to put ads in a game, so I created a Google AdMob account.\n\nI knew I didn't want to be very forward with the ads. I don't like games that put a banner in the game, or a carousel of ads. It's annoying. So I merged the ads with the game.\n\nOnce you reach the moon, you can keep going higher. It's infinite. But past the moon the clouds stop, and you start seeing ad billboards collecting dust in space. They say \"Ads don't work? It just did,\" a reference to the billboards you see driving down a highway. Inside each billboard is a green square, and that's where the ad appears.\n\nPeople keep playing, see the ads, and jump on them. The ad becomes the platform. Rather than plastering ads all over the game, I made the ad a functional object in it. I really like how it turned out, and it was fun to work on.\n\n![A billboard past the moon. The green panel becomes a live ad](content/capy/billboard.png)\n\n![In the game: Capy flies past a billboard with a live ad in it](content/capy/billboard-live.jpg)\n\n## 10. Where it is now\n\nThe app is free and monetized by ads. It doesn't have a lot of users, and I haven't marketed it much. I just wanted to see if I could create a video game, and I could.\n\n![App Store Connect: 22 first-time downloads from 684 impressions and 96 product page views](content/capy/app-store-downloads.png)\n\n## 11. What I learned\n\n- **I can make a video game.** The idea had been on my mind for years, and I shipped it in about 60 days.\n- **The game loop is the hard part.** The interactions, what makes a game addicting, what makes someone keep playing. I only explored the surface, and there's a way bigger world out there.\n- **Test the hard mode on other people.** I shipped tilt as the default, and players told me right away it was too hard.\n- **Ads can be part of the design.** An ad that's an object in the world doesn't have to get in the way of the game.\n\n## Deep dives\n\n### The loop\n\nLaunch, fly, fall, upgrade, launch again. The launch is the player's moment of agency: if pulling back the slingshot doesn't feel good, nothing else matters. Height is the score and the progress. As you climb, the world gets more intense, in how it looks and how it sounds.\n\n### Power-ups and power-downs\n\nPower-ups come in two kinds: instant boosts, a one-time push up, and duration effects, which change how Capy flies for a few seconds. Players learn quickly what to expect and can make decisions mid-flight.\n\nHazards only show up past certain heights, so new players aren't overwhelmed. After a hit, a short invincibility window keeps one mistake from turning into several.\n\n### The ad inside the world\n\nAdMob's banner is a regular iOS view, but the ad lives on a billboard inside the game scene. Every frame, the billboard's panel is converted from game coordinates to screen coordinates and the banner moves to match, so the ad scrolls with the world. Until an ad loads, the green panel is painted navy.\n\n### The build\n\n- **Game:** Swift and SpriteKit, CoreMotion for tilt\n- **Spawning:** clouds, coins, power-ups and hazards spawn ahead of the player from a seeded random generator, so every run feels new but any run can be replayed while tuning\n- **Ads:** Google AdMob",
   "beats": [
     {
       "id": "c-what",
       "type": "copy",
-      "headline": "Launch. Fly. Upgrade.",
-      "body": "Pull back the slingshot, release Capy into the sky, then steer through an endless world of clouds, coins, powerups and hazards.\n\nHeight is your score. Coins buy upgrades. Every run makes the next one go higher."
+      "headline": "A game I'd wanted to make for years",
+      "body": "An old online game, Launch the Hedgehog: slingshot a hedgehog, fly higher, collect coins, buy gear.\n\nI always wanted to make a game like it. So I did, for the iPhone, in about 60 days.",
+      "place": {
+        "as": "story",
+        "x": 5,
+        "y": 22
+      }
     },
     {
-      "id": "c-launch",
+      "id": "c-hedgehog-img",
       "type": "image",
-      "src": "content/capy/capy-launch.png",
-      "caption": "Capy, mid-launch",
-      "alt": "Capybara character launching"
+      "src": "content/capy/launch-the-hedgehog.png",
+      "caption": "Launch the Hedgehog, the game that started it",
+      "alt": "Launch the Hedgehog: a hedgehog in a slingshot in a backyard",
+      "place": {
+        "as": "sign",
+        "at": 21
+      }
+    },
+    {
+      "id": "c-mechanics",
+      "type": "copy",
+      "headline": "Mechanics first",
+      "body": "No art, no character. Just a slingshot you pull down and release, built with Claude Code. Tilt the phone or slide a finger to steer.\n\nIt worked really well, so I went all in.",
+      "place": {
+        "as": "story",
+        "x": 27,
+        "y": 22
+      }
+    },
+    {
+      "id": "c-mechanics-img",
+      "type": "image",
+      "src": "content/capy/mechanics-test.png",
+      "caption": "The first test: mechanics only, no art",
+      "alt": "Early test build: an orange square in a red slingshot over a brown ground line",
+      "place": {
+        "as": "sign",
+        "at": 30.5
+      }
     },
     {
       "id": "c-zones",
       "type": "metric",
       "value": "7",
-      "label": "Zones from meadow to space",
-      "body": "Each zone has its own art, music and difficulty. The sky color blends with altitude, and deep space tiles forever above the moon."
+      "label": "Zones from the ground to the moon",
+      "body": "No tool could make one tall sky, so I stitched seven images with transition frames in Figma and hid the seams with clouds. Reach the moon and you beat the game.",
+      "place": {
+        "as": "story",
+        "x": 49,
+        "y": 22
+      }
     },
     {
       "id": "c-zone-art",
       "type": "image",
-      "src": "content/capy/zone.png",
-      "caption": "One of the vertical zone backgrounds",
-      "alt": "Vertical zone background art"
+      "src": "content/capy/sky-zones.png",
+      "caption": "The seven sky zones, stitched together with transition frames",
+      "alt": "The game sky in Figma: seven zone backgrounds from grass to the moon, with transition frames between them",
+      "place": {
+        "as": "sign",
+        "at": 185
+      }
+    },
+    {
+      "id": "c-craft",
+      "type": "copy",
+      "headline": "A paper-craft world",
+      "body": "A slingshot that changes as you upgrade, Capy, cosmetics, coins, power-ups and power-downs, made with ChatGPT, Nano Banana and Flux.\n\nWatch out for thunderclouds, birds, fake balloons, wind, icicles and airplanes.",
+      "place": {
+        "as": "story",
+        "x": 65,
+        "y": 22
+      }
+    },
+    {
+      "id": "c-slingshot-img",
+      "type": "image",
+      "src": "content/capy/slingshot-phases.webp",
+      "caption": "The slingshot, from plain wood to phase 6",
+      "alt": "Slingshot designs: early options, then six upgrade phases from plain wood to gold and robotic",
+      "place": {
+        "as": "sign",
+        "at": 190.5
+      }
+    },
+    {
+      "id": "c-launch",
+      "type": "image",
+      "src": "content/capy/capy-jetpack.png",
+      "caption": "Capy, mid-launch with a jetpack",
+      "alt": "Capy the capybara with a knitted jetpack",
+      "place": {
+        "as": "sign",
+        "at": 196
+      }
+    },
+    {
+      "id": "c-powerups-img",
+      "type": "image",
+      "src": "content/capy/powerups.webp",
+      "caption": "Power-ups, knit like the rest of the world",
+      "alt": "Yarn clouds, a crate, dynamite, an air bubble, feathers, a life ring, a jetpack and a red balloon",
+      "place": {
+        "as": "sign",
+        "at": 201.5
+      }
+    },
+    {
+      "id": "c-powerdowns-img",
+      "type": "image",
+      "src": "content/capy/powerdowns.jpg",
+      "caption": "Power-downs: thundercloud, birds, fake balloon, wind, icicle, airplane",
+      "alt": "A yarn thundercloud, a flock of birds, a patched fake balloon, a gust of wind, an icicle and a toy airplane",
+      "place": {
+        "as": "sign",
+        "at": 207
+      }
+    },
+    {
+      "id": "c-crash-img",
+      "type": "image",
+      "src": "content/capy/capy-fall-crash.jpg",
+      "caption": "Capy falling, then the crash, eyes crossed",
+      "alt": "Capy upside down falling, then upside down after the crash with crossed-out eyes",
+      "place": {
+        "as": "sign",
+        "at": 212.5
+      }
+    },
+    {
+      "id": "c-clouds",
+      "type": "copy",
+      "headline": "The clouds are the challenge",
+      "body": "Big white clouds are easy to land on but barely bounce you. Small dark clouds bounce you higher but are harder to hit.\n\nThe higher you go, the more small dark ones.",
+      "place": {
+        "as": "story",
+        "x": 74,
+        "y": 22
+      }
+    },
+    {
+      "id": "c-clouds-img",
+      "type": "image",
+      "src": "content/capy/clouds.jpg",
+      "caption": "Big and easy, smaller and bouncier, small and dark",
+      "alt": "Three yarn clouds: a big white one, a smaller blue one and a small dark blue one",
+      "place": {
+        "as": "sign",
+        "at": 218
+      }
+    },
+    {
+      "id": "c-garage",
+      "type": "image",
+      "src": "content/capy/garage.png",
+      "caption": "Capy's Garage, where coins become upgrades",
+      "alt": "Garage shop background",
+      "place": {
+        "as": "sign",
+        "at": 94.5
+      }
+    },
+    {
+      "id": "c-economy",
+      "type": "copy",
+      "headline": "Capy's Garage",
+      "body": "Game screens don't follow app rules, so the Garage took a lot of tries.\n\nThe prices too: high enough that there's always a reason for one more run, never so high they feel impossible.",
+      "place": {
+        "as": "story",
+        "x": 83,
+        "y": 22
+      }
+    },
+    {
+      "id": "c-controls",
+      "type": "decision",
+      "question": "Tilt or touch by default?",
+      "optionA": {
+        "label": "Tilt (hard)",
+        "body": "Steer by tilting the phone. It's what I wanted at first, and it's how I launched."
+      },
+      "optionB": {
+        "label": "Touch (easy)",
+        "body": "Move Capy with your finger. Tilt stays available for anyone who wants the hard mode."
+      },
+      "chosen": "B",
+      "why": "I launched with tilt as the default and heard right away it was too hard. Version two made touch the default.",
+      "place": {
+        "as": "decision",
+        "a": [
+          100,
+          22
+        ],
+        "b": [
+          102,
+          22
+        ]
+      }
+    },
+    {
+      "id": "c-music",
+      "type": "copy",
+      "headline": "Jazz that speeds up",
+      "body": "Slow jazz in the Garage. In the game, jazz that gets faster and more chaotic the higher you climb.\n\nEvery power-up has its own sound, down to a pile of coins jingling.",
+      "place": {
+        "as": "story",
+        "x": 121,
+        "y": 16
+      }
+    },
+    {
+      "id": "c-ad-call",
+      "type": "decision",
+      "question": "Where do the ads go?",
+      "optionA": {
+        "label": "A banner on screen",
+        "body": "The usual: a strip or a carousel over the game. Easy to add, and annoying."
+      },
+      "optionB": {
+        "label": "Billboards in space",
+        "body": "Past the moon the clouds stop and ad billboards drift in space. The ad shows in each billboard's green panel, and you jump on it."
+      },
+      "chosen": "B",
+      "why": "The ad became a platform: part of the game instead of on top of it. \"Ads don't work? It just did.\"",
+      "place": {
+        "as": "decision",
+        "a": [
+          126,
+          14
+        ],
+        "b": [
+          128,
+          14
+        ]
+      }
+    },
+    {
+      "id": "c-billboard",
+      "type": "image",
+      "src": "content/capy/billboard.png",
+      "caption": "A billboard past the moon. The green panel becomes a live ad",
+      "alt": "Cardboard billboard with green screen panel",
+      "place": {
+        "as": "sign",
+        "at": 223.5
+      }
+    },
+    {
+      "id": "c-billboard-live",
+      "type": "image",
+      "src": "content/capy/billboard-live.jpg",
+      "caption": "In the game, with a live ad in the panel",
+      "alt": "Capy flying in space past a cardboard billboard showing a live app ad, with the sign 'Ads don't work? It just did'",
+      "place": {
+        "as": "sign",
+        "at": 238
+      }
+    },
+    {
+      "id": "c-ads",
+      "type": "copy",
+      "lens": "build",
+      "headline": "A real ad inside the world",
+      "body": "AdMob's banner is a UIKit view, but the ad lives on a billboard inside the SpriteKit scene.\n\nEvery frame, the billboard's panel is converted from world space to screen coordinates and the banner is moved to match, so the ad scrolls with the world. A shader paints the green placeholder navy until an ad loads.",
+      "place": {
+        "as": "story",
+        "x": 243,
+        "y": 16
+      }
     },
     {
       "id": "c-chain",
@@ -57,63 +306,69 @@
         "body": "Keep the density. After 4 powerups in a row, Capy passes through the next ones for 3 seconds. Hitting a hazard resets the count."
       },
       "chosen": "B",
-      "why": "It kept the world full and rewarded skill. I also nudged spawns toward the screen edges so powerups cluster less."
-    },
-    {
-      "id": "c-garage",
-      "type": "image",
-      "src": "content/capy/garage.png",
-      "caption": "The Garage, where coins become upgrades",
-      "alt": "Garage shop background"
-    },
-    {
-      "id": "c-economy",
-      "type": "copy",
-      "headline": "An economy worth grinding",
-      "body": "The slingshot has 6 upgrade tiers on an exponential power curve, about 1.4× per tier.\n\nConsumables (Jetpack, Dynamite, Super Feather) and cosmetics give coins somewhere to go after the big upgrades are bought."
-    },
-    {
-      "id": "c-powerups",
-      "type": "metric",
-      "value": "8 + 4",
-      "label": "Powerups and hazards",
-      "body": "8 powerups to grab mid-flight. 4 hazards with their own feel: birds stun and knock back, wind pushes sideways, storm clouds push down, rain slows you."
-    },
-    {
-      "id": "c-billboard",
-      "type": "image",
-      "src": "content/capy/billboard.png",
-      "caption": "The billboard prop. The green panel becomes a live ad",
-      "alt": "Cardboard billboard with green screen panel"
-    },
-    {
-      "id": "c-ads",
-      "type": "copy",
+      "why": "It kept the world full and rewarded skill. I also nudged spawns toward the screen edges so powerups cluster less.",
       "lens": "build",
-      "headline": "A real ad inside the world",
-      "body": "AdMob's banner is a UIKit view, but the ad lives on a billboard inside the SpriteKit scene.\n\nEvery frame, the billboard's panel is converted from world space to screen coordinates and the banner is moved to match, so the ad scrolls with the world. A shader paints the green placeholder navy until an ad loads."
+      "place": {
+        "as": "decision",
+        "a": [
+          245,
+          16
+        ],
+        "b": [
+          246,
+          16
+        ]
+      }
     },
     {
-      "id": "c-controls",
-      "type": "decision",
-      "lens": "build",
-      "question": "Touch or tilt to steer?",
-      "optionA": {
-        "label": "Tilt only",
-        "body": "Gyroscope steering feels great once you learn it, but it's hard on new players and awkward on a couch."
-      },
-      "optionB": {
-        "label": "Both, in Garage",
-        "body": "Touch (Easy) moves Capy toward your finger. Gyroscope (Hard) applies tilt force. Players pick in the Garage and it's saved."
-      },
-      "chosen": "B",
-      "why": "Different players, different hands. The gyroscope only starts when Hard mode is on, which saves battery too."
+      "id": "c-now",
+      "type": "copy",
+      "headline": "Did it work?",
+      "body": "It's free, it earns from ads, and it doesn't have many players. I haven't marketed it much.\n\nBut I wanted to know if I could make a video game, and I could.",
+      "place": {
+        "as": "story",
+        "x": 136,
+        "y": 15
+      }
+    },
+    {
+      "id": "c-downloads-img",
+      "type": "image",
+      "src": "content/capy/app-store-downloads.png",
+      "caption": "22 first-time downloads from 684 impressions",
+      "alt": "App Store Connect acquisition: 22 first-time downloads, 684 impressions, 96 product page views, 4.14% conversion rate",
+      "place": {
+        "as": "sign",
+        "at": 145.5
+      }
+    },
+    {
+      "id": "c-learned",
+      "type": "copy",
+      "headline": "What I learned",
+      "body": "- I can make a video game\n- The game loop is the hard part\n- Test the hard mode on other people\n- Ads can be part of the design",
+      "place": {
+        "as": "story",
+        "x": 155,
+        "y": 22
+      }
     },
     {
       "id": "c-differently",
       "type": "copy",
       "headline": "What I'd do differently",
-      "body": "- Plan the ad system first. Designing it late meant refactoring the camera and coordinate math.\n- Design both control modes as one input abstraction from the start.\n- Lock asset naming early. Prefixes changed mid-project and took several sweeps to clean up."
+      "body": "- Plan the ad system first. Designing it late meant refactoring the camera and coordinate math.\n- Design both control modes as one input abstraction from the start.\n- Lock asset naming early. Prefixes changed mid-project and took several sweeps to clean up.",
+      "lens": "build",
+      "place": {
+        "as": "story",
+        "x": 248,
+        "y": 16
+      }
     }
+  ],
+  "lessons": [
+    "I can make a video game",
+    "The game loop is the hard part",
+    "Test the hard mode on other people"
   ]
 }
