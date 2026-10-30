@@ -420,7 +420,8 @@ export class CourseScene extends Phaser.Scene {
     // a rebuild from the editor picks up where the player was, without the intro
     if (at) this.story.resume(at.x);
     else this.cameras.main.fadeIn(250);
-    playMusic(this, L.id === 'world-1-2' ? 'world-1-2' : 'world-1-1');
+    // each course has its own track; any course without one plays World 1-1's
+    playMusic(this, L.id === 'world-1-2' || L.id === 'world-1-3' ? L.id : 'world-1-1');
   }
 
   /** The world billboard at the start of the course (Figma: screen/gameplay · world 1 start). */

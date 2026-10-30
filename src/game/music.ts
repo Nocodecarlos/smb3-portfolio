@@ -7,7 +7,7 @@ import { asset } from '../assets';
 // in public/music as AAC with an MP3 fallback. Browsers only allow sound after
 // the first key press, so a track asked for before then starts on that press.
 
-export type Track = 'overworld' | 'world-1-1' | 'world-1-2';
+export type Track = 'overworld' | 'world-1-1' | 'world-1-2' | 'world-1-3';
 
 const VOLUME = 0.45;
 let current: { track: Track; sound: Phaser.Sound.BaseSound } | null = null;
