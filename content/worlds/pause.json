@@ -38,13 +38,13 @@
     },
     {
       "id": "design",
-      "at": 38,
+      "at": 55,
       "title": "THE DESIGN",
       "subtitle": "Friction that feels like a pause"
     },
     {
       "id": "results",
-      "at": 116,
+      "at": 104,
       "title": "THE RESULTS",
       "subtitle": "The leak was week one"
     }
@@ -54,110 +54,220 @@
       "id": "p-problem",
       "type": "copy",
       "chapter": "problem",
-      "place": {
-        "as": "story",
-        "x": 7,
-        "y": 22
-      },
+      "headline": "One tap to bypass",
+      "body": "I was spending 9 hours a day on Instagram. Screen Time limits did nothing to reduce that time. The limit sheet always had an \"Ignore Limit\" button, and one tap put me right back in the feed.\n\nSo I built Pause. It puts a short brainteaser in front of the apps I choose. Solve the puzzle and I'm in. Those daily 9 hours went down to one.",
       "image": {
         "src": "content/pause/easy-to-bypass.jpg",
         "caption": "One tap to bypass: the iOS Time Limit screen",
         "alt": "iOS Time Limit screen with an Ignore Limit button"
       },
-      "headline": "One tap to bypass",
-      "body": "I was spending 9 hours a day on Instagram. Screen Time limits did nothing: every one came with an \"Ignore Limit\" button, and one tap put me right back in the feed.\n\nPause took me from 9 hours a day to 1."
+      "place": {
+        "as": "sign",
+        "at": 39.5,
+        "lift": 6
+      }
     },
     {
       "id": "p-hmw",
       "type": "copy",
       "chapter": "problem",
+      "headline": "How much friction is enough?",
+      "body": "I looked at apps like ClearSpace, Forest and One Sec, among others. They were either too restrictive or too easy to bypass. The question I kept coming back to:\n\nHow much friction is enough to break autopilot, without making people feel punished or locked out of their own phone? Too little and it's a toothless timer. Too much and people delete the app.",
       "place": {
-        "as": "story",
-        "x": 27,
-        "y": 19
-      },
-      "headline": "How might we...",
-      "body": "I looked at ClearSpace, Forest, One Sec and others. They were either too restrictive or too easy to bypass.\n\n...so how might we add enough friction to break autopilot, without making people feel punished or locked out of their own phone?\n\nToo little and it's a toothless timer. Too much and people delete the app."
+        "as": "sign",
+        "at": 46
+      }
     },
     {
       "id": "p-friction",
-      "type": "decision",
+      "type": "copy",
       "chapter": "problem",
+      "headline": "Block it or slow it down",
+      "body": "The obvious version of a screen time app is a hard block: a timer that locks the app until it runs out. It's strong, but it feels like punishment, and per secondary research, people are likely to delete apps that punish them.\n\nI went with a quick puzzle instead. It's enough to interrupt autopilot without locking anyone out. Opening Instagram becomes a choice you make, not a reflex.",
       "place": {
-        "as": "decision",
-        "a": [
-          33,
-          15
-        ],
-        "b": [
-          34,
-          15
-        ]
-      },
-      "question": "Block it or slow it down?",
-      "optionA": {
-        "label": "Hard block",
-        "body": "A timer that locks the app. Strong, but it feels like punishment, and people delete apps that punish them."
-      },
-      "optionB": {
-        "label": "Quick puzzle",
-        "body": "A short puzzle before the app opens. Enough to break autopilot, and you're still in charge."
-      },
-      "chosen": "B",
-      "why": "Opening Instagram becomes a choice you make, not a reflex."
+        "as": "sign",
+        "at": 51.5
+      }
     },
     {
       "id": "p-principles",
       "type": "copy",
       "chapter": "design",
-      "place": {
-        "as": "story",
-        "x": 44,
-        "y": 22
-      },
-      "headline": "Happy path first",
-      "body": "I designed the happy path in Figma first: the colors, the brand, the theme. Then Claude Code and I built it in Xcode.\n\n- A pause, not a punishment\n- One shell, many games: learn it once\n- Don't collect what I don't need",
+      "headline": "Designing the happy path",
+      "body": "I started in Figma with the happy path: what the app looks like when everything goes right. Before any code existed, I picked the colors, the brand and the theme.\n\nThree rules guided it:\n\n- A pause, not a punishment\n- One shell, many games\n- Don't collect what I don't need",
       "image": {
         "src": "content/pause/original-happy-path.jpg",
         "caption": "The original happy path, designed in Figma"
+      },
+      "place": {
+        "as": "sign",
+        "at": 57
+      }
+    },
+    {
+      "id": "p-shell",
+      "type": "copy",
+      "chapter": "design",
+      "headline": "One shell for every puzzle",
+      "body": "I started with Word Jumble and kept at it until it felt right. Then I wrote down what made it work and made that the rule for every puzzle after it.\n\nOnly the game area changes. That's why Sixdoku makes sense in a few seconds even the first time you see it. I launched with 9 puzzles.",
+      "image": {
+        "src": "content/pause/all-puzzles-same-shell.jpg",
+        "caption": "Every puzzle in the same shell"
+      },
+      "place": {
+        "as": "sign",
+        "at": 63
+      }
+    },
+    {
+      "id": "p-deadends",
+      "type": "copy",
+      "chapter": "design",
+      "headline": "Building it with Claude Code",
+      "body": "Once the happy path was ready, I sent it to Claude Code and we built it in Xcode. I own the problem, the taste and what ships.\n\nThe happy path was the easy part. The missing cases showed up when I tested on my phone. I'd find something that wasn't there, take a screenshot, annotate it in Figma, and tell Claude Code to go back to the frame and check the style guide. Then we'd go around again.",
+      "image": {
+        "src": "content/pause/emulator-and-design-feedback.jpg",
+        "caption": "Working alongside the simulator, with design feedback"
+      },
+      "place": {
+        "as": "sign",
+        "at": 71.5
+      }
+    },
+    {
+      "id": "p-ai",
+      "type": "copy",
+      "chapter": "design",
+      "headline": "My first users",
+      "body": "My first users were friends and family. I shared the idea with a few of them, and 7 decided to prepay $20 each. For that, they got the first version and a full year of service.\n\nThe money mattered less than what it gave me: a group I could ask. Three ideas came out of that group, and all three are in the app:\n\n- Timing sessions\n- Difficulty per app\n- A view of your time",
+      "image": {
+        "src": "content/pause/whatsapp-poll.jpg",
+        "caption": "A poll in my early users' WhatsApp group: matching puzzles to specific apps got the most votes"
+      },
+      "place": {
+        "as": "sign",
+        "at": 82.5,
+        "lift": 70
+      }
+    },
+    {
+      "id": "p-themes",
+      "type": "copy",
+      "chapter": "design",
+      "headline": "Seasonal themes",
+      "body": "I wanted the app to feel alive and give people an opportunity to resonate with the season, so I decided to celebrate each upcoming season (Halloween, Thanksgiving, and Christmas).\n\nSo I built a SeasonalTheme system (gradients, accent colors, fonts and decor) that resolves once on launch.",
+      "image": {
+        "src": "content/pause/apps-season-theme.jpg",
+        "caption": "The dashboard in its default, Halloween and Thanksgiving themes"
+      },
+      "place": {
+        "as": "sign",
+        "at": 95,
+        "lift": 34
+      }
+    },
+    {
+      "id": "p-onboarding",
+      "type": "copy",
+      "chapter": "results",
+      "headline": "Going wide",
+      "body": "Once I had the group, I got louder about it on Instagram, LinkedIn and Threads. About 20 users came from there so it wasn't moving the needle.\n\nSo I put $1,000 into ads, split evenly between Reddit and Apple Search Ads. Reddit brought 0 installs. Apple brought all of the 100-something installs I tested.",
+      "image": {
+        "src": "content/pause/appstore-connect-data.jpg",
+        "caption": "App Store Connect: acquisition, the latest view"
+      },
+      "place": {
+        "as": "sign",
+        "at": 106
+      }
+    },
+    {
+      "id": "p-data",
+      "type": "copy",
+      "chapter": "results",
+      "headline": "What the data showed",
+      "body": "The installs were real. PostHog showed where those people stopped:\n\n- If you denied Screen Time or Notifications, you got stuck.\n- A lot of people dropped at app selection.\n- Free users got stuck on the only puzzle they had.",
+      "image": {
+        "src": "content/pause/mvql5muo-screenshot-2026-10-27-at-6.11.40-am.jpg",
+        "caption": "PostHog: the Word Jumble funnel"
+      },
+      "place": {
+        "as": "sign",
+        "at": 118,
+        "lift": 30
+      }
+    },
+    {
+      "id": "p-twist",
+      "type": "copy",
+      "chapter": "results",
+      "headline": "The real problem was week one",
+      "body": "The paid installs made the math clear. It cost about $4.33 to get an install, and each download was worth about $1.14, so every paid install lost about $3. Buying more installs would only lose more money.\n\nMarketing wasn't the leak. Week one was.",
+      "image": {
+        "src": "content/pause/posthog-roadmap.jpg",
+        "caption": "PostHog: weekly retention by cohort"
+      },
+      "note": "Notion 8.4: update the results with the latest numbers once 1.7 ships (Nov 1).",
+      "place": {
+        "as": "sign",
+        "at": 123,
+        "lift": 30
+      }
+    },
+    {
+      "id": "p-changed",
+      "type": "copy",
+      "chapter": "results",
+      "headline": "What I changed",
+      "body": "Onboarding is where my idea of the flow and what people actually got through were furthest apart. Here's what I changed:\n\n- A \"Try Again\" button after a denied permission\n- A Choose Apps screen before the picker\n- A \"Heads up\" box that explains why Screen Time access matters before iOS asks",
+      "image": {
+        "src": "content/pause/mvqlboxq-screenshot-2026-10-27-at-6.16.29-am.jpg",
+        "caption": "The new onboarding (thanksgiving theme)"
+      },
+      "place": {
+        "as": "sign",
+        "at": 128.5,
+        "lift": 30
+      }
+    },
+    {
+      "id": "p-downloads",
+      "type": "copy",
+      "chapter": "results",
+      "headline": "What's next: version 1.7",
+      "body": "Version 1.7, out Nov 1, is the test:\n\n- Trial first. People start a free trial to try Pause.\n- A different free version: three puzzles on one app.\n- The Word Jumble fixes, so nobody hits that dead end again.\n\nThe question is whether these changes move Day 7 retention. I'll update this with the numbers, even if they barely move.",
+      "image": {
+        "src": "content/pause/mvqlktxv-screenshot-2026-10-27-at-6.22.49-am.jpg",
+        "caption": "Word Jumble after the fixes, with Mix letters and Show word"
+      },
+      "note": "Notion 8.4: update the results with the latest numbers once 1.7 ships (Nov 1).",
+      "place": {
+        "as": "sign",
+        "at": 143
+      }
+    },
+    {
+      "id": "p-lessons",
+      "type": "copy",
+      "chapter": "results",
+      "headline": "What I'd tell another designer",
+      "body": "- Measure from the get go.\n- One system beats ten screens.\n- Measure what you design.\n- Stop when the data says stop.\n- AI made building cheap. Knowing what's right is still the job.\n- Most importantly: Distribution is THE only moat that counts and you cannot \"vibe marketing\"",
+      "place": {
+        "as": "sign",
+        "at": 148.3
       }
     },
     {
       "id": "p-principles-img",
       "type": "image",
       "chapter": "design",
-      "place": {
-        "as": "sign",
-        "at": 46
-      },
       "src": "content/pause/all-puzzles-same-shell.jpg",
       "caption": "Every puzzle, one shared shell"
-    },
-    {
-      "id": "p-deadends",
-      "type": "copy",
-      "chapter": "design",
-      "place": {
-        "as": "story",
-        "x": 76,
-        "y": 22
-      },
-      "image": {
-        "src": "content/pause/working-with-claude.jpg",
-        "caption": "Design feedback, built with Claude Code"
-      },
-      "headline": "Building with Claude Code",
-      "body": "I own the problem, the taste and what ships. Claude Code turns my Figma frames into SwiftUI and checks the code.\n\nThe missing cases showed up on my phone. I'd screenshot, annotate it in Figma, and send Claude back to the frame.",
-      "note": "Image still to add (Notion §3.3): IMG_0368, Word Jumble after the fixes. Placeholder for now."
     },
     {
       "id": "p-deadends-img",
       "type": "image",
       "chapter": "design",
-      "place": {
-        "as": "sign",
-        "at": 71
-      },
       "src": "content/pause/emulator-and-design-feedback.jpg",
       "caption": "Working alongside the emulator, with design feedback",
       "note": "Image still to add (Notion §3.3): IMG_0368, Word Jumble after the fixes. Placeholder for now."
@@ -166,17 +276,6 @@
       "id": "p-crossword",
       "type": "decision",
       "chapter": "design",
-      "place": {
-        "as": "decision",
-        "a": [
-          91,
-          23
-        ],
-        "b": [
-          93,
-          21
-        ]
-      },
       "question": "Kill or keep the Mini Crossword?",
       "optionA": {
         "label": "Mini Crossword",
@@ -190,30 +289,9 @@
       "why": "The gate shows up many times a day. A puzzle that repeats is worse than no puzzle."
     },
     {
-      "id": "p-ai",
-      "type": "copy",
-      "chapter": "design",
-      "place": {
-        "as": "story",
-        "x": 96,
-        "y": 22
-      },
-      "image": {
-        "src": "content/pause/whatsapp-poll.jpg",
-        "caption": "A poll in my early users' WhatsApp group: matching puzzles to specific apps won"
-      },
-      "headline": "My first users",
-      "body": "Seven friends and family prepaid $20 each for the first version and a year of service. Then I had a group to ask.\n\nI put my questions to them in WhatsApp polls: this puzzle or that one? Three ideas came out of it, and all three shipped:\n\n- Timing sessions\n- Difficulty per app\n- A view of your time and how often you walk away"
-    },
-    {
       "id": "p-ai-img",
       "type": "image",
       "chapter": "design",
-      "place": {
-        "as": "sign",
-        "at": 95,
-        "lift": 34
-      },
       "src": "content/pause/puzzle-difficulty.jpg",
       "caption": "Friction per app: an idea from my first users"
     },
@@ -231,29 +309,9 @@
       "body": "- Design it in Figma first\n- One thing at a time\n- Test it on my phone\n- Write the decision down\n\nIt even caught my analytics lying: puzzle_reset meant someone tapped Reset, not that they got it wrong."
     },
     {
-      "id": "p-themes",
-      "type": "copy",
-      "chapter": "design",
-      "place": {
-        "as": "story",
-        "x": 109,
-        "y": 22
-      },
-      "image": {
-        "src": "content/pause/apps-season-theme.jpg",
-        "caption": "Default, Halloween and Thanksgiving themes"
-      },
-      "headline": "Seasonal themes",
-      "body": "Change the accent, not the app. One theme system for gradients, colors, fonts and decor. Halloween brought Memory Match. Thanksgiving brought Gratitude, where your answers never leave your phone."
-    },
-    {
       "id": "p-themes-img",
       "type": "image",
       "chapter": "design",
-      "place": {
-        "as": "sign",
-        "at": 104
-      },
       "src": "content/pause/app-dashboard-halloween.jpg",
       "caption": "The dashboard in its Halloween theme"
     },
@@ -265,75 +323,17 @@
       "body": "Apple's Screen Time API hides app names and icons and won't open up categories. Instead of faking a clean list, I show app and category tiles side by side, got the system title to match my type, and wrote the rule down in the code."
     },
     {
-      "id": "p-onboarding",
-      "type": "copy",
-      "chapter": "results",
-      "place": {
-        "as": "story",
-        "x": 121,
-        "y": 21
-      },
-      "image": {
-        "src": "content/pause/appstore-connect-data.jpg",
-        "caption": "App Store Connect: acquisition, the latest view"
-      },
-      "headline": "Going wide",
-      "body": "Instagram, LinkedIn and Threads brought about 20 users. Not enough, so I put $1,000 into ads: $500 on Reddit and $500 on Apple.\n\nReddit brought no installs. Apple brought 100-something. Downloads went up 149%, but conversion dropped from 6.07% to 1.38%.",
-      "note": "Image still to add (Notion §5): the onboarding screenshot. Placeholder for now."
-    },
-    {
       "id": "p-onboarding-img",
       "type": "image",
       "chapter": "results",
-      "place": {
-        "as": "sign",
-        "at": 116
-      },
       "src": "content/pause/applyra.jpg",
       "caption": "Applyra: keyword ranks stayed flat",
       "note": "Image still to add (Notion §5): the onboarding screenshot. Placeholder for now."
     },
     {
-      "id": "p-twist",
-      "type": "copy",
-      "chapter": "results",
-      "place": {
-        "as": "switch"
-      },
-      "headline": "Plot twist: week one",
-      "body": "Marketing wasn't the leak. Week one was. People got stuck at permissions, at the app picker, and on the free version's only puzzle.\n\n- Each paid install cost $4.33 and was worth $1.14\n- Free users rarely converted\n- Paying subscribers: still single digits\n- Day 7 retention: 16% now, 30% is the target",
-      "note": "Notion 8.4: update the results with the latest numbers once 1.7 ships (Nov 1).",
-      "image": {
-        "src": "content/pause/free-vs-premium-starts.jpg",
-        "caption": "Free tier vs premium starts"
-      }
-    },
-    {
-      "id": "p-downloads",
-      "type": "metric",
-      "chapter": "results",
-      "place": {
-        "as": "story",
-        "x": 141,
-        "y": 19
-      },
-      "image": {
-        "src": "content/pause/mvqlktxv-screenshot-2026-10-27-at-6.22.49-am.jpg",
-        "caption": "Word Jumble, after the fixes"
-      },
-      "value": "1.7",
-      "label": "is the next test",
-      "body": "- Trial first: start a free trial in onboarding\n- A new free version: 3 puzzles on 1 app, not 1 puzzle on 3 apps\n- The Word Jumble fixes\n\nDoes it move Day 7 retention? I'll update this with the numbers, even if they barely move.",
-      "note": "Notion 8.4: update the results with the latest numbers once 1.7 ships (Nov 1)."
-    },
-    {
       "id": "p-downloads-img",
       "type": "image",
       "chapter": "results",
-      "place": {
-        "as": "sign",
-        "at": 143
-      },
       "src": "content/pause/mvqlboxq-screenshot-2026-10-27-at-6.16.29-am.jpg",
       "caption": "The new onboarding (thanksgiving theme)"
     },
@@ -345,7 +345,7 @@
         "as": "room"
       },
       "headline": "Bonus: the honest numbers",
-      "body": "Before the ads (Aug 31) vs after (Oct 1). I ran ads most of September.\n\n- Impressions 2.19k → 23.7k\n- Page views 364 → 924\n- Conversion 6.07% → 1.38%\n- Downloads 81 → 202\n\nTwo months of tweaking my title, subtitle and keywords didn't move my rankings.",
+      "body": "Before the ads (August 31) and after (October 1). I ran ads on most days of September.\n\n- Impressions 2.19k → 23.7k\n- Product page views 364 → 924\n- Conversion rate 6.07% → 1.38%\n- First-time downloads 81 → 202\n\nDownloads went up, but conversion rate went down.",
       "note": "Notion 8.4: update the results with the latest numbers once 1.7 ships (Nov 1).",
       "image": {
         "src": "content/pause/applyra.jpg",
@@ -393,13 +393,6 @@
       "chapter": "results",
       "src": "content/pause/appstore-first-images.jpg",
       "caption": "The first App Store images"
-    },
-    {
-      "id": "p-lessons",
-      "type": "copy",
-      "chapter": "results",
-      "headline": "What I'd tell another designer",
-      "body": "- Measure from the get go\n- One system beats ten screens\n- Measure what you design\n- Stop when the data says stop\n- AI made building cheap. Knowing what's right is still the job\n- Most importantly: distribution is the only moat that counts"
     }
   ]
 }

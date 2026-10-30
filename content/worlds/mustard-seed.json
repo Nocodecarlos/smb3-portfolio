@@ -27,54 +27,37 @@
     {
       "id": "m-problem",
       "type": "copy",
-      "headline": "Born at church",
-      "body": "When I took my kids to Mass, they mostly roamed around or played little games on my phone. I wanted to bring them closer to my faith, with activities to do and a way to go over the readings before and after, in words a five-year-old and a three-year-old could follow.\n\nIt started as a personal project, but I always wanted to see if it was marketable and if I could sell it.",
+      "headline": "Why I built it",
+      "body": "When I took my kids to Mass, they didn't do much besides roam around or play little games on my phone. I wanted to bring them closer to my faith, and I wanted to go over the readings with them before and after, in words a five-year-old and a three-year-old could follow.\n\nSo I built Mustard Seed. It started as a personal project, but my intention was always to see if it was marketable and if I could sell it.",
+      "image": {
+        "src": "content/mustard-seed/readings-adults.png",
+        "caption": "The readings, written for adults"
+      },
       "place": {
-        "as": "story",
-        "x": 5,
-        "y": 22
+        "as": "sign",
+        "at": 14
       }
     },
     {
       "id": "m-first-ai",
       "type": "copy",
       "headline": "My first app built with AI",
-      "body": "Cursor, Xcode, then the App Store. I'd never done it before, and Mustard Seed felt safe enough to try.\n\nI gave the tools a Figma link and screenshots. The app came out almost exactly as I'd designed it, and that's when I thought: I can do this now.",
-      "note": "Which AI image tools (Canva, Nano Banana, Flux) did you actually use, if any?",
-      "place": {
-        "as": "story",
-        "x": 13,
-        "y": 20
-      }
-    },
-    {
-      "id": "m-brand",
-      "type": "copy",
-      "headline": "Purple was too heavy",
-      "body": "I pictured a purple and mustard brand. After a couple of runs it felt heavy and drastic. I wanted clean and simple, and parents would be the ones using it most.\n\nMuted yellow and a darker green won.",
-      "place": {
-        "as": "story",
-        "x": 29,
-        "y": 19
-      }
-    },
-    {
-      "id": "m-brand-img",
-      "type": "image",
-      "src": "content/mustard-seed/purple-direction.webp",
-      "caption": "The purple and mustard direction I dropped",
-      "alt": "Two purple Mustard Seed sign-in screens, a lighter and a darker one",
+      "body": "This was my first attempt at building anything with AI. I used Cursor with Xcode, and I took it all the way to the App Store.\n\nI didn't have the Figma MCP, and I wasn't using Claude Code yet. I gave the tools a Figma link and Figma screenshots. Even then, the app came out almost exactly the way I'd designed it, down to how it feels. I thought, wow, I can do these things now.",
       "place": {
         "as": "sign",
         "at": 31.2
       }
     },
     {
-      "id": "m-splash",
-      "type": "image",
-      "src": "content/mustard-seed/splash.png",
-      "caption": "The brand: muted yellow on a darker green with a subtle gradient",
-      "alt": "Mustard Seed splash screen",
+      "id": "m-brand",
+      "type": "copy",
+      "headline": "Finding the look",
+      "body": "I started by imagining a purple and mustard brand. I did a couple of runs, and the more I looked at it, the less I felt it. It was heavy and drastic. I wanted something clean and simple.\n\nI also realized that parents would be the ones using this most, even though it was for kids. So I went with a muted yellow and a darker green, and built the splash screen from that.",
+      "image": {
+        "src": "content/mustard-seed/purple-direction.webp",
+        "caption": "The purple and mustard direction I dropped",
+        "alt": "Two purple Mustard Seed sign-in screens, a lighter and a darker one"
+      },
       "place": {
         "as": "sign",
         "at": 45.5
@@ -82,10 +65,14 @@
     },
     {
       "id": "m-happy-path",
-      "type": "image",
-      "src": "content/mustard-seed/happy-path.webp",
-      "caption": "The happy path: my first pass, before building",
-      "alt": "A row of Mustard Seed screens: splash, sign up, readings, and the seed growing",
+      "type": "copy",
+      "headline": "The happy path",
+      "body": "I did my usual first pass, the happy path: what the app looks like when everything goes right, what it will have, how it should feel. After that I built it.",
+      "image": {
+        "src": "content/mustard-seed/happy-path.webp",
+        "caption": "The happy path: every screen in the first pass, with everything going right",
+        "alt": "A row of Mustard Seed screens: splash, sign up, readings, and the seed growing"
+      },
       "place": {
         "as": "sign",
         "at": 50.3
@@ -93,10 +80,14 @@
     },
     {
       "id": "m-app",
-      "type": "image",
-      "src": "content/mustard-seed/app.jpg",
-      "caption": "This Sunday's readings, plus past weeks",
-      "alt": "Mustard Seed readings screen",
+      "type": "copy",
+      "headline": "What the app does",
+      "body": "You come in on Sunday and read the First Reading, the Second Reading and the Gospel with your kids, in a format they can understand. Each week, they can also complete an activity.\n\n- This Sunday: the readings for the week, written for kids\n- Past Sundays: an archive to go back to\n- Activities: a coloring page, a maze, and a word search\n- The seed: it grows a little every Sunday",
+      "image": {
+        "src": "content/mustard-seed/app.jpg",
+        "caption": "This Sunday's readings, plus past weeks",
+        "alt": "Mustard Seed readings screen"
+      },
       "place": {
         "as": "sign",
         "at": 63.4
@@ -105,70 +96,150 @@
     {
       "id": "m-seed",
       "type": "copy",
-      "headline": "A seed that grows",
-      "body": "Read the readings with your kids, or finish an activity, and your seed grows a little each Sunday. It grows through 8 stages and starts to sprout vegetables.\n\nGentle, no streaks, just a plant that gets bigger.",
+      "headline": "The seed",
+      "body": "Progress is displayed as a growing mustard seed. There are 8 stages, and every Sunday the seed grows a bit closer to bloom. It starts to sprout vegetables.\n\nThe idea was that you'd see your progress as the weeks went by. It's gentle. There are no streaks to feel bad about, just a plant that gets bigger.",
+      "image": {
+        "src": "content/mustard-seed/seed-growing.webp",
+        "caption": "The seed growing across the weeks"
+      },
       "place": {
-        "as": "story",
-        "x": 82,
-        "y": 21
+        "as": "sign",
+        "at": 70.5
       }
     },
     {
-      "id": "m-seed-img",
-      "type": "image",
-      "src": "content/mustard-seed/seed-growing.webp",
-      "caption": "The seed across the weeks",
+      "id": "m-activities",
+      "type": "copy",
+      "headline": "The word search",
+      "body": "The word search is where my puzzle idea started. It was the first time I tried one, and I thought, whoa, it would be cool to have puzzle-like things inside an app so kids could be entertained.\n\nThe puzzle is dynamic: it brings in words from that week's reading. That's the idea that later turned into the puzzles in Pause.",
+      "image": {
+        "src": "content/mustard-seed/word-search.png",
+        "caption": "The word search, built from that week's reading"
+      },
+      "place": {
+        "as": "sign",
+        "at": 79.8
+      }
+    },
+    {
+      "id": "m-content",
+      "type": "copy",
+      "headline": "Content every week",
+      "body": "If the app was going to be live, it was going to need new content every week. I couldn't ship an App Store update every Sunday, so the content had to live outside the app.\n\nSo I built an admin website using Supabase as a backend. A Sunday shows up in the app once its publish date passes, and I could schedule weeks ahead.",
+      "place": {
+        "as": "sign",
+        "at": 89.3
+      }
+    },
+    {
+      "id": "m-bilingual",
+      "type": "copy",
+      "headline": "English and Spanish",
+      "body": "I speak Spanish with my kids, and my kids mainly speak Spanish, so I knew I wanted the app in at least two languages.\n\nIt was also my first time localizing an app. Spanish is longer. \"Start free trial\" becomes \"Comenzar prueba gratuita\", which is a very long message. Seeing how that stretched the UI was a great lesson.",
+      "image": {
+        "src": "content/mustard-seed/spanish-trial.webp",
+        "caption": "Comenzar prueba gratuita, the Spanish for Start free trial"
+      },
       "place": {
         "as": "sign",
         "at": 94.5
       }
     },
     {
-      "id": "m-activities",
+      "id": "m-hard",
       "type": "copy",
-      "headline": "Activities that change weekly",
-      "body": "A coloring page you color on the iPad, a maze, and my first ever word search, built from that week's readings.\n\nThat word search is where Pause's puzzles started.",
-      "place": {
-        "as": "story",
-        "x": 91,
-        "y": 14
-      }
-    },
-    {
-      "id": "m-wordsearch-img",
-      "type": "image",
-      "src": "content/mustard-seed/word-search.png",
-      "caption": "The word search, built from that week's reading",
+      "headline": "Too much to keep up with",
+      "body": "I updated content myself for a couple of weeks. Then I realized it was going to be very hard to keep up.\n\nEvery week I had to retell the readings in simple words, in English and in Spanish, make an image for each reading, and think of an activity. I wasn't going to have the time to do that week after week.",
       "place": {
         "as": "sign",
         "at": 110.3
       }
     },
     {
-      "id": "m-content",
-      "type": "decision",
-      "question": "How does new content reach families each week?",
-      "optionA": {
-        "label": "Ship in the app",
-        "body": "Bundle each Sunday into an app update.\n\nSimple to build, but it means an App Store release every week."
+      "id": "m-reddit",
+      "type": "copy",
+      "headline": "Did anyone want it?",
+      "body": "Mustard Seed was a personal project, but I still wanted to see if other people were interested. I went out and searched Reddit and joined Facebook groups.\n\nThe feedback was loud. Parents don't give phones to kids at Mass. They give them books. And they're adamantly against screen time.",
+      "image": {
+        "src": "content/mustard-seed/reddit-feedback.png",
+        "caption": "What parents told me on Reddit and in Facebook groups"
       },
-      "optionB": {
-        "label": "Publish from an admin",
-        "body": "Put each Sunday in a web admin and the app picks it up.\n\nMore to build up front, but no releases for content."
-      },
-      "chosen": "B",
-      "why": "Content changes every week, so I built a server-side CMS: an admin site and a Supabase backend. A Sunday shows up once its publish date passes.",
       "place": {
-        "as": "decision",
-        "a": [
-          71,
-          22
-        ],
-        "b": [
-          73,
-          22
-        ]
+        "as": "sign",
+        "at": 120.3
       }
+    },
+    {
+      "id": "m-stop",
+      "type": "copy",
+      "headline": "Stopping",
+      "body": "In the end I stopped supporting the app and stopped posting the readings. I wrote to the few users I had, six people, and apologized. They all understood where I was coming from.\n\nIt went nowhere as a product. But it planted a seed - no pun intended. People really are against screen time, and that's what I later went on to solve with Pause.",
+      "place": {
+        "as": "sign",
+        "at": 125.7
+      }
+    },
+    {
+      "id": "m-learned",
+      "type": "copy",
+      "headline": "What I learned",
+      "body": "- I can build things with AI now.\n- I can try to market them, too. Building was only half of it, and this is probably the hardest hurdle.\n- Designing for content is design work.\n- Language changes the UI. Spanish is longer than English, so I design for the longer word.\n- Small projects teach the most.",
+      "place": {
+        "as": "sign",
+        "at": 138.6
+      }
+    },
+    {
+      "id": "m-admin",
+      "type": "copy",
+      "headline": "The three sides",
+      "body": "Mustard Seed has three parts that all read from one Supabase backend.\n\n- The iOS app: what families use\n- The marketing site: readings, activities and a blog\n- The admin site: drafts and published weeks, a Sunday editor, uploads, and schedule and publish",
+      "place": {
+        "as": "sign",
+        "at": 179.3
+      }
+    },
+    {
+      "id": "m-hidden-admin",
+      "type": "copy",
+      "lens": "build",
+      "headline": "A hidden admin mode",
+      "body": "The app has its own hidden admin entry: triple-tap the version number in Settings. It has drafts, an editor, and a Seed Growth Emulator to preview how the seed looks as it grows.\n\nSound familiar? You found this editor the same way.",
+      "image": {
+        "src": "content/mustard-seed/admin-login.webp",
+        "caption": "The app's hidden admin login",
+        "alt": "Mustard Seed admin login screen in dark mode, with email and password fields"
+      },
+      "place": {
+        "as": "sign",
+        "at": 188.3
+      }
+    },
+    {
+      "id": "m-splash",
+      "type": "image",
+      "src": "content/mustard-seed/splash.png",
+      "caption": "The brand: muted yellow on a darker green with a subtle gradient",
+      "alt": "Mustard Seed splash screen"
+    },
+    {
+      "id": "m-brand-img",
+      "type": "image",
+      "src": "content/mustard-seed/purple-direction.webp",
+      "caption": "The purple and mustard direction I dropped",
+      "alt": "Two purple Mustard Seed sign-in screens, a lighter and a darker one"
+    },
+    {
+      "id": "m-seed-img",
+      "type": "image",
+      "src": "content/mustard-seed/seed-growing.webp",
+      "caption": "The seed across the weeks"
+    },
+    {
+      "id": "m-wordsearch-img",
+      "type": "image",
+      "src": "content/mustard-seed/word-search.png",
+      "caption": "The word search, built from that week's reading"
     },
     {
       "id": "m-surfaces",
@@ -178,80 +249,16 @@
       "body": "The iOS app for families, the marketing website for discovery and SEO, and the admin website. All of them read the same Supabase tables."
     },
     {
-      "id": "m-bilingual",
-      "type": "metric",
-      "value": "EN/ES",
-      "label": "Bilingual from day one",
-      "body": "I speak Spanish with my kids, so the admin had a side for each language.\n\nSpanish is longer: \"Start free trial\" becomes \"Comenzar prueba gratuita\". Seeing that stretch my buttons taught me a lot about localizing.",
-      "place": {
-        "as": "story",
-        "x": 121,
-        "y": 22
-      }
-    },
-    {
       "id": "m-spanish-img",
       "type": "image",
       "src": "content/mustard-seed/spanish-trial.webp",
-      "caption": "Comenzar prueba gratuita, the Spanish for Start free trial",
-      "place": {
-        "as": "sign",
-        "at": 123.4
-      }
-    },
-    {
-      "id": "m-admin",
-      "type": "copy",
-      "headline": "An editor that fits Sunday",
-      "body": "The admin site has one job: build a Sunday package.\n\n- Four readings (First Reading, Psalm, Second Reading, Gospel) with EN/ES titles and summaries\n- One activity with a PDF upload\n- Publish now or schedule it\n\nOnly people on the admin list can sign in, and row-level security enforces it in the database.",
-      "place": {
-        "as": "story",
-        "x": 181,
-        "y": 22
-      }
-    },
-    {
-      "id": "m-hard",
-      "type": "copy",
-      "headline": "Too much to keep up with",
-      "body": "Every Sunday: put the readings into kid-friendly words, in English and Spanish, cite the scripture, make an image for each reading, and think up an activity.\n\nI did it for a couple of weeks. Then I knew I couldn't keep it up.",
-      "place": {
-        "as": "story",
-        "x": 129,
-        "y": 22
-      }
-    },
-    {
-      "id": "m-reddit",
-      "type": "copy",
-      "headline": "Did anyone want it?",
-      "body": "I wanted to know if other people cared, so I searched Reddit and joined Facebook groups.\n\nThe answer was loud: parents don't hand phones to kids at Mass. They hand them books. Many are adamantly against screen time.",
-      "place": {
-        "as": "story",
-        "x": 136,
-        "y": 19
-      }
+      "caption": "Comenzar prueba gratuita, the Spanish for Start free trial"
     },
     {
       "id": "m-reddit-img",
       "type": "image",
       "src": "content/mustard-seed/reddit-feedback.png",
-      "caption": "What parents told me on Reddit and in Facebook groups",
-      "place": {
-        "as": "sign",
-        "at": 138.6
-      }
-    },
-    {
-      "id": "m-stop",
-      "type": "copy",
-      "headline": "Closing it down",
-      "body": "I stopped posting readings. I wrote to the six people using it, apologized and explained why. They all understood.",
-      "place": {
-        "as": "story",
-        "x": 154,
-        "y": 22
-      }
+      "caption": "What parents told me on Reddit and in Facebook groups"
     },
     {
       "id": "m-stack",
@@ -259,29 +266,6 @@
       "lens": "build",
       "headline": "The build",
       "body": "- Tools: Figma, Cursor, Xcode\n- iOS: Swift, SwiftUI, Supabase Swift, StoreKit 2 subscriptions, PencilKit for drawing on activities\n- Offline: local cache plus background refresh\n- Web and admin: Next.js on Netlify\n- Backend: Supabase auth, Postgres, storage for images and PDFs, row-level security tied to an admin list"
-    },
-    {
-      "id": "m-hidden-admin",
-      "type": "copy",
-      "lens": "build",
-      "headline": "A hidden admin mode",
-      "body": "The app has its own hidden admin entry (triple-tap the version number in Settings) with drafts, an editor and a Seed Growth Emulator to preview how the seed grows.\n\nSound familiar? You found this editor the same way.",
-      "place": {
-        "as": "story",
-        "x": 190,
-        "y": 22
-      },
-      "image": {
-        "src": "content/mustard-seed/admin-login.webp",
-        "caption": "The app's hidden admin login",
-        "alt": "Mustard Seed admin login screen in dark mode, with email and password fields"
-      }
-    },
-    {
-      "id": "m-learned",
-      "type": "copy",
-      "headline": "What I learned",
-      "body": "I can build what I design with AI: my vision came out almost exactly from a Figma link and screenshots.\n\nAnd that Reddit answer planted a seed for Pause. People really are against screen time, so that's what I tried to solve next."
     }
   ],
   "lessons": [

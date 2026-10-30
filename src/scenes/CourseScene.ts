@@ -37,6 +37,11 @@ export interface CourseLevel {
   goalRow?: number;
   /** A Capy slingshot on the ground, centred on this tile x: hold S on it to pull back, let go to fly straight up. */
   slingshot?: number;
+  /**
+   * Launch the Capy's bounce clouds on the way up to the goal: [white | blue | dark, tile x of the left edge, tile
+   * row of the top]. Landing on one bounces you up to the next. The slingshot reaches the lowest.
+   */
+  bounceClouds?: [Bounce, number, number][];
   ground: [number, number][];
   /** Knit ground with slopes (in place of `ground`): each piece's top edge as [tile x, tiles above the ground row]. */
   terrain?: [number, number][][];
@@ -79,6 +84,13 @@ export function getLevel(id: string): CourseLevel | undefined {
 const T = 16;
 /** How long S has to be held on the white platform to flip sides, in ms. */
 const DOOR_HOLD = 2000;
+type Bounce = 'white' | 'blue' | 'dark';
+/** Each Capy cloud's width in px (the art is twice as wide as tall) and the speed it bounces you up at, no jump needed. */
+const BOUNCE: Record<Bounce, { key: string; w: number; speed: number }> = {
+  white: { key: CAPY.cloud, w: 64, speed: 460 },
+  blue: { key: CAPY.cloudBlue, w: 48, speed: 520 },
+  dark: { key: CAPY.cloudDark, w: 36, speed: 450 },
+};
 /** `coin` is a brick hiding a coin: a shell can't break it, it bounces back. `wood` is a plain solid block (stairs). */
 type Kind = 'q' | 'item' | 'brick' | 'coin' | 'wood' | 'note' | 'super' | 'pswitch' | 'story';
 interface Block {
@@ -111,6 +123,8 @@ export class CourseScene extends Phaser.Scene {
   private story!: CourseStory;
   private solids!: Phaser.Physics.Arcade.StaticGroup;
   private semis!: Phaser.Physics.Arcade.StaticGroup;
+  /** Capy bounce clouds: jump-through tops that spring you up. */
+  private bouncers!: Phaser.Physics.Arcade.StaticGroup;
   private coins!: Phaser.Physics.Arcade.StaticGroup;
   private enemies!: Phaser.Physics.Arcade.Group;
   private blocks = new Map<Phaser.GameObjects.GameObject, Block>();
@@ -210,6 +224,7 @@ export class CourseScene extends Phaser.Scene {
 
     this.solids = this.physics.add.staticGroup();
     this.semis = this.physics.add.staticGroup();
+    this.bouncers = this.physics.add.staticGroup();
     this.coins = this.physics.add.staticGroup();
     this.enemies = this.physics.add.group();
 
@@ -364,6 +379,7 @@ export class CourseScene extends Phaser.Scene {
     this.goal = feltImage(this, gx, goalY, `icon-${this.world.card}`).setDepth(5);
     this.add.graphics().setDepth(4).lineStyle(2, 0xffffff).strokeRect(gx - 14, goalY - 14, 28, 28);
     if (L.slingshot !== undefined) this.buildSlingshot(L.slingshot * T, G);
+    for (const [kind, x, y] of L.bounceClouds ?? []) this.buildBounceCloud(kind, x * T, y * T);
 
     if (L.room) this.buildRoom();
     this.buildSky();
@@ -380,6 +396,7 @@ export class CourseScene extends Phaser.Scene {
 
     this.physics.add.collider(this.player, this.solids, (_p, o) => this.touchSolid(o as Phaser.GameObjects.GameObject));
     this.physics.add.collider(this.player, this.semis);
+    this.physics.add.collider(this.player, this.bouncers, (_p, top) => this.bounceOff(top as Phaser.GameObjects.Rectangle));
     this.physics.add.collider(this.enemies, this.solids, undefined, (e, o) => this.shellHits(e as Phaser.Physics.Arcade.Sprite, o as Phaser.GameObjects.GameObject));
     this.physics.add.collider(this.enemies, this.semis);
     this.physics.add.overlap(this.enemies, this.enemies, (a, b) => this.shellMeets(a as Phaser.Physics.Arcade.Sprite, b as Phaser.Physics.Arcade.Sprite));
@@ -576,6 +593,30 @@ export class CourseScene extends Phaser.Scene {
     this.sling = { x, pull: 0, band, hint, art };
   }
 
+  /** A Capy cloud on the way up to the goal; `top` is where its yarn crown is. */
+  private buildBounceCloud(kind: Bounce, x: number, top: number) {
+    const c = BOUNCE[kind];
+    // the crown of the yarn sits about a tenth of the art's height below its top edge
+    const art = this.add.image(x, top - c.w * 0.05, c.key).setOrigin(0).setDisplaySize(c.w, c.w / 2).setDepth(3);
+    // jump-through, across the fuller middle of the cloud
+    const body = this.add.rectangle(x + c.w / 2, top + 3, c.w * 0.7, 6).setVisible(false).setData('cloud', kind).setData('art', art);
+    this.bouncers.add(body);
+    const b = body.body as Phaser.Physics.Arcade.StaticBody;
+    b.checkCollision.down = b.checkCollision.left = b.checkCollision.right = false;
+  }
+
+  /** Land on a Capy cloud and it throws you up to the next one by itself. */
+  private bounceOff(top: Phaser.GameObjects.Rectangle) {
+    if (!this.player.body.touching.down) return;
+    const c = BOUNCE[top.getData('cloud') as Bounce];
+    this.player.spring(c.speed, c.speed);
+    sfx.select();
+    const art = top.getData('art') as Phaser.GameObjects.Image;
+    this.tweens.killTweensOf(art);
+    const y = art.y;
+    this.tweens.add({ targets: art, y: y + 4, duration: 70, yoyo: true, onComplete: () => art.setY(y) });
+  }
+
   /** Per frame: pull back while S is held on the slingshot, fly when it's let go. */
   private updateSlingshot(p: Player) {
     const s = this.sling;
@@ -593,8 +634,9 @@ export class CourseScene extends Phaser.Scene {
       return;
     }
     if (s.pull > 0) {
-      // full pull carries you just past the goal card; less, proportionally lower
-      const rise = G - this.goal.y + 28;
+      // full pull carries you just past the goal card, or with clouds on the way, two tiles over the lowest one
+      const clouds = this.level.bounceClouds;
+      const rise = clouds?.length ? G - Math.max(...clouds.map(([, , y]) => y)) * T + 2 * T : G - this.goal.y + 28;
       const speed = Math.sqrt(2 * this.physics.world.gravity.y * rise) * (0.55 + 0.45 * s.pull);
       s.pull = 0;
       s.art.setAngle(0);
@@ -769,8 +811,8 @@ export class CourseScene extends Phaser.Scene {
       return;
     }
 
-    // Felt signposts: press S in front of one to look at its picture
-    if (!this.inRoom && p.downPressed) {
+    // Felt billboards (the secret room can have them too): press S in front of one to read it, or see its picture
+    if (p.downPressed) {
       const look = this.story.signAt(p.x);
       if (look) {
         if (ui.dev) this.select(this.story.signFor(p.x)!.beat.id);
