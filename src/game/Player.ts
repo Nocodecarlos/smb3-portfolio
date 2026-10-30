@@ -24,12 +24,14 @@ export function createControls(scene: Phaser.Scene): Controls {
   const K = Phaser.Input.Keyboard.KeyCodes;
   const keys = (...codes: number[]) => codes.map((c) => k.addKey(c, false));
   return {
-    // WASD + K (run) and L (jump) are the advertised scheme; arrows/space/shift still work
+    // WASD + K (run) and L (jump) are the advertised scheme, with Space and Alt/Option beside them
+    // for thumbs on the space bar; arrows/shift still work. (Not Cmd: Cmd+W would close the tab.)
     left: keys(K.A, K.LEFT),
     right: keys(K.D, K.RIGHT),
     down: keys(K.S, K.DOWN),
     jump: keys(K.L, K.W, K.SPACE, K.Z, K.UP),
-    run: keys(K.K, K.SHIFT, K.X),
+    // Alt is captured so it can't pop open the browser's menu bar
+    run: [...keys(K.K, K.SHIFT, K.X), k.addKey(K.ALT, true)],
   };
 }
 

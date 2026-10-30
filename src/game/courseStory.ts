@@ -3,7 +3,7 @@ import { ART, FELT, Z, feltPost } from '../art/felt';
 import { resolveSrc } from '../content/store';
 import type { Beat, ImageBeat, World } from '../content/types';
 import { type StoryCard, showImage, showStory } from '../ui/overlays';
-import type { FeltStatusBar } from './feltHud';
+import { type FeltStatusBar, SEED, SEED_STAGES } from './feltHud';
 import { ui } from './state';
 import { px } from './text';
 import { asset } from '../assets';
@@ -60,11 +60,15 @@ export class CourseStory {
     }
     if (world.chapters?.length) hud.setChapters(CARD_FRAMES.slice(0, world.chapters.length));
     hud.setStories(0, this.stories.length);
+    if (world.growSeed) hud.setSeed(0);
   }
 
   /** The story block image and any billboard pictures, loaded with the scene. */
   static preload(scene: Phaser.Scene, world: World) {
     if (!scene.textures.exists(STORY_TEXTURE)) scene.load.image(STORY_TEXTURE, asset('felt/story-block.png'));
+    if (world.growSeed) {
+      for (let i = 0; i < SEED_STAGES; i++) if (!scene.textures.exists(`${SEED}-${i}`)) scene.load.image(`${SEED}-${i}`, asset(`felt/seed/stage-${i}.png`));
+    }
     for (const b of world.beats) {
       if (b.type === 'image' && b.place?.as === 'sign' && b.src && !scene.textures.exists(`img:${b.src}`)) {
         scene.load.image(`img:${b.src}`, resolveSrc(b.src));
@@ -87,15 +91,14 @@ export class CourseStory {
     this.hints.push({ x: x * T + 8, id, tag });
   }
 
-  /** Felt billboards for image beats, standing on the ground row. */
-  buildSigns(groundY: number) {
+  /** Felt billboards for image beats, standing on the ground (`groundAt(x)` is its top at x; on a slope the posts differ). */
+  buildSigns(groundAt: (x: number) => number) {
     for (const b of this.world.beats) {
       if (b.type !== 'image' || b.place?.as !== 'sign') continue;
       const x = b.place.at * T;
-      const top = groundY - SIGN_H - 30 - (b.place.lift ?? 0);
-      const postH = groundY - top - SIGN_H + 2;
-      feltPost(this.scene, x + 9, top + SIGN_H - 2, 5, postH).setDepth(-3.1);
-      feltPost(this.scene, x + SIGN_W - 14, top + SIGN_H - 2, 5, postH).setDepth(-3.1);
+      const legs = [x + 9, x + SIGN_W - 14];
+      const top = Math.min(...legs.map((l) => groundAt(l + 2.5))) - SIGN_H - 30 - (b.place.lift ?? 0);
+      for (const l of legs) feltPost(this.scene, l, top + SIGN_H - 2, 5, groundAt(l + 2.5) - top - SIGN_H + 2).setDepth(-3.1);
       this.scene.add.nineslice(x, top, FELT, 'platform-f4faf4', SIGN_W * ART, SIGN_H * ART, 9 * ART, 9 * ART, 9 * ART, 9 * ART).setOrigin(0).setScale(1 / ART).setDepth(-3);
       if (b.src && this.scene.textures.exists(`img:${b.src}`)) {
         const img = this.scene.add.image(x + SIGN_W / 2, top + SIGN_H / 2, `img:${b.src}`).setDepth(-2.9);
@@ -203,9 +206,16 @@ export class CourseStory {
     return () => showStory(this.card(b));
   }
 
+  /** Reached the goal: the seed is in bloom, however many stories were read. */
+  bloom() {
+    if (this.world.growSeed) this.hud.setSeed(SEED_STAGES - 1);
+  }
+
   private openCard(id: string, card: StoryCard) {
     this.read.add(id);
     this.hud.setStories(this.read.size, this.stories.length);
+    // the seed grows with the stories; full bloom is saved for the goal
+    if (this.world.growSeed) this.hud.setSeed(Math.min(SEED_STAGES - 2, Math.floor((this.read.size * (SEED_STAGES - 1)) / this.stories.length)));
     return showStory({ ...card, progress: `${this.read.size} / ${this.stories.length} stories` });
   }
 

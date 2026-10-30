@@ -10,7 +10,6 @@ const COIN_X = 179 + EXTRA;
 /** The app icon on a map stop: as tall as the two text rows beside it, inside the dashed outline. */
 const STOP_ICON = 16;
 const STOP_ICON_Y = FIELD + 14.25;
-import { px } from './text';
 
 // The felt status bar (Figma: ui-felt/status-bar) for courses that render
 // at Z times resolution. Same API as StatusBar.
@@ -19,6 +18,13 @@ const NAVY = '#2f3f8f';
 const BROWN = '#5a3518';
 /** Card art for the problem / design / results chapters. */
 const CHAPTER_FRAMES = ['bug-0', 'icon-pencil', 'icon-star'];
+/** Texture keys of the seed stages, `${SEED}-0` to `${SEED}-7`. */
+export const SEED = 'hud-seed';
+export const SEED_STAGES = 8;
+/** Each stage's height in the bar (game px): the seed starts small and grows. */
+const SEED_H = [8, 11, 13, 15, 17, 18, 19, 21];
+/** Centre of the seed: right after the story count. */
+const SEED_X = 182;
 
 export class FeltStatusBar {
   private scene: Phaser.Scene;
@@ -27,11 +33,11 @@ export class FeltStatusBar {
   private line2: Phaser.GameObjects.Text;
   private worldText: Phaser.GameObjects.Text;
   private root: Phaser.GameObjects.Container;
-  private tip?: Phaser.GameObjects.Container;
   private subtitle: Phaser.GameObjects.Text;
   private headline: Phaser.GameObjects.Text;
   private storiesText: Phaser.GameObjects.Text;
   private chapterIcon?: Phaser.GameObjects.Image;
+  private seed?: Phaser.GameObjects.Image;
   private cards: Phaser.GameObjects.Image[] = [];
 
   constructor(scene: Phaser.Scene, worldLabel: string, line2: string) {
@@ -102,6 +108,27 @@ export class FeltStatusBar {
 
   setLine2(s: string) {
     this.line2.setText(s);
+  }
+
+  /**
+   * The growing seed beside the story count (Mustard Seed): stage 0 is the
+   * seed, the last is the plant in bloom. Each new stage pops in.
+   */
+  setSeed(stage: number) {
+    const key = `${SEED}-${stage}`;
+    if (!this.scene.textures.exists(key)) return;
+    const h = SEED_H[stage] ?? SEED_H[SEED_H.length - 1];
+    const grew = this.seed?.texture.key !== key;
+    if (!this.seed) {
+      this.seed = this.scene.add.image(SEED_X, FIELD + 23.5, key).setOrigin(0.5, 1);
+      this.root.add(this.seed);
+    }
+    this.scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR);
+    this.seed.setTexture(key).setDisplaySize((h * this.seed.width) / this.seed.height, h);
+    if (grew && stage > 0) {
+      const sy = this.seed.scaleY;
+      this.scene.tweens.add({ targets: this.seed, scaleY: { from: sy * 0.6, to: sy }, duration: 400, ease: 'Back.easeOut' });
+    }
   }
 
   /**
@@ -195,26 +222,6 @@ export class FeltStatusBar {
 
   setWorld(s: string) {
     this.worldText.setText(s);
-  }
-
-  /** A sand-coloured strip just above the bar, for the controls at the start of a level. */
-  showTip(s: string) {
-    this.hideTip();
-    const strip = this.scene.add.rectangle(0, FIELD - 15, WIDTH, 15, 0xfcd8a8).setOrigin(0);
-    const text = px(this.scene, WIDTH / 2, FIELD - 11, s, { color: '#000000', size: 6 }).setOrigin(0.5, 0);
-    this.tip = this.scene.add.container(0, 0, [strip, text]);
-    this.root.add(this.tip);
-  }
-
-  hideTip() {
-    const tip = this.tip;
-    if (!tip) return;
-    this.tip = undefined;
-    this.scene.tweens.add({ targets: tip, alpha: 0, duration: 400, onComplete: () => tip.destroy() });
-  }
-
-  get tipShown() {
-    return !!this.tip;
   }
 }
 

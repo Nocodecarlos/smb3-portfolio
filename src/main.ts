@@ -65,6 +65,8 @@ async function start() {
   window.addEventListener('keydown', (e) => {
     const t = e.target as HTMLElement;
     if (isTyping(t) || ui.blocking) return;
+    // Alt is a run key: keep Alt+arrow (back/forward) and Alt+letter browser shortcuts from firing mid-run
+    if (e.altKey) e.preventDefault();
     if (e.key === 'm' || e.key === 'M') game.sound.mute = toggleMute();
   });
 

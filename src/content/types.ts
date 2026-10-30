@@ -96,6 +96,8 @@ export interface World {
   level?: string;
   /** Chapters of the hand-built course, in order: where each starts and what the status bar says. */
   chapters?: { id: Chapter; at: number; title: string; subtitle: string }[];
+  /** The status bar shows a seed (public/felt/seed) that grows a stage per story read and blooms at the goal. */
+  growSeed?: boolean;
   /** Short takeaways for the end card. */
   lessons?: string[];
   /**

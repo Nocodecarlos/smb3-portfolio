@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
-import { ART, FELT, SKY, Z, feltImage, feltOnGround, feltPlatform, feltPost, feltSprite, haze, preloadFelt, setupFelt } from '../art/felt';
+import { ART, FELT, PIPE_INSET, PIPE_RUN, SKY, Z, feltImage, feltOnGround, feltPlatform, feltPost, feltSprite, haze, preloadFelt, setupFelt } from '../art/felt';
 import { HeroRig, preloadHeroes } from '../art/hero';
+import { drawKnit, preloadKnit } from '../art/knit';
 import { getWorld, getWorlds } from '../content/store';
 import type { World } from '../content/types';
 import { CourseStory, STORY_TEXTURE } from '../game/courseStory';
@@ -9,6 +10,7 @@ import { Player, createControls, held, type Controls } from '../game/Player';
 import { playMusic } from '../game/music';
 import { sfx } from '../game/sfx';
 import { BAR, HEIGHT, WIDTH, markCleared, progress, saveProgress, ui } from '../game/state';
+import { Terrain } from '../game/terrain';
 import { px } from '../game/text';
 import { devBus } from '../ui/devBus';
 import { setDevMode } from '../ui/devmode';
@@ -31,12 +33,18 @@ export interface CourseLevel {
   spawn: [number, number];
   goal: number;
   ground: [number, number][];
+  /** Knit ground with slopes (in place of `ground`): each piece's top edge as [tile x, tiles above the ground row]. */
+  terrain?: [number, number][][];
   platforms: { x: number; y: number; w: number; h: number; color: string }[];
   blocks: [string, number, number][];
   notes: [number, number][];
   pickups: [string, number, number][];
   coins: [number, number][];
-  pipes: { x: number; y: number; h: number; plant?: boolean; hanging?: boolean; warp?: string }[];
+  /**
+   * Upright pipes are `h` tiles tall; sideways ones (`side` is where the mouth faces) are `w` tiles long and 2 tall.
+   * `warp` drops into the room, `exit` is where you come back out (the warp pipe when there's none).
+   */
+  pipes: { x: number; y: number; h?: number; w?: number; side?: 'left' | 'right'; capless?: boolean; plant?: boolean; hanging?: boolean; warp?: string; exit?: string }[];
   enemies: [string, number, number][];
   scenery: {
     clouds: [number, number, number][];
@@ -44,7 +52,11 @@ export interface CourseLevel {
     shrubs: [number, number][];
     glints: [number, number, number][];
   };
-  room: { id: string; pipe: number; tiles: string[]; coins: [number, number][] };
+  /**
+   * The secret room: the entry pipe hangs from the ceiling at column `pipe` (row `pipeY`). With `exit`, the way
+   * out is a sideways pipe in the left wall at that tile; without, it's off the right edge.
+   */
+  room: { id: string; pipe: number; pipeY?: number; exit?: [number, number]; tiles: string[]; coins: [number, number][] };
 }
 
 const levels = import.meta.glob<CourseLevel>('../../content/levels/*.json', { eager: true, import: 'default' });
@@ -90,6 +102,9 @@ export class CourseScene extends Phaser.Scene {
   private plants: Plant[] = [];
   private feathers: Phaser.GameObjects.Sprite[] = [];
   private warp!: { x0: number; x1: number; top: number };
+  /** Where the room lets you out, when it isn't back up the warp pipe. */
+  private exitPipe?: { x0: number; x1: number; top: number };
+  private terrain?: Terrain;
   /** The tall white platform: S on top flips to the secret editor world. */
   private door?: { x0: number; x1: number; top: number };
   /** How long S has been held on the door. */
@@ -129,10 +144,12 @@ export class CourseScene extends Phaser.Scene {
     this.heads = [];
     this.feet = [];
     this.busy = this.finished = this.inRoom = false;
+    this.exitPipe = this.terrain = undefined;
   }
 
   preload() {
     preloadFelt(this);
+    if (this.level.terrain) preloadKnit(this);
     preloadHeroes(this);
     CourseStory.preload(this, this.world);
   }
@@ -173,6 +190,12 @@ export class CourseScene extends Phaser.Scene {
       return r;
     };
 
+    // Sloped knit ground (World 1-2): its pieces' top edges in game px
+    const terrain = L.terrain?.map((top) => top.map(([x, h]) => [x * T, G - h * T] as [number, number]));
+    if (terrain) this.terrain = new Terrain(terrain);
+    /** Where things stand at x: the slope there, or the flat ground row. */
+    const groundAt = (x: number) => this.terrain?.surface(x) ?? G;
+
     // ---- Scenery ----
     for (const [x, y, s] of L.scenery.glints) {
       const g = feltImage(this, x, y, 'glint').setDepth(-10).setScale(s / 5 / ART).setAlpha(0.8);
@@ -181,8 +204,10 @@ export class CourseScene extends Phaser.Scene {
     // clouds and the big bushes are the far layer: hazed toward the sky so the course reads first
     for (const [x, y, w] of L.scenery.clouds) haze(feltImage(this, x, y, w > 50 ? 'cloud-l' : w > 40 ? 'cloud-m' : 'cloud-s').setOrigin(0).setDepth(-8), 0.45, 0.8);
     // Plants stand on the ground line (their felt art has empty rows underneath)
-    for (const [x, , w, h] of L.scenery.bushes) haze(feltOnGround(this, x, G, `bush2-${w}x${h}`).setDepth(-6), 0.22, 0.85);
-    for (const [x] of L.scenery.shrubs) feltOnGround(this, x * T, G, 'shrub').setDepth(-6);
+    // on knit ground the big bushes sink in a little, so their round bottoms sit behind its stitched edge
+    const sink = terrain ? 3 : 0;
+    for (const [x, , w, h] of L.scenery.bushes) haze(feltOnGround(this, x, groundAt(x + w / 2) + sink, `bush2-${w}x${h}`).setDepth(-6), 0.22, 0.85);
+    for (const [x] of L.scenery.shrubs) feltOnGround(this, x * T, groundAt(x * T + 8), 'shrub').setDepth(-6);
 
     // ---- Platforms: drawn back to front, tops are jump-through ----
     for (const p of L.platforms) {
@@ -206,18 +231,33 @@ export class CourseScene extends Phaser.Scene {
       this.add.tileSprite(x * T, G, w * T, this.H - G, FELT, 'soil').setOrigin(0).setDepth(3).setTileScale(1 / ART);
       solidRect(x * T, G, w * T, this.H - G);
     }
+    // the knit pieces are drawn in front of the pipes, so pipe feet tuck into the ground,
+    // and run on under the status bar so no sky shows around its cards
+    if (terrain) drawKnit(this, L.id, terrain, this.H + BAR, 3);
     solidRect(this.W, 0, 8, this.H); // end wall
 
     // ---- Pipes ----
+    const cap = 14;
     for (const p of L.pipes) {
       const x = p.x * T;
       const top = p.y * T;
-      const h = p.h * T;
+      if (p.side) {
+        // Lying down: the knitted body runs along the pipe, the cap turned to face its mouth. It's
+        // lowered so the body itself rests on what's below; the wider cap tucks behind the ground.
+        const len = p.w! * T;
+        const left = p.side === 'left';
+        const bodyX = left ? x + cap - 4 : x;
+        const mid = top + 16 + PIPE_INSET;
+        this.add.tileSprite(bodyX + (len - cap + 4) / 2, mid, 32, len - cap + 4, FELT, PIPE_RUN).setDepth(2).setTileScale(1 / ART).setAngle(90);
+        feltImage(this, left ? x + cap / 2 : x + len - cap / 2, mid, 'pipe2-top').setDisplaySize(32, cap).setAngle(left ? -90 : 90).setDepth(2);
+        solidRect(x, top + 2 * PIPE_INSET, len, 32 - 2 * PIPE_INSET);
+        continue;
+      }
+      const h = p.h! * T;
       // One knitted body (tiled down the pipe) under a 14px felt cap; hanging pipes cap their bottom end.
-      const cap = 14;
-      const bodyY = p.hanging ? top : top + cap - 4;
-      this.add.tileSprite(x, bodyY, 32, h - cap + 4, FELT, 'pipe2-body').setOrigin(0).setDepth(2).setTileScale(1 / ART);
-      feltImage(this, x, p.hanging ? top + h - cap : top, 'pipe2-top').setOrigin(0).setDisplaySize(32, cap).setDepth(2).setFlipY(!!p.hanging);
+      const bodyY = p.hanging || p.capless ? top : top + cap - 4;
+      this.add.tileSprite(x, bodyY, 32, h - (p.capless ? 0 : cap - 4), FELT, PIPE_RUN).setOrigin(0).setDepth(p.capless ? 1.9 : 2).setTileScale(1 / ART);
+      if (!p.capless) feltImage(this, x, p.hanging ? top + h - cap : top, 'pipe2-top').setOrigin(0).setDisplaySize(32, cap).setDepth(2).setFlipY(!!p.hanging);
       solidRect(x, top, 32, h);
       if (p.plant) {
         const s = feltSprite(this, x + 16, top, 'snapper-0').setOrigin(0.5, 0).setDepth(1);
@@ -225,11 +265,12 @@ export class CourseScene extends Phaser.Scene {
         this.plants.push({ sprite: s, top, cx: x + 16 });
       }
       if (p.warp) this.warp = { x0: x, x1: x + 32, top };
+      if (p.exit) this.exitPipe = { x0: x, x1: x + 32, top };
     }
     for (const pl of this.plants) this.cyclePlant(pl);
 
     // ---- Status bar and story (story blocks replace level blocks on their tiles) ----
-    this.hud = new FeltStatusBar(this, `WORLD ${this.worldIndex + 1}-1`, this.world.title.toUpperCase().slice(0, 26));
+    this.hud = new FeltStatusBar(this, `WORLD ${this.levelNumber}`, this.world.title.toUpperCase().slice(0, 26));
     this.story = new CourseStory(this, this.world, this.hud);
     const storyCells = new Set(this.story.storyCells.map(([x, y]) => `${x},${y}`));
 
@@ -303,19 +344,25 @@ export class CourseScene extends Phaser.Scene {
     this.physics.add.overlap(this.enemies, this.enemies, (a, b) => this.shellMeets(a as Phaser.Physics.Arcade.Sprite, b as Phaser.Physics.Arcade.Sprite));
     this.physics.add.overlap(this.player, this.enemies, (_p, e) => this.touchEnemy(e as Phaser.Physics.Arcade.Sprite));
     this.physics.add.overlap(this.player, this.coins, (_p, c) => this.collect(c as Phaser.GameObjects.Image));
+    if (this.terrain) {
+      const ground = this.terrain;
+      const settle = () => {
+        ground.collide(this.player.body);
+        for (const e of this.enemies.getChildren()) ground.collide((e as Phaser.Physics.Arcade.Sprite).body as Phaser.Physics.Arcade.Body);
+      };
+      // the physics world is torn down with the scene, listeners and all
+      this.physics.world.on(Phaser.Physics.Arcade.Events.WORLD_STEP, settle);
+    }
 
     this.useMainCamera();
     this.introSign(G);
-    this.story.buildSigns(G);
+    this.story.buildSigns(groundAt);
     this.input.keyboard!.on('keydown-ESC', () => !ui.blocking && this.exitToMap());
     this.drawDevLayer();
     // a rebuild from the editor picks up where the player was, without the intro
     if (at) this.story.resume(at.x);
-    else {
-      this.hud.showTip('AWSD to move • K to run • L to jump');
-      this.cameras.main.fadeIn(250);
-    }
-    playMusic(this, 'world-1-1');
+    else this.cameras.main.fadeIn(250);
+    playMusic(this, L.id === 'world-1-2' ? 'world-1-2' : 'world-1-1');
   }
 
   /** The world billboard at the start of the course (Figma: screen/gameplay · world 1 start). */
@@ -346,7 +393,7 @@ export class CourseScene extends Phaser.Scene {
         })
         .setResolution(Z)
         .setDepth(-1);
-    const world = text(y + 11, `WORLD ${this.worldIndex + 1}`, 'heading', 10, '#d82800');
+    const world = text(y + 11, `WORLD ${this.levelNumber}`, 'heading', 10, '#d82800');
     const title = text(world.y + world.height, w.title.toUpperCase(), 'heading', 13, '#000000', 2);
     // platform and role sit on the bottom edge; the tagline gets whatever room is left between
     const role = text(y + 88, w.role, 'body', 7, '#2038a0').setOrigin(0, 1);
@@ -412,7 +459,7 @@ export class CourseScene extends Phaser.Scene {
     const R = this.level.room;
     const w = R.tiles[0].length * T;
     const h = R.tiles.length * T;
-    this.add.rectangle(this.RX, 0, Math.max(w, WIDTH), Math.max(h, HEIGHT), 0x000000).setOrigin(0).setDepth(-9);
+    this.add.rectangle(this.RX - this.roomMargin, 0, Math.max(w, WIDTH), Math.max(h, HEIGHT), 0x000000).setOrigin(0).setDepth(-9);
     R.tiles.forEach((row, ty) => {
       for (let tx = 0; tx < row.length; tx++) {
         if (row[tx] !== '#') continue;
@@ -420,8 +467,29 @@ export class CourseScene extends Phaser.Scene {
         this.solids.add(s);
       }
     });
-    // The entry pipe hangs from the ceiling; the way out is up the stairs and off the right edge.
-    this.solids.add(feltImage(this, this.RX + R.pipe * T + 16, 16, 'pipe-dark').setDepth(3));
+    const cap = 14;
+    if (R.pipeY === undefined) {
+      // The entry pipe hangs from the ceiling; the way out is up the stairs and off the right edge.
+      this.solids.add(feltImage(this, this.RX + R.pipe * T + 16, 16, 'pipe-dark').setDepth(3));
+    } else {
+      // A felt pipe, two tiles long, hanging under the ceiling with its mouth down
+      const x = this.RX + R.pipe * T;
+      const top = R.pipeY * T;
+      this.add.tileSprite(x, top, 32, 2 * T - cap + 4, FELT, PIPE_RUN).setOrigin(0).setDepth(2).setTileScale(1 / ART);
+      feltImage(this, x, top + 2 * T - cap, 'pipe2-top').setOrigin(0).setDisplaySize(32, cap).setDepth(2).setFlipY(true);
+      this.solids.add(this.add.rectangle(x + 16, top + T, 32, 2 * T).setVisible(false));
+    }
+    if (R.exit) {
+      // the way out: a sideways pipe in the left wall, mouth facing into the room
+      const [ex, ey] = R.exit;
+      const x = this.RX + ex * T;
+      const y = ey * T;
+      // lowered like the sideways pipes outside, so the body rests on the floor
+      const mid = y + 16 + PIPE_INSET;
+      this.add.tileSprite(x + (2 * T - cap + 4) / 2, mid, 32, 2 * T - cap + 4, FELT, PIPE_RUN).setDepth(2).setTileScale(1 / ART).setAngle(90);
+      feltImage(this, x + 2 * T - cap / 2, mid, 'pipe2-top').setDisplaySize(32, cap).setAngle(90).setDepth(2);
+      this.solids.add(this.add.rectangle(x + T, y + 16, 2 * T, 32).setVisible(false));
+    }
     for (const [x, y] of R.coins) this.coins.add(feltImage(this, this.RX + x * T + 8, y * T + 8, 'coin').setDepth(4));
   }
 
@@ -439,7 +507,12 @@ export class CourseScene extends Phaser.Scene {
     const R = this.level.room;
     const cam = this.cameras.main;
     cam.setBackgroundColor(0x000000);
-    cam.setBounds(this.RX, 0, R.tiles[0].length * T, Math.max(R.tiles.length * T + BAR, HEIGHT));
+    cam.setBounds(this.RX - this.roomMargin, 0, Math.max(R.tiles[0].length * T, WIDTH), Math.max(R.tiles.length * T + BAR, HEIGHT));
+  }
+
+  /** A room narrower than the screen sits in the middle of it, with this much black either side. */
+  private get roomMargin() {
+    return Math.max(0, (WIDTH - this.level.room.tiles[0].length * T) / 2);
   }
 
   private async enterRoom() {
@@ -453,7 +526,8 @@ export class CourseScene extends Phaser.Scene {
     await new Promise((r) => this.cameras.main.once('camerafadeoutcomplete', r));
     this.inRoom = true;
     this.useRoomCamera();
-    p.setPosition(this.RX + this.level.room.pipe * T + 16, 40);
+    const R = this.level.room;
+    p.setPosition(this.RX + R.pipe * T + 16, R.pipeY === undefined ? 40 : (R.pipeY + 2) * T + 10);
     p.body.reset(p.x, p.y);
     p.body.enable = true;
     this.cameras.main.fadeIn(150);
@@ -470,10 +544,11 @@ export class CourseScene extends Phaser.Scene {
     this.cameras.main.fadeOut(150);
     await new Promise((r) => this.cameras.main.once('camerafadeoutcomplete', r));
     this.inRoom = false;
-    p.setPosition((this.warp.x0 + this.warp.x1) / 2, this.warp.top + 8);
+    const out = this.exitPipe ?? this.warp;
+    p.setPosition((out.x0 + out.x1) / 2, out.top + 8);
     this.useMainCamera();
     this.cameras.main.fadeIn(150);
-    await this.tweenTo(p, { y: this.warp.top - 10 }, 400);
+    await this.tweenTo(p, { y: out.top - 10 }, 400);
     p.body.reset(p.x, p.y);
     p.body.enable = true;
     this.busy = false;
@@ -533,7 +608,12 @@ export class CourseScene extends Phaser.Scene {
       }
     }
 
-    if (this.inRoom && p.x > this.RX + this.level.room.tiles[0].length * T - 4) {
+    const R = this.level.room;
+    const leaving = R.exit
+      ? // walk into the sideways pipe's mouth
+        p.body.blocked.left && held(this.controls.left) && p.x < this.RX + (R.exit[0] + 2) * T + 10 && p.body.bottom > R.exit[1] * T + 16
+      : p.x > this.RX + R.tiles[0].length * T - 4;
+    if (this.inRoom && leaving) {
       void this.exitRoom();
       return;
     }
@@ -547,7 +627,6 @@ export class CourseScene extends Phaser.Scene {
       p.hurt(p.x + 1);
     }
 
-    if (this.hud.tipShown && p.x > 12 * T) this.hud.hideTip();
     this.story.update(p.x, this.inRoom);
     this.updateEnemies();
     this.updateFeathers();
@@ -584,7 +663,9 @@ export class CourseScene extends Phaser.Scene {
       else if (b.blocked.down) {
         // turn around at ledges so walkers patrol their platform
         const ahead = this.physics.overlapRect(e.x + dir * 9, b.bottom + 2, 2, 2, false, true);
-        if (!ahead.length) dir = -dir;
+        // on knit ground the slope ahead counts too, as long as it doesn't drop away
+        const slope = this.terrain?.surface(e.x + dir * 9);
+        if (!ahead.length && !(slope !== undefined && slope < b.bottom + 12)) dir = -dir;
       }
       e.setVelocityX(dir * 24);
       e.setFlipX(dir < 0); // felt art faces right
@@ -867,6 +948,7 @@ export class CourseScene extends Phaser.Scene {
 
   private async finish() {
     this.finished = true;
+    this.story.bloom();
     this.goal.setTexture(FELT, `icon-${this.world.card}`);
     this.tweens.add({ targets: this.goal, y: this.goal.y - 40, duration: 600, ease: 'Quad.easeOut' });
     markCleared(this.world.slug);
@@ -884,6 +966,12 @@ export class CourseScene extends Phaser.Scene {
 
   get slug() {
     return this.world.slug;
+  }
+
+  /** "1-2" for content/levels/world-1-2.json; levels named otherwise count worlds from 1. */
+  private get levelNumber() {
+    const m = /(\d+)-(\d+)$/.exec(this.level.id);
+    return m ? `${m[1]}-${m[2]}` : `${this.worldIndex + 1}-1`;
   }
 
   /** Restart data that keeps the player where they are (live rebuilds while editing). */

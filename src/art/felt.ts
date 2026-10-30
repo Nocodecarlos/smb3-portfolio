@@ -61,9 +61,23 @@ export function haze<T extends Phaser.GameObjects.Image>(obj: T, amount: number,
   return obj;
 }
 
+/**
+ * The straight middle of the pipe body art. The full frame is one segment with
+ * rounded stripe ends, so tiling it shows a seam every few pixels; tiling this
+ * slice gives one continuous pipe.
+ */
+export const PIPE_RUN = 'pipe2-body-run';
+/** The body art fills 22 of the pipe's 32 px across; the cap is wider. */
+export const PIPE_INSET = 5;
+
 /** Smooth filtering (the game defaults to pixel-art nearest) and the felt animations. */
 export function setupFelt(scene: Phaser.Scene) {
   for (const key of [FELT, SKY]) scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR);
+  const felt = scene.textures.get(FELT);
+  if (!felt.has(PIPE_RUN)) {
+    const f = felt.get('pipe2-body');
+    felt.add(PIPE_RUN, f.sourceIndex, f.cutX, f.cutY + 30, f.cutWidth, 36);
+  }
   const a = scene.anims;
   if (a.exists('felt-snap')) return;
   const frames = (...names: string[]) => names.map((frame) => ({ key: FELT, frame }));

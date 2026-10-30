@@ -2,12 +2,12 @@ import Phaser from 'phaser';
 import { asset } from '../assets';
 
 // Background music: one looping track at a time, shared across scenes
-// (Phaser's sound manager is global). The overworld and World 1-1 each have
-// a track; the title is silent. Files live in public/music as AAC with an
-// MP3 fallback. Browsers only allow sound after the first key press, so a
-// track asked for before then starts on that press.
+// (Phaser's sound manager is global). The overworld and each course have a
+// track (World 1-2's is "Hidden Forest Loop"); the title is silent. Files live
+// in public/music as AAC with an MP3 fallback. Browsers only allow sound after
+// the first key press, so a track asked for before then starts on that press.
 
-export type Track = 'overworld' | 'world-1-1';
+export type Track = 'overworld' | 'world-1-1' | 'world-1-2';
 
 const VOLUME = 0.45;
 let current: { track: Track; sound: Phaser.Sound.BaseSound } | null = null;
