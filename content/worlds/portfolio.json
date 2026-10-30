@@ -1,0 +1,157 @@
+{
+  "slug": "portfolio",
+  "title": "This Portfolio",
+  "tagline": "A playable portfolio: walk through my work like a Super Mario Bros. 3 level.",
+  "headline": "Why I made my portfolio a video game, and how I built it.",
+  "role": "Design, art direction and build",
+  "timeline": "2026",
+  "platform": "Web · Phaser",
+  "theme": "sky",
+  "card": "star",
+  "summary": "A portfolio you play: a Super Mario Bros. 3 style game in felt, built in about ten days with Claude Code. Every world is a project, told as a guided walk with billboards, with the full case study a click away.",
+  "outcomes": [
+    "Four worlds, each one a case study",
+    "Felt art from a Figma sprite library",
+    "Secrets, rooms and a cheat-code editor that saves to the site"
+  ],
+  "links": [],
+  "level": "world-1-4",
+  "article": "I've been looking at a lot of portfolios lately, and everybody seems to be making open world ones: you land on a map, walk anywhere you want, pick a project and look at it. I thought that was very cool, but I wanted to do it my own way.\n\nI was also tired of the advice. There's a plethora of recommendations out there for product designers: don't include too many images, don't include large images, write a bunch of text, don't write a bunch of text, make it scannable, use a custom font that feels right to you. I just wanted to make my own thing, something that represented me.\n\nI love video games, and Super Mario Bros. 3 is one of my favorite video games of all time. So I asked myself: can I actually make my portfolio a video game? Something people can enjoy, stroll through, and even find secrets in. Now that I'm empowered with AI, I wanted to see if I could merge the two worlds together and how far I could push it.\n\nYou're playing it right now. I built it in about ten days, with Claude Code as my engineering partner.\n\n**Tools:** Figma, Claude Code, Suno, Phaser, TypeScript, Vite, GitHub Pages\n\n![The overworld: one numbered panel per project](content/portfolio/map.jpg)\n\n## 1. A path, not an open world\n\nPlatforming gives you more of a walking-through-an-art-gallery feel. It sets you on a path from point A to point B, so you don't have to choose where to go. You just go through the levels and walk through the work. I guide you, and it feels like a guided experience.\n\nThe map still lets you pick a world. But inside each one there's a beginning, a middle and an end, the same shape as a case study: the problem, the design, the results.\n\n## 2. One world per project\n\nEvery world is a project, told two ways. The game is the highlights. The full case study is one click away: \"Skip the game → read the case studies\" opens a plain page with every article, for anyone who'd rather read.\n\nEach world also borrows from its project. Mustard Seed's world is knit hills, and a seed in the status bar grows as you read, just like the seed in the app. Launch the Capy ends with a slingshot and Capy's own clouds, and a hidden note block launches you into its night sky.\n\n![World 1-2: Mustard Seed's knit hills, with the seed growing in the status bar](content/portfolio/world-1-2.jpg)\n\n## 3. From pixels to felt\n\nThe first version was pixel art, drawn in code, a lot like the original game.\n\nEver since I started working on my capybara video game, Launch the Capy, I've really liked the felt texture. It feels unique, not generic, and I really like the games that use it. So I moved everything to felt: plush heroes, stitched blocks, knitted hills and wool clouds.\n\nIt was also a test. I wanted to see if we could even do that in Figma and with Claude Code, and push the limits. I made parts of the sprite library myself, and other parts were AI generated in Figma from my prompts. I gave it a couple of screenshots and examples of how I envisioned the felt texture.\n\n![The title screen: pick the Hat Hero or the Helmet Hero](content/portfolio/title.jpg)\n\n## 4. A screen to play it on\n\nA game in a browser tab felt flat, so the game sits inside an old tube TV, with a felt curtain that rises on the title screen. The screen went widescreen (16:9) early on, so each level shows more of the course.\n\nOn phones, the TV becomes a Game Boy.\n\nThe music for every world, and for the map, comes from Suno.\n\n## 5. The controls\n\nYou move with WASD, run with K and jump with L, so both hands sit on the keyboard like on a controller. Space jumps and Alt runs too, for anyone whose thumbs go to the space bar.\n\nI left Cmd out on purpose. Cmd+W closes the tab, and I didn't want anyone to lose their game by accident.\n\n## 6. From blocks to billboards\n\nAt first, the story lived in story blocks. You jumped up to hit one, and it opened a card. It was very Mario, but you had to hunt for the content, and every block looked like a game piece.\n\nSo I moved the story onto billboards in the background. You stand in front of one and press S to read it, with its screenshot. Blocks went back to being coins and bricks, part of the game. It feels more like an art gallery: you play, and you can make a stop at each billboard.\n\nThe game copy was also too punchy. It read awkwardly, skipping from one thing to the next. Now every billboard is a short snippet from the full article, so the game and the case study sound the same: the game is the highlights, the article is the deep dive.\n\n![A billboard in World 1-1: stand in front and press S to read](content/portfolio/billboard.jpg)\n\n## 7. Secrets\n\nIf you're familiar with the game, you'll find secret pathways and secret doors. I have a lot of love for this game, and I wanted all of that in.\n\n- Pipes that drop you into hidden rooms\n- A turtle shell that breaks the bricks around a hidden note block\n- A P-switch that turns bricks into coins\n- A blog house with three treasure boxes\n- The famous, old cheat code. Type it anywhere, and the TV flips to the other side, where I can edit every word and picture in the game and save it straight to the site.\n\n![The blog house: each box holds one of my \"What if\" ideas](content/portfolio/blog-house.jpg)\n\n## 8. Building it with Claude Code\n\nI designed in Figma and built with Claude Code. Every level starts as a frame in Figma; Claude Code reads the layout and turns it into a course, then I play it and send notes. Then we go around again.\n\nThe levels are files with the course in them: ground, platforms, blocks, pipes, enemies. Each world's story is a separate file with the article and the billboards. Every push to the main branch publishes the site.\n\n## 9. What I learned\n\nThere are almost no limits to what you can create with Claude Code and some creativity. We're entering an era where getting ideas out into the world is becoming much cheaper, much faster and much easier to do.\n\nIt's exciting. It's exciting to live in this world, in this day and age.\n\nI also learned how to use remote sessions in Claude Code. Most of this portfolio was built by giving Claude Code my first instructions on my desktop early in the morning, over the weekends, and then leaving the computer on. I went about my day, to piano recitals and to brunch, and kept correcting and prompting Claude from my phone. It was very illuminating: even when you're not at your computer, you can still make things happen.\n\n## Deep dives\n\n### The other side\n\nThe cheat code opens an editor inside the game. The game turns black and white, every billboard gets an outline, and clicking one opens its text and picture. Saving commits the change to the site's code on GitHub, and it publishes on its own. I can fix a typo in a case study while standing in the level.\n\n### One file per level\n\nEach level is a list of what's in it, in tiles: where the ground starts and stops, which blocks sit where, where the pipes lead. The billboards say which tile they stand on. That made it easy to move things around when something didn't feel right after playing it.",
+  "beats": [
+    {
+      "id": "f-my-way",
+      "type": "copy",
+      "headline": "My own way",
+      "body": "I've been looking at a lot of portfolios lately, and everybody seems to be making open world ones: you land on a map, walk anywhere you want, pick a project and look at it. I thought that was very cool, but I wanted to do it my own way.\n\nI was also tired of the advice: don't include too many images, don't include large images, write a bunch of text, don't write a bunch of text, make it scannable. I just wanted to make my own thing, something that represented me.",
+      "place": {
+        "as": "sign",
+        "at": 18
+      }
+    },
+    {
+      "id": "f-video-game",
+      "type": "copy",
+      "headline": "Can my portfolio be a video game?",
+      "body": "I love video games, and Super Mario Bros. 3 is one of my favorite video games of all time. So I asked myself: can I actually make my portfolio a video game? Something people can enjoy, stroll through, and even find secrets in.\n\nNow that I'm empowered with AI, I wanted to see if I could merge the two worlds together and how far I could push it.",
+      "place": {
+        "as": "sign",
+        "at": 32
+      }
+    },
+    {
+      "id": "f-path",
+      "type": "copy",
+      "headline": "A path, not an open world",
+      "body": "Platforming gives you more of a walking-through-an-art-gallery feel. It sets you on a path from point A to point B, so you don't have to choose where to go. You just go through the levels and walk through the work.\n\nThe map still lets you pick a world. But inside each one there's a beginning, a middle and an end, the same shape as a case study.",
+      "image": {
+        "src": "content/portfolio/map.jpg",
+        "caption": "The overworld: one numbered panel per project"
+      },
+      "place": {
+        "as": "sign",
+        "at": 46
+      }
+    },
+    {
+      "id": "f-worlds",
+      "type": "copy",
+      "headline": "One world per project",
+      "body": "Every world is a project, told two ways. The game is the highlights. The full case study is one click away, for anyone who'd rather read.\n\nEach world also borrows from its project. Mustard Seed's world is knit hills, and a seed in the status bar grows as you read, just like the seed in the app.",
+      "image": {
+        "src": "content/portfolio/world-1-2.jpg",
+        "caption": "World 1-2: Mustard Seed's knit hills, with the seed growing in the status bar"
+      },
+      "place": {
+        "as": "sign",
+        "at": 60
+      }
+    },
+    {
+      "id": "f-felt",
+      "type": "copy",
+      "headline": "From pixels to felt",
+      "body": "Ever since I started working on my capybara video game, I've really liked the felt texture. It feels unique, not generic, and I really like the games that use it.\n\nIt was also a test. I wanted to see if we could even do that in Figma and with Claude Code, and push the limits.",
+      "image": {
+        "src": "content/portfolio/title.jpg",
+        "caption": "The title screen: pick the Hat Hero or the Helmet Hero"
+      },
+      "place": {
+        "as": "sign",
+        "at": 74
+      }
+    },
+    {
+      "id": "f-screen",
+      "type": "copy",
+      "headline": "A screen to play it on",
+      "body": "A game in a browser tab felt flat, so the game sits inside an old tube TV, with a felt curtain that rises on the title screen. The screen went widescreen early on, so each level shows more of the course.\n\nOn phones, the TV becomes a Game Boy.",
+      "place": {
+        "as": "sign",
+        "at": 88
+      }
+    },
+    {
+      "id": "f-controls",
+      "type": "copy",
+      "headline": "The controls",
+      "body": "You move with WASD, run with K and jump with L, so both hands sit on the keyboard like on a controller. Space jumps and Alt runs too, for anyone whose thumbs go to the space bar.\n\nI left Cmd out on purpose. Cmd+W closes the tab, and I didn't want anyone to lose their game by accident.",
+      "place": {
+        "as": "sign",
+        "at": 102
+      }
+    },
+    {
+      "id": "f-billboards",
+      "type": "copy",
+      "headline": "From blocks to billboards",
+      "body": "At first, the story lived in story blocks. You jumped up to hit one, and it opened a card. It was very Mario, but you had to hunt for the content.\n\nSo I moved the story onto billboards like this one. You stand in front and press S to read. Every billboard is a short snippet from the full article, so the game and the case study sound the same.",
+      "image": {
+        "src": "content/portfolio/billboard.jpg",
+        "caption": "A billboard in World 1-1: stand in front and press S to read"
+      },
+      "place": {
+        "as": "sign",
+        "at": 116
+      }
+    },
+    {
+      "id": "f-secrets",
+      "type": "copy",
+      "headline": "Secrets",
+      "body": "If you're familiar with the game, you'll find secret pathways and secret doors. I have a lot of love for this game, and I wanted all of that in.\n\n- Pipes that drop you into hidden rooms\n- A turtle shell that breaks the bricks around a hidden note block\n- A blog house with three treasure boxes\n- The famous, old cheat code",
+      "image": {
+        "src": "content/portfolio/blog-house.jpg",
+        "caption": "The blog house: each box holds one of my \"What if\" ideas"
+      },
+      "place": {
+        "as": "sign",
+        "at": 130
+      }
+    },
+    {
+      "id": "f-claude",
+      "type": "copy",
+      "headline": "Building it with Claude Code",
+      "body": "I designed in Figma and built with Claude Code. Every level starts as a frame in Figma; Claude Code reads the layout and turns it into a course, then I play it and send notes.\n\nMost of it I built remotely. I'd give Claude Code my first instructions on my desktop early in the morning, leave the computer on, and keep prompting it from my phone, between piano recitals and brunch.",
+      "place": {
+        "as": "sign",
+        "at": 141
+      }
+    },
+    {
+      "id": "f-learned",
+      "type": "copy",
+      "headline": "What I learned",
+      "body": "There are almost no limits to what you can create with Claude Code and some creativity. We're entering an era where getting ideas out into the world is becoming much cheaper, much faster and much easier to do.\n\nIt's exciting. It's exciting to live in this world, in this day and age.",
+      "place": {
+        "as": "sign",
+        "at": 147
+      }
+    }
+  ],
+  "lessons": [
+    "Almost no limits with Claude Code and some creativity",
+    "Getting ideas out is cheaper, faster and easier than ever",
+    "You can make things happen even when you're not at your computer"
+  ]
+}

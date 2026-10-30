@@ -20,7 +20,7 @@
       {"id": "w1", "type": "world", "x": 856, "y": 103, "world": "pause", "number": 1},
       {"id": "w2", "type": "world", "x": 1414, "y": 103, "world": "mustard-seed", "number": 2},
       {"id": "w3", "type": "world", "x": 1699, "y": 103, "world": "capy", "number": 3},
-      {"id": "w4", "type": "world", "x": 1696, "y": 380, "number": 4, "title": "World 4", "body": "This stop is still being built. Check back soon."},
+      {"id": "w4", "type": "world", "x": 1696, "y": 380, "world": "portfolio", "number": 4},
       {"id": "w5", "type": "world", "x": 854, "y": 1228, "number": 5, "title": "World 5", "body": "This stop is still being built. Check back soon."},
       {"id": "w6", "type": "world", "x": 1413, "y": 1228, "number": 6, "title": "World 6", "body": "This stop is still being built. Check back soon."},
       {"id": "s1", "type": "step", "x": 1144, "y": 118},

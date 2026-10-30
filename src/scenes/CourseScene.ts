@@ -37,6 +37,8 @@ export interface CourseLevel {
   goalRow?: number;
   /** A Capy slingshot on the ground, centred on this tile x: hold S on it to pull back, let go to fly straight up. */
   slingshot?: number;
+  /** An auto-scroller (World 1-4): the screen moves right on its own at this many px a second, and you keep up. */
+  autoscroll?: number;
   /**
    * Launch the Capy's bounce clouds on the way up to the goal: [white | blue | dark, tile x of the left edge, tile
    * row of the top]. Landing on one bounces you up to the next. The slingshot reaches the lowest.
@@ -160,6 +162,10 @@ export class CourseScene extends Phaser.Scene {
   private finished = false;
   private inRoom = false;
   private safe = { x: 0, y: 0 };
+  /** Where an auto-scrolling screen's left edge is, in world px. */
+  private autoX = 0;
+  /** Scene time when the course was built (the auto-scroll waits a moment after it). */
+  private startedAt = 0;
   private W = 0;
   private H = 0;
   private RX = 0;
@@ -412,9 +418,13 @@ export class CourseScene extends Phaser.Scene {
       this.physics.world.on(Phaser.Physics.Arcade.Events.WORLD_STEP, settle);
     }
 
+    this.startedAt = this.time.now;
+    if (L.autoscroll) this.autoX = at ? Phaser.Math.Clamp(at.x - 100, 0, this.W - WIDTH) : 0;
     this.useMainCamera();
     this.introSign(G);
-    this.story.buildSigns(groundAt);
+    // over an auto-scroller's gaps the billboard posts run down out of sight
+    const overGround = (x: number) => L.ground.some(([gx, w]) => x >= gx * T && x < (gx + w) * T);
+    this.story.buildSigns(L.autoscroll ? () => G : groundAt, L.autoscroll ? (x) => (overGround(x) ? G : this.H + 8) : groundAt);
     this.input.keyboard!.on('keydown-ESC', () => !ui.blocking && this.exitToMap());
     this.drawDevLayer();
     // a rebuild from the editor picks up where the player was, without the intro
@@ -700,10 +710,31 @@ export class CourseScene extends Phaser.Scene {
     const cam = this.cameras.main;
     cam.setBackgroundColor(this.level.sky);
     cam.setBounds(0, 0, this.W, this.H + BAR);
+    // an auto-scroller moves the camera itself (in update)
+    if (this.level.autoscroll) return cam.stopFollow().centerOn(this.autoX + WIDTH / 2, (this.H + BAR) / 2);
     cam.startFollow(this.player, true, 0.15, 0.12);
     cam.setDeadzone(24, 80);
     // felt scrolls smoothly; snapping to whole game pixels would jump 4 screen pixels at a time
     cam.setRoundPixels(false);
+  }
+
+  /**
+   * Per frame on an auto-scroller: the screen moves right at least at the level's pace (after a moment at the
+   * start, and paused with the game while a card is open), keeps up when you run ahead, and pushes from the
+   * left. True if the left edge has pinned the hero against a wall.
+   */
+  private autoScroll(p: Player) {
+    const speed = this.level.autoscroll;
+    if (!speed) return false;
+    const pace = this.time.now - this.startedAt > 1500 ? (speed * this.game.loop.delta) / 1000 : 0;
+    this.autoX = Phaser.Math.Clamp(Math.max(this.autoX + pace, p.x - WIDTH * 0.6), 0, this.W - WIDTH);
+    // the camera is zoomed, so place it by its centre: autoX is the left edge of what you see
+    this.cameras.main.centerOn(this.autoX + WIDTH / 2, (this.H + BAR) / 2);
+    const left = this.autoX + 6;
+    if (p.body.left >= left) return false;
+    p.setX(p.x + left - p.body.left);
+    if (p.body.velocity.x < 0) p.setVelocityX(0);
+    return p.body.blocked.right;
   }
 
   private useRoomCamera() {
@@ -834,13 +865,16 @@ export class CourseScene extends Phaser.Scene {
       return;
     }
 
-    // Pits
+    // Pits (and, on an auto-scroller, being pinned to a wall by the screen's edge)
     if (p.body.blocked.down && !this.inRoom && !this.inSky) this.safe = { x: p.x, y: p.y };
-    if (p.y > this.H + 24) {
+    const pinned = this.autoScroll(p);
+    if (p.y > this.H + 24 || pinned) {
       sfx.hurt();
       p.setPosition(this.safe.x - 12, this.safe.y - 24);
       p.setVelocity(0, 0);
       p.hurt(p.x + 1);
+      // the screen backs up so you land in view
+      if (this.level.autoscroll) this.autoX = Phaser.Math.Clamp(Math.min(this.autoX, this.safe.x - 80), 0, this.W - WIDTH);
     }
 
     this.story.update(p.x, this.inRoom);

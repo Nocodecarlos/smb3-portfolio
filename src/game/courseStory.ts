@@ -93,14 +93,15 @@ export class CourseStory {
   /**
    * Felt billboards, standing on the ground (`groundAt(x)` is its top at x; on a slope the posts differ). An image
    * beat's board is a picture to look at; any other beat's board shows its picture (or its headline) and reads as a story.
+   * `legEnd(x)` is where a post stops, when that's not the ground (over an auto-scroller's gaps).
    */
-  buildSigns(groundAt: (x: number) => number) {
+  buildSigns(groundAt: (x: number) => number, legEnd = groundAt) {
     for (const b of this.world.beats) {
       if (b.place?.as !== 'sign') continue;
       const x = b.place.at * T;
       const legs = [x + 9, x + SIGN_W - 14];
       const top = Math.min(...legs.map((l) => groundAt(l + 2.5))) - SIGN_H - 30 - (b.place.lift ?? 0);
-      for (const l of legs) feltPost(this.scene, l, top + SIGN_H - 2, 5, groundAt(l + 2.5) - top - SIGN_H + 2).setDepth(-3.1);
+      for (const l of legs) feltPost(this.scene, l, top + SIGN_H - 2, 5, legEnd(l + 2.5) - top - SIGN_H + 2).setDepth(-3.1);
       const board = this.scene.add.nineslice(x, top, FELT, 'platform-f4faf4', SIGN_W * ART, SIGN_H * ART, 9 * ART, 9 * ART, 9 * ART, 9 * ART).setOrigin(0).setScale(1 / ART).setDepth(-3);
       const parts: { setTint(color: number): unknown }[] = [board];
       const src = picture(b);
