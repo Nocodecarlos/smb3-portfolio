@@ -10,7 +10,7 @@ import { FeltStatusBar } from '../game/feltHud';
 import { Player, createControls, held, type Controls } from '../game/Player';
 import { playMusic } from '../game/music';
 import { sfx } from '../game/sfx';
-import { BAR, HEIGHT, WIDTH, markCleared, progress, saveProgress, ui } from '../game/state';
+import { BAR, HEIGHT, KEYS, WIDTH, markCleared, progress, saveProgress, ui } from '../game/state';
 import { Terrain } from '../game/terrain';
 import { px } from '../game/text';
 import { devBus } from '../ui/devBus';
@@ -23,7 +23,8 @@ import { showEndCard } from '../ui/overlays';
 // felt art (src/art/felt.ts) and render at Z times the base resolution.
 // Holding S for two seconds on the tall white platform flips to the other side: the same
 // course in black and white, where story blocks and billboards are editable
-// in the dev panel (src/ui/devmode.ts).
+// in the dev panel (src/ui/devmode.ts). In a world with a secret house (World 1-3) it
+// drops you behind the scenery instead, and the house is past the black end zone.
 
 export interface CourseLevel {
   id: string;
@@ -86,6 +87,8 @@ export function getLevel(id: string): CourseLevel | undefined {
 const T = 16;
 /** How long S has to be held on the white platform to flip sides, in ms. */
 const DOOR_HOLD = 2000;
+/** Behind the scenery the hero is drawn behind platforms, billboards and bushes, but in front of the black end zone. */
+const BEHIND = -8.5;
 type Bounce = 'white' | 'blue' | 'dark';
 /** Each Capy cloud's width in px (the art is twice as wide as tall) and the speed it bounces you up at, no jump needed. */
 const BOUNCE: Record<Bounce, { key: string; w: number; speed: number }> = {
@@ -151,6 +154,12 @@ export class CourseScene extends Phaser.Scene {
   private doorHold = 0;
   /** Set after a flip until S is let go, so holding it doesn't flip straight back. */
   private doorLatch = false;
+  /** Dropped through the white platform: walking on the ground behind everything, where nothing else touches you. */
+  private behind = false;
+  /** The ground's solid rectangles, the only solids there are behind the scenery. */
+  private floor = new Set<Phaser.GameObjects.GameObject>();
+  /** Stories read before a trip to the secret house, to count again when you're back (set only then). */
+  private readBefore?: string[];
   private devLayer?: Phaser.GameObjects.Container;
   /** Where to put the player back after a live rebuild from the editor. */
   private resumeAt?: { x: number; y: number; powered: boolean };
@@ -174,12 +183,14 @@ export class CourseScene extends Phaser.Scene {
     super('Course');
   }
 
-  init(data: { slug: string; at?: { x: number; y: number; powered: boolean } }) {
+  init(data: { slug: string; at?: { x: number; y: number; powered: boolean }; read?: string[] }) {
     this.world = getWorld(data.slug)!;
     this.resumeAt = data.at;
+    this.readBefore = data.read;
     this.door = this.devLayer = undefined;
     this.doorHold = 0;
-    this.doorLatch = false;
+    this.doorLatch = this.behind = false;
+    this.floor = new Set();
     this.level = getLevel(this.world.level!)!;
     this.worldIndex = Math.max(0, getWorlds().findIndex((w) => w.slug === data.slug));
     this.blocks = new Map();
@@ -280,7 +291,7 @@ export class CourseScene extends Phaser.Scene {
       this.add.rectangle(x * T, G, w * T, this.H - G, 0x4e2e24).setOrigin(0).setDepth(3);
       // the Figma course fills both ground rows with the diagonal soil felt
       this.add.tileSprite(x * T, G, w * T, this.H - G, FELT, 'soil').setOrigin(0).setDepth(3).setTileScale(1 / ART);
-      solidRect(x * T, G, w * T, this.H - G);
+      this.floor.add(solidRect(x * T, G, w * T, this.H - G));
     }
     // the knit pieces are drawn in front of the pipes, so pipe feet tuck into the ground,
     // and run on under the status bar so no sky shows around its cards
@@ -400,13 +411,15 @@ export class CourseScene extends Phaser.Scene {
     this.physics.world.setBoundsCollision(true, true, false, false);
     this.player.setCollideWorldBounds(true);
 
-    this.physics.add.collider(this.player, this.solids, (_p, o) => this.touchSolid(o as Phaser.GameObjects.GameObject));
-    this.physics.add.collider(this.player, this.semis);
-    this.physics.add.collider(this.player, this.bouncers, (_p, top) => this.bounceOff(top as Phaser.GameObjects.Rectangle));
+    // behind the scenery only the ground holds you up, and nothing else touches you
+    const inFront = () => !this.behind;
+    this.physics.add.collider(this.player, this.solids, (_p, o) => this.touchSolid(o as Phaser.GameObjects.GameObject), (_p, o) => !this.behind || this.floor.has(o as Phaser.GameObjects.GameObject));
+    this.physics.add.collider(this.player, this.semis, undefined, inFront);
+    this.physics.add.collider(this.player, this.bouncers, (_p, top) => this.bounceOff(top as Phaser.GameObjects.Rectangle), inFront);
     this.physics.add.collider(this.enemies, this.solids, undefined, (e, o) => this.shellHits(e as Phaser.Physics.Arcade.Sprite, o as Phaser.GameObjects.GameObject));
     this.physics.add.collider(this.enemies, this.semis);
     this.physics.add.overlap(this.enemies, this.enemies, (a, b) => this.shellMeets(a as Phaser.Physics.Arcade.Sprite, b as Phaser.Physics.Arcade.Sprite));
-    this.physics.add.overlap(this.player, this.enemies, (_p, e) => this.touchEnemy(e as Phaser.Physics.Arcade.Sprite));
+    this.physics.add.overlap(this.player, this.enemies, (_p, e) => this.touchEnemy(e as Phaser.Physics.Arcade.Sprite), inFront);
     this.physics.add.overlap(this.player, this.coins, (_p, c) => this.collect(c as Phaser.GameObjects.Image));
     if (this.terrain) {
       const ground = this.terrain;
@@ -425,11 +438,13 @@ export class CourseScene extends Phaser.Scene {
     // over an auto-scroller's gaps the billboard posts run down out of sight
     const overGround = (x: number) => L.ground.some(([gx, w]) => x >= gx * T && x < (gx + w) * T);
     this.story.buildSigns(L.autoscroll ? () => G : groundAt, L.autoscroll ? (x) => (overGround(x) ? G : this.H + 8) : groundAt);
+    if (this.readBefore) this.story.restoreRead(this.readBefore);
     this.input.keyboard!.on('keydown-ESC', () => !ui.blocking && this.exitToMap());
     this.drawDevLayer();
     // a rebuild from the editor picks up where the player was, without the intro
     if (at) this.story.resume(at.x);
-    else this.cameras.main.fadeIn(250);
+    // back from the secret house it fades in like a fresh start; an editor rebuild cuts straight back
+    if (!at || this.readBefore) this.cameras.main.fadeIn(250);
     // each course has its own track; any course without one plays World 1-1's
     playMusic(this, L.id === 'world-1-2' || L.id === 'world-1-3' ? L.id : 'world-1-1');
   }
@@ -497,6 +512,31 @@ export class CourseScene extends Phaser.Scene {
     this.busy = false;
   }
 
+  /** Down through the white platform: the hero lands on the ground behind everything, still in view. */
+  private dropBehind() {
+    this.behind = true;
+    sfx.secret();
+    this.player.setLayer(BEHIND);
+  }
+
+  /** Back in front: after a fall into a pit. */
+  private comeOut() {
+    this.behind = false;
+    this.player.setLayer(10);
+  }
+
+  /** Off the right edge behind the black end zone: into the secret house. Coming out puts you back by the slingshot. */
+  private async enterSecretHouse() {
+    this.busy = true;
+    sfx.pipe();
+    const L = this.level;
+    const x = ((L.slingshot ?? L.goal) - 2.5) * T;
+    const back = { x, y: (L.groundRow - 1) * T, powered: this.player.powered };
+    this.cameras.main.fadeOut(250);
+    await new Promise((r) => this.cameras.main.once('camerafadeoutcomplete', r));
+    this.scene.start('House', { secret: this.world.slug, back: { slug: this.world.slug, at: back, read: this.story.readIds } });
+  }
+
   /** On the other side every story block and billboard is outlined; click one (or bump it) to edit it. */
   private drawDevLayer() {
     this.devLayer?.destroy();
@@ -513,7 +553,7 @@ export class CourseScene extends Phaser.Scene {
       hit.on('pointerdown', () => this.select(e.id));
       c.add([g, tag(e.x + e.w / 2, e.y - 2, e.label), hit]);
     }
-    if (this.door) c.add(tag((this.door.x0 + this.door.x1) / 2, this.door.top - 4, 'HOLD S: FLIP BACK'));
+    if (this.door && !this.world.secretHouse) c.add(tag((this.door.x0 + this.door.x1) / 2, this.door.top - 4, `HOLD ${KEYS.s}: FLIP BACK`));
     this.devLayer = c;
   }
 
@@ -598,7 +638,7 @@ export class CourseScene extends Phaser.Scene {
   private buildSlingshot(x: number, ground: number) {
     const art = this.add.image(x, ground + 2, CAPY.slingshot).setOrigin(0.5, 1).setDisplaySize(40, 40).setDepth(-2);
     const band = this.add.graphics().setDepth(11);
-    const hint = px(this, x, ground - 44, 'HOLD S: PULL BACK', { size: 6, color: '#000' }).setOrigin(0.5).setDepth(20).setVisible(false);
+    const hint = px(this, x, ground - 44, `HOLD ${KEYS.s}: PULL BACK`, { size: 6, color: '#000' }).setOrigin(0.5).setDepth(20).setVisible(false);
     hint.setBackgroundColor('#ffffff').setPadding(2, 2, 2, 1);
     this.tweens.add({ targets: hint, y: hint.y - 2, yoyo: true, repeat: -1, duration: 450 });
     this.sling = { x, pull: 0, band, hint, art };
@@ -631,7 +671,7 @@ export class CourseScene extends Phaser.Scene {
   /** Per frame: pull back while S is held on the slingshot, fly when it's let go. */
   private updateSlingshot(p: Player) {
     const s = this.sling;
-    if (!s || this.inRoom || this.inSky) return;
+    if (!s || this.inRoom || this.inSky || this.behind) return;
     const G = this.level.groundRow * T;
     const on = p.body.blocked.down && Math.abs(p.x - s.x) < 12 && Math.abs(p.body.bottom - G) < 3;
     s.hint.setVisible(on && s.pull === 0 && !ui.dev);
@@ -837,9 +877,14 @@ export class CourseScene extends Phaser.Scene {
     }
     this.updateSlingshot(p);
 
-    // The white platform is the door to the other side
+    // The white platform is the door to the other side, or, in a world with a secret house, the way behind the scenery
     if (this.holdDoor(p)) {
-      void this.flipSides();
+      if (this.world.secretHouse) this.dropBehind();
+      else void this.flipSides();
+      return;
+    }
+    if (this.behind && p.x > this.W - 10) {
+      void this.enterSecretHouse();
       return;
     }
 
@@ -875,19 +920,20 @@ export class CourseScene extends Phaser.Scene {
       p.hurt(p.x + 1);
       // the screen backs up so you land in view
       if (this.level.autoscroll) this.autoX = Phaser.Math.Clamp(Math.min(this.autoX, this.safe.x - 80), 0, this.W - WIDTH);
+      if (this.behind) this.comeOut();
     }
 
     this.story.update(p.x, this.inRoom);
     this.updateEnemies();
     this.updateFeathers();
     for (const pl of this.plants) {
-      if (pl.sprite.y < pl.top - 4 && Phaser.Geom.Intersects.RectangleToRectangle(p.getBounds(), new Phaser.Geom.Rectangle(pl.cx - 6, pl.sprite.y + 2, 12, pl.top - pl.sprite.y))) {
+      if (!this.behind && pl.sprite.y < pl.top - 4 && Phaser.Geom.Intersects.RectangleToRectangle(p.getBounds(), new Phaser.Geom.Rectangle(pl.cx - 6, pl.sprite.y + 2, 12, pl.top - pl.sprite.y))) {
         p.hurt(pl.cx);
       }
     }
 
     if (!this.finished) {
-      if (Phaser.Math.Distance.Between(p.x, p.y, this.goal.x, this.goal.y) < 18) void this.finish();
+      if (!this.behind && Phaser.Math.Distance.Between(p.x, p.y, this.goal.x, this.goal.y) < 18) void this.finish();
       else this.goal.setTexture(FELT, `icon-${['star', 'heart', 'pencil', 'seed'][Math.floor(this.time.now / 140) % 4]}`);
     }
   }

@@ -4,8 +4,22 @@ import type { Lens } from '../content/types';
 // so it lives in localStorage and the game works without it.
 
 export const TILE = 16;
-/** 16:9 at the NES's 240 lines (426.7, rounded). */
-export const WIDTH = 427;
+
+/**
+ * Phones play in a Game Boy Color (src/ui/phone.ts) with touch buttons. ?phone forces it on a desktop, to
+ * test; ?desktop turns it off.
+ */
+export const PHONE = (() => {
+  const q = new URLSearchParams(location.search);
+  if (q.has('phone')) return true;
+  if (q.has('desktop')) return false;
+  const coarse = window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(any-pointer: fine)').matches;
+  return coarse || window.innerWidth < 720;
+})();
+/** What on-screen hints call the keys: S and Esc on a keyboard; on the Game Boy, the D-pad's down, SELECT, and A to stop the bonus game. */
+export const KEYS = PHONE ? { s: 'DOWN', esc: 'SELECT', stop: 'A' } : { s: 'S', esc: 'ESC', stop: 'S' };
+/** 16:9 at the NES's 240 lines (426.7, rounded); on a phone, the NES's own 256, almost square. */
+export const WIDTH = PHONE ? 256 : 427;
 export const HEIGHT = 240;
 export const BAR = 32; // SMB3-style status bar at the bottom
 export const FIELD = HEIGHT - BAR; // 208px playfield = 13 tiles

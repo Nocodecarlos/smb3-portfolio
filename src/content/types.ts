@@ -107,6 +107,11 @@ export interface World {
    * path shows "image coming soon"), **bold**.
    */
   article?: string;
+  /**
+   * A hidden mushroom house past the end of the course (World 1-3). Holding S on the white platform drops you
+   * behind the scenery, in place of flipping sides, and walking on behind the black end zone finds it.
+   */
+  secretHouse?: { intro: string; boxes: HouseBox[] };
   beats: Beat[];
 }
 
@@ -139,6 +144,11 @@ export interface MapNode {
   /** A house you walk into: what the panel on its wall says, and the treasure boxes to open. */
   intro?: string;
   boxes?: HouseBox[];
+  /**
+   * The spade panel's picture-matching game: its strips show my face, my resume and a ladybug from the levels (paths in
+   * /public; an empty one shows a stand-in). Matching the resume offers `resumePdf` to download.
+   */
+  bonus?: { face: string; resume: string; resumePdf: string };
 }
 
 /** A treasure box in a house: opening it reads one of my blog posts in full. */

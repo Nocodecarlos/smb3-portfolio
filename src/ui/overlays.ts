@@ -1,6 +1,6 @@
 import { getSite, getWorlds, resolveSrc } from '../content/store';
 import type { Beat, World } from '../content/types';
-import { ui } from '../game/state';
+import { PHONE, ui } from '../game/state';
 import { sfx } from '../game/sfx';
 import { isTyping } from './typing';
 
@@ -131,6 +131,8 @@ export interface StoryCard {
   image?: { src: string; caption: string; alt?: string };
   /** e.g. "3 / 11 stories". */
   progress?: string;
+  /** A button in the footer, e.g. to download the resume (`download` is the saved file's name). */
+  link?: { label: string; href: string; download?: string };
 }
 
 /**
@@ -153,10 +155,16 @@ export function showStory(c: StoryCard): Promise<void> {
           <h2 class="story-title">${esc(c.title)}</h2>
           <div class="story-body">${richText(c.body)}</div>
         </div>
-        <footer class="story-foot">SPACE or L to keep playing</footer>
+        <footer class="story-foot">${
+          c.link
+            ? `<a class="story-btn story-link" href="${esc(resolveSrc(c.link.href))}"${c.link.download ? ` download="${esc(c.link.download)}"` : ''} target="_blank" rel="noopener">${esc(c.link.label)}</a>`
+            : ''
+        }${PHONE ? 'A to keep playing' : 'SPACE or L to keep playing'}</footer>
       </article>
     </div>`);
   node.addEventListener('click', () => node.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
+  // the link downloads without closing the card
+  node.querySelector('.story-link')?.addEventListener('click', (e) => e.stopPropagation());
   const text = node.querySelector<HTMLElement>('.story-text')!;
   return open<void>(node, (e, close) => {
     // longer pieces scroll: arrows or W/S
@@ -176,7 +184,7 @@ export function showImage(src: string, caption: string, alt = ''): Promise<void>
         ${src ? `<img src="${esc(resolveSrc(src))}" alt="${esc(alt || caption)}">` : placeholder(caption)}
         <figcaption>${esc(caption)}</figcaption>
       </figure>
-      <div class="hint">Press SPACE to close</div>
+      <div class="hint">${PHONE ? 'Press A to close' : 'Press SPACE to close'}</div>
     </div>`);
   node.addEventListener('click', () => node.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
   return open<void>(node, (e, close) => {

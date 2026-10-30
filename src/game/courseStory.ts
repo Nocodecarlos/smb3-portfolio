@@ -4,7 +4,7 @@ import { resolveSrc } from '../content/store';
 import type { Beat, World } from '../content/types';
 import { type StoryCard, showImage, showStory } from '../ui/overlays';
 import { type FeltStatusBar, SEED, SEED_STAGES } from './feltHud';
-import { ui } from './state';
+import { KEYS, ui } from './state';
 import { px } from './text';
 import { asset } from '../assets';
 
@@ -125,7 +125,7 @@ export class CourseStory {
         t.setY(top + (SIGN_H - t.height) / 2);
         parts.push(t);
       }
-      const hint = px(this.scene, x + SIGN_W / 2, top - 9, b.type === 'image' ? 'S: LOOK' : 'S: READ', { size: 6, color: '#000' }).setOrigin(0.5).setDepth(20).setVisible(false);
+      const hint = px(this.scene, x + SIGN_W / 2, top - 9, `${KEYS.s}: ${b.type === 'image' ? 'LOOK' : 'READ'}`, { size: 6, color: '#000' }).setOrigin(0.5).setDepth(20).setVisible(false);
       hint.setBackgroundColor('#ffffff').setPadding(2, 2, 2, 1);
       this.scene.tweens.add({ targets: hint, y: hint.y - 2, yoyo: true, repeat: -1, duration: 450 });
       this.signs.push({ beat: b, x, top, hint, parts });
@@ -229,6 +229,18 @@ export class CourseStory {
   /** Reached the goal: the seed is in bloom, however many stories were read. */
   bloom() {
     if (this.world.growSeed) this.hud.setSeed(SEED_STAGES - 1);
+  }
+
+  /** The stories read so far, carried over a trip out of the course and back (the secret house). */
+  get readIds() {
+    return [...this.read];
+  }
+
+  /** Back from that trip: the same stories count as read, and their boards stay faded. */
+  restoreRead(ids: string[]) {
+    for (const id of ids) this.read.add(id);
+    for (const s of this.signs) if (this.read.has(s.beat.id)) s.parts.forEach((p) => p.setTint(0xd2d2d2));
+    this.hud.setStories(this.read.size, this.stories.length);
   }
 
   private openCard(id: string, card: StoryCard) {

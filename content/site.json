@@ -34,7 +34,7 @@
       {"id": "s9", "type": "step", "x": 1729, "y": 987},
       {"id": "lock", "type": "lock", "x": 839, "y": 521, "requires": ["pause"]},
       {"id": "fortress", "type": "fortress", "x": 1114, "y": 660, "label": "FORTRESS", "title": "Fortress", "body": "This stop is still being built. Check back soon."},
-      {"id": "spade", "type": "spade", "x": 1402, "y": 660, "label": "BONUS", "title": "Bonus game", "body": "This stop is still being built. Check back soon."},
+      {"id": "spade", "type": "spade", "x": 1402, "y": 660, "label": "BONUS", "bonus": {"face": "", "resume": "", "resumePdf": ""}},
       {"id": "house2", "type": "house", "x": 1129, "y": 960, "label": "ABOUT", "about": true},
       {"id": "house1", "type": "house", "x": 1969, "y": 368, "label": "BLOG", "title": "Blog house", "intro": "Pick a box. Each one holds one of my \"What if\" ideas: an app I use, reimagined with something I think it should have.", "boxes": [
           {

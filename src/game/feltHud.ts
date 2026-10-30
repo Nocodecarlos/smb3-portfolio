@@ -1,12 +1,13 @@
 import Phaser from 'phaser';
 import { ART, FELT, Z } from '../art/felt';
 import { getWorlds } from '../content/store';
-import { FIELD, WIDTH, progress } from './state';
+import { FIELD, PHONE, WIDTH, progress } from './state';
 
 /** Extra width over the 320px bar the art was drawn for: the panel stretches, the card slots move right. */
 const EXTRA = WIDTH - 320;
 const CARD_X = 230 + EXTRA;
-const COIN_X = 179 + EXTRA;
+/** The phone's screen is too narrow for the card slots: the info panel runs the whole width, coins at its end. */
+const COIN_X = PHONE ? WIDTH - 40 : 179 + EXTRA;
 /** The app icon on a map stop: as tall as the two text rows beside it, inside the dashed outline. */
 const STOP_ICON = 16;
 const STOP_ICON_Y = FIELD + 14.25;
@@ -52,9 +53,9 @@ export class FeltStatusBar {
 
     // the info panel is a 3-slice that stretches across; the card slots keep their size
     const panelW = scene.textures.getFrame(FELT, 'hud-panel').width;
-    const panel = scene.add.nineslice(0, FIELD - 1, FELT, 'hud-panel', panelW + EXTRA * ART, undefined, 40 * (ART / 4), 40 * (ART / 4)).setOrigin(0).setScale(1 / ART);
-    const cards = scene.add.image(panelW / ART + EXTRA, FIELD - 1, FELT, 'hud-cards').setOrigin(0).setScale(1 / ART);
-    root.add([panel, cards]);
+    const panel = scene.add.nineslice(0, FIELD - 1, FELT, 'hud-panel', PHONE ? WIDTH * ART : panelW + EXTRA * ART, undefined, 40 * (ART / 4), 40 * (ART / 4)).setOrigin(0).setScale(1 / ART);
+    root.add(panel);
+    if (!PHONE) root.add(scene.add.image(panelW / ART + EXTRA, FIELD - 1, FELT, 'hud-cards').setOrigin(0).setScale(1 / ART));
 
     const text = (x: number, y: number, s: string, color: string) => {
       const t = scene.add
@@ -83,7 +84,7 @@ export class FeltStatusBar {
     // Card slots are part of the background; cleared worlds show their plush card
     // (a course swaps these for its chapter cards).
     const worlds = getWorlds();
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < (PHONE ? 0 : 3); i++) {
       const w = worlds[i];
       if (w && progress.cleared.includes(w.slug)) {
         const card = scene.add.image(CARD_X + i * 30 + 14, FIELD - 1 + 13.5, FELT, `icon-${w.card}`).setScale(0.85 / ART);
@@ -205,6 +206,7 @@ export class FeltStatusBar {
 
   /** Chapter cards (bug, pencil, star): dim until reached. */
   setChapters(frames: string[]) {
+    if (PHONE) return;
     this.cards.forEach((c) => c.destroy());
     this.cards = frames.map((frame, i) => {
       const img = this.scene.add.image(CARD_X + i * 30 + 14, FIELD - 1 + 13.5, FELT, frame).setScale(0.7 / ART).setAlpha(0.22);

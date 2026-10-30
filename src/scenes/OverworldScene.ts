@@ -18,9 +18,10 @@ import { asset } from '../assets';
 
 type Dir = 'left' | 'right' | 'up' | 'down';
 
-/** The Figma map frame's width (overworld · felt · 16:9); the map fills the screen's width. */
+/** The Figma map frame's width (overworld · felt · 16:9); the map fills the desktop screen's width (on a phone's narrower screen, the camera follows the hero across it). */
 const MAP_W = 2668;
-const K = WIDTH / MAP_W;
+const MAP_SCREEN = 427;
+const K = MAP_SCREEN / MAP_W;
 const MAP_H = 1384 * K;
 /** Texture pixels per Figma pixel in the exported map art (map-bg.jpg, map-lock.png). */
 const MAP_TEX = 1.25;
@@ -85,7 +86,7 @@ export class OverworldScene extends Phaser.Scene {
     setupFelt(this);
     for (const key of ['felt-map', 'felt-map-lock', CARDS]) this.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR);
 
-    this.add.image(0, 0, 'felt-map').setOrigin(0).setDisplaySize(WIDTH, MAP_H);
+    this.add.image(0, 0, 'felt-map').setOrigin(0).setDisplaySize(MAP_SCREEN, MAP_H);
 
     // Live pieces on top of the art: the lock (until opened), cleared-world cards, signs
     const lock = nodes.find((n) => n.type === 'lock');
@@ -112,7 +113,7 @@ export class OverworldScene extends Phaser.Scene {
     const start = at(this.current);
     this.marker = this.add.container(start.x, start.y + MARKER_FEET, [this.markerImg]).setDepth(10);
 
-    cam.setBounds(0, 0, WIDTH, MAP_H + BAR);
+    cam.setBounds(0, 0, MAP_SCREEN, MAP_H + BAR);
     cam.startFollow(this.marker, true, 0.2, 0.2);
 
     this.hud = new FeltStatusBar(this, 'WORLD 1', '');
@@ -293,6 +294,14 @@ export class OverworldScene extends Phaser.Scene {
       this.moving = true;
       this.cameras.main.fadeOut(250);
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('House', { node: n.id }));
+      return;
+    }
+    if (n.bonus) {
+      // the spade panel is the picture-matching game
+      sfx.select();
+      this.moving = true;
+      this.cameras.main.fadeOut(250);
+      this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Spade', { node: n.id }));
       return;
     }
     if (n.type === 'castle') await showLetter();

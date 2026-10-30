@@ -2,20 +2,22 @@ import Phaser from 'phaser';
 import { setRenderZoom } from './art/felt';
 import { onContentChange } from './content/store';
 import { isMuted, toggleMute } from './game/sfx';
-import { HEIGHT, WIDTH, ui } from './game/state';
+import { HEIGHT, PHONE, WIDTH, ui } from './game/state';
 import { BootScene } from './scenes/BootScene';
 import { CourseScene } from './scenes/CourseScene';
 import { HouseScene } from './scenes/HouseScene';
+import { SpadeScene } from './scenes/SpadeScene';
 import { OverworldScene } from './scenes/OverworldScene';
 import { TitleScene } from './scenes/TitleScene';
 import { WorldScene } from './scenes/WorldScene';
 import { initDevMode } from './ui/devmode';
-import { isMobile, showMobileGate } from './ui/mobile';
+import { setupPhone } from './ui/phone';
 import { isTyping } from './ui/typing';
 import { showQuickView } from './ui/overlays';
 
 async function start() {
-  if (isMobile()) return showMobileGate();
+  // phones play in a Game Boy Color: lay it out before the game measures its screen
+  if (PHONE) document.body.classList.add('phone');
 
   // Pixel fonts must be ready before the first scene draws text.
   await Promise.race([
@@ -30,7 +32,8 @@ async function start() {
   const tallest = Math.min(window.screen.height - 92, ((window.screen.width - 48) * HEIGHT) / WIDTH);
   // ?zoom=5 forces it, to see how another display renders
   const forced = Number(new URLSearchParams(location.search).get('zoom'));
-  setRenderZoom(Phaser.Math.Clamp(forced || Math.ceil((tallest * dpr) / HEIGHT), 4, 8));
+  // (the Game Boy's screen is small: the art's 4x is plenty)
+  setRenderZoom(Phaser.Math.Clamp(forced || (PHONE ? 4 : Math.ceil((tallest * dpr) / HEIGHT)), 4, 8));
 
   const game = new Phaser.Game({
     type: Phaser.AUTO,
@@ -44,17 +47,19 @@ async function start() {
     fps: { forceSetTimeOut: new URLSearchParams(location.search).has('timer'), target: 60 },
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.NO_CENTER },
     physics: { default: 'arcade', arcade: { gravity: { x: 0, y: 1000 }, debug: false } },
-    scene: [BootScene, TitleScene, OverworldScene, WorldScene, CourseScene, HouseScene],
+    scene: [BootScene, TitleScene, OverworldScene, WorldScene, CourseScene, HouseScene, SpadeScene],
   });
 
   game.sound.mute = isMuted();
   if (import.meta.env.DEV) import('./devtools').then((m) => m.installDevtools(game));
 
-  // Overlays size their pixel font off the real screen width.
+  // Overlays size their pixel font off the real screen width; on a phone they fill the phone instead.
   const screen = document.getElementById('screen')!;
-  const sync = () => document.documentElement.style.setProperty('--px', `${screen.clientWidth / WIDTH}px`);
-  new ResizeObserver(sync).observe(screen);
+  const unit = () => (PHONE ? Math.min(window.innerWidth / 210, window.innerHeight / 380) : screen.clientWidth / WIDTH);
+  const sync = () => document.documentElement.style.setProperty('--px', `${unit()}px`);
+  new ResizeObserver(sync).observe(PHONE ? document.body : screen);
   sync();
+  if (PHONE) setupPhone(game);
 
   // Typing in dev-panel fields shouldn't move the player.
   document.addEventListener('focusin', (e) => {

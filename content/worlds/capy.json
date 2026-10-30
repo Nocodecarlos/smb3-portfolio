@@ -10,6 +10,16 @@
   "theme": "sunset",
   "card": "heart",
   "level": "world-1-3",
+  "secretHouse": {
+    "intro": "You found the secret house! Open the box for a trip back in time.",
+    "boxes": [
+      {
+        "title": "One of my early works",
+        "body": "You found it. Congratulations!\n\nThis is one of my early works. I designed it about 10 years ago, and I wanted to share it just to show you how much progress I've made since.",
+        "image": { "src": "", "caption": "One of my early works, from about 10 years ago" }
+      }
+    ]
+  },
   "summary": "A vertical arcade game I designed and built solo in about 60 days, live on the App Store. Slingshot a capybara through seven zones to the moon, then past it, where the ads are billboards you can jump on.",
   "outcomes": [
     "Shipped solo in about 60 days, from idea to the App Store",

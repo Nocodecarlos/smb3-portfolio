@@ -316,6 +316,8 @@ body.dev #legend { display: none; }
   padding: calc(var(--px) * 2.5) calc(var(--px) * 8) calc(var(--px) * 4);
   font: 600 calc(var(--px) * 4) / 1 Fredoka, sans-serif; text-align: right; opacity: 0.75;
 }
+.story-foot:has(.story-link) { display: flex; align-items: center; justify-content: space-between; gap: calc(var(--px) * 6); opacity: 1; }
+.story-link { text-decoration: none; }
 .end-story { max-width: calc(var(--px) * 260); }
 .intro-story { max-width: calc(var(--px) * 300); }
 .intro-story .story-body { font-size: calc(var(--px) * 5.2); }
@@ -533,63 +535,53 @@ body.qv-open #stage, body.qv-open #dev-panel { visibility: hidden; }
 .dev-modal p { margin: 0 0 8px; color: #ccc; }
 .dev-modal pre { max-height: 200px; overflow: auto; background: #111; padding: 8px; font-size: 10px; }
 
-/* ---------- Mobile: Game Boy gate ---------- */
+/* ---------- Phone: the game in a Game Boy Color ---------- */
 
-#mobile {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: #2b2a33;
-  padding: 16px;
-  overflow-y: auto;
-}
-#mobile[hidden] { display: none; }
-.gb {
+/* The Game Boy is a photo (gameboy-color.png, 337x593) as wide as the phone allows; the game sits on its
+   screen and touch buttons sit on its own (src/ui/phone.ts). Positions are % of the photo. */
+body.phone #stage { display: grid; place-items: center; perspective: none; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+body.phone #tv {
   position: relative;
-  width: min(380px, 100%);
-  aspect-ratio: 584 / 968;
-  container-type: inline-size;
-  background: url("./art/page/gameboy.webp") center / 100% 100% no-repeat;
-  filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.5));
+  left: auto; top: auto; translate: none;
+  width: min(100vw, calc((100vh - 12px) * 337 / 593));
+  width: min(100vw, calc((100dvh - 12px) * 337 / 593));
+  transition: none;
 }
-/* sits on the photo's LCD; sizes are cqw of the Game Boy's width */
-.gb-screen {
-  position: absolute;
-  left: 23.6%;
-  top: 13.1%;
-  width: 53.8%;
-  height: 29.9%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 2.2cqw;
-  padding: 3.2cqw;
-  color: #34420f;
-  font: 2.5cqw/1.7 var(--pixel);
-  /* a little depth under the bezel, like a real LCD */
-  box-shadow: inset 0 1.1cqw 2.2cqw rgba(40, 50, 10, 0.25);
+body.phone #tv-flip {
+  aspect-ratio: 337 / 593;
+  background: url("./art/page/gameboy-color.png") center / 100% 100% no-repeat;
+  filter: drop-shadow(0 16px 26px rgba(0, 0, 0, 0.5));
 }
-.gb-screen p { margin: 0; }
-.gb-title { font: 5.9cqw/1.05 "Luckiest Guy", sans-serif; letter-spacing: 0.04em; }
-.gb-blink { animation: blink 0.8s steps(2) infinite; }
-/* invisible hit areas over the photo's A and B buttons; they dip when pressed */
-.gb-btn {
+body.phone #tv-flip::after, body.phone .tv-power, body.phone #legend, body.phone #secret, body.phone #screen::after { display: none; }
+/* the photo's screen, 256x240 like the game, a hair taller so the bezel hides its edges */
+body.phone #screen { left: 23.44%; top: 10.72%; width: 53.12%; aspect-ratio: 256 / 240; }
+/* cards and dialogs fill the phone (the overlay is moved out to <body>) */
+body.phone #overlay { position: fixed; z-index: 50; }
+body.phone .ov-story { padding: calc(var(--px) * 8); background: none; }
+body.phone .story.has-img { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr auto; }
+body.phone .story-img { padding: calc(var(--px) * 5) calc(var(--px) * 8) 0; }
+body.phone .story-img img { max-height: calc(var(--px) * 85); }
+
+#pad > * {
   position: absolute;
-  width: 11%;
-  aspect-ratio: 1;
   translate: -50% -50%;
   border: 0;
-  border-radius: 50%;
+  padding: 0;
   background: transparent;
-  cursor: pointer;
+  touch-action: none;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 0.08s, background 0.08s;
 }
-.gb-btn:active { transform: scale(0.92); background: radial-gradient(circle, rgba(0, 0, 0, 0.28), transparent 70%); }
-.gb-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
-.gb-a { left: 86%; top: 64.1%; }
-.gb-b { left: 70.2%; top: 68.4%; }
-.gb-hint { display: flex; justify-content: space-between; width: min(380px, 100%); margin-top: 16px; font: 600 12px Inter, sans-serif; color: #c9c6d6; }
+#pad > .down { background: radial-gradient(circle, rgba(0, 0, 0, 0.3), transparent 70%); }
+.pad-dpad { left: 22.26%; top: 64.67%; width: 36%; aspect-ratio: 1; }
+.pad-dpad[data-dir~="ArrowLeft"] { background: radial-gradient(circle at 20% 50%, rgba(0, 0, 0, 0.3), transparent 30%); }
+.pad-dpad[data-dir~="ArrowRight"] { background: radial-gradient(circle at 80% 50%, rgba(0, 0, 0, 0.3), transparent 30%); }
+.pad-dpad[data-dir~="ArrowUp"] { background: radial-gradient(circle at 50% 20%, rgba(0, 0, 0, 0.3), transparent 30%); }
+.pad-dpad[data-dir~="ArrowDown"] { background: radial-gradient(circle at 50% 80%, rgba(0, 0, 0, 0.3), transparent 30%); }
+.pad-a, .pad-b, .pad-ab { aspect-ratio: 1; border-radius: 50%; }
+.pad-a { left: 84.72%; top: 62.82%; width: 18%; }
+.pad-b { left: 67.21%; top: 66.1%; width: 18%; }
+/* the seam between B and A presses both, for running jumps */
+.pad-ab { left: 75.96%; top: 64.46%; width: 7%; z-index: 1; }
+.pad-select, .pad-start { top: 80.61%; width: 13%; height: 6%; border-radius: 999px; }
+.pad-select { left: 43.32%; }
+.pad-start { left: 57.57%; }

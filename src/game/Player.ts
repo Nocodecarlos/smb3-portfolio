@@ -80,6 +80,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setDepth(10);
   }
 
+  /** Draws the hero (and its puppet) at this depth: behind the scenery, or back in front at 10. */
+  setLayer(depth: number) {
+    this.setDepth(depth);
+    this.rig?.root.setDepth(depth);
+    return this;
+  }
+
   get hurting() {
     return this.scene.time.now < this.hurtUntil;
   }

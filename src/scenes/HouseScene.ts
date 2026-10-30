@@ -2,12 +2,12 @@ import Phaser from 'phaser';
 import { asset } from '../assets';
 import { Z, feltImage, preloadFelt, setupFelt } from '../art/felt';
 import { ChibiRig, preloadHeroes } from '../art/hero';
-import { getSite } from '../content/store';
-import type { MapNode } from '../content/types';
+import { getSite, getWorld } from '../content/store';
+import type { HouseBox } from '../content/types';
 import { FeltStatusBar } from '../game/feltHud';
 import { Player, createControls } from '../game/Player';
 import { sfx } from '../game/sfx';
-import { HEIGHT, WIDTH, progress, ui } from '../game/state';
+import { HEIGHT, KEYS, WIDTH, progress, ui } from '../game/state';
 import { px } from '../game/text';
 import { showStory } from '../ui/overlays';
 
@@ -15,6 +15,8 @@ import { showStory } from '../ui/overlays';
 // walls, a panel on the wall, the other hero waiting on a ledge, and three
 // treasure boxes. Stand at a box and press S to open it and read the post
 // inside. Esc goes back to the map.
+// The same house hides past the end of World 1-3 (a world's `secretHouse`),
+// with one box; Esc from there goes back to the course.
 
 const T = 16;
 /**
@@ -36,19 +38,26 @@ const ROOM = [
   '  #..............#  ',
   '  ################  ',
 ];
-/** Centred on the screen. */
-const X0 = (WIDTH - ROOM[0].length * T) / 2;
+/** Centred on the screen; on a phone's narrower screen the room is wider, and the camera follows you across it. */
+const ROOM_W = ROOM[0].length * T;
+const X0 = Math.max(0, (WIDTH - ROOM_W) / 2);
 const FLOOR = (ROOM.length - 1) * T;
-/** Tile columns of the three boxes' centres, spaced evenly across the floor. */
-const BOX_COLS = [6, 10, 14];
+/** The boxes stand four tiles apart, centred on the floor (three of them at columns 6, 10 and 14). */
+const boxCol = (i: number, n: number) => 10 + (i - (n - 1) / 2) * 4;
+const MAX_BOXES = 3;
 const CHEST = 'house-chest';
 const CHEST_OPEN = 'house-chest-open';
 const CREAM = 'house-cream';
 
 type Box = { x: number; art: Phaser.GameObjects.Image; hint: Phaser.GameObjects.Text; opened: boolean };
+/** What a house holds and says: the status bar's two lines, the cards' kicker, the panel and the boxes. */
+type House = { name: string; what: string; kicker: string; intro: string; boxes: HouseBox[] };
+/** Where the secret house lets you out: back on its course. */
+type Back = { slug: string; at: { x: number; y: number; powered: boolean }; read: string[] };
 
 export class HouseScene extends Phaser.Scene {
-  private node!: MapNode;
+  private house!: House;
+  private back?: Back;
   private player!: Player;
   private host!: ChibiRig;
   private hud!: FeltStatusBar;
@@ -60,8 +69,16 @@ export class HouseScene extends Phaser.Scene {
     super('House');
   }
 
-  init(data: { node: string }) {
-    this.node = getSite().map.nodes.find((n) => n.id === data.node)!;
+  init(data: { node: string } | { secret: string; back: Back }) {
+    if ('secret' in data) {
+      const h = getWorld(data.secret)!.secretHouse!;
+      this.house = { name: 'SECRET HOUSE', what: 'EARLY WORK', kicker: 'YOU FOUND IT', intro: h.intro, boxes: h.boxes };
+      this.back = data.back;
+    } else {
+      const node = getSite().map.nodes.find((n) => n.id === data.node)!;
+      this.house = { name: (node.label ?? 'HOUSE').toUpperCase() + ' HOUSE', what: 'WHAT IF IDEAS', kicker: 'WHAT IF…', intro: node.intro ?? '', boxes: node.boxes ?? [] };
+      this.back = undefined;
+    }
     this.boxes = [];
     this.busy = this.leaving = false;
   }
@@ -112,7 +129,7 @@ export class HouseScene extends Phaser.Scene {
     panel.lineStyle(1.5, 0xf6efdc).strokeRoundedRect(pxl, pyt, pw, ph, 5);
     stitches(panel, pxl + 4, pyt + 4, pw - 8, ph - 8);
     this.add
-      .text(pxl + pw / 2, pyt + ph / 2, this.node.intro ?? '', {
+      .text(pxl + pw / 2, pyt + ph / 2, this.house.intro, {
         fontFamily: '"Fredoka", sans-serif',
         fontStyle: '600',
         fontSize: '9px',
@@ -132,10 +149,11 @@ export class HouseScene extends Phaser.Scene {
     this.host.setFacing(true);
 
     // the boxes, standing on the floor
-    (this.node.boxes ?? []).slice(0, BOX_COLS.length).forEach((_, i) => {
-      const x = X0 + BOX_COLS[i] * T;
+    const posts = this.house.boxes.slice(0, MAX_BOXES);
+    posts.forEach((_, i) => {
+      const x = X0 + boxCol(i, posts.length) * T;
       const art = this.add.image(x, FLOOR + 1, CHEST).setOrigin(0.5, 1).setDisplaySize(30, 34.3).setDepth(4);
-      const hint = px(this, x, FLOOR - 44, 'S: OPEN', { size: 6, color: '#000' }).setOrigin(0.5).setDepth(20).setVisible(false);
+      const hint = px(this, x, FLOOR - 44, `${KEYS.s}: OPEN`, { size: 6, color: '#000' }).setOrigin(0.5).setDepth(20).setVisible(false);
       hint.setBackgroundColor('#ffffff').setPadding(2, 2, 2, 1);
       this.tweens.add({ targets: hint, y: hint.y - 2, yoyo: true, repeat: -1, duration: 450 });
       this.boxes.push({ x, art, hint, opened: false });
@@ -145,8 +163,9 @@ export class HouseScene extends Phaser.Scene {
     const controls = createControls(this);
     this.player = new Player(this, X0 + 4 * T, FLOOR - 8, controls, progress.hero);
     this.physics.add.collider(this.player, solids);
+    if (ROOM_W > WIDTH) cam.setBounds(0, 0, ROOM_W, HEIGHT).startFollow(this.player, true, 0.15, 0.15);
 
-    this.hud = new FeltStatusBar(this, (this.node.label ?? 'HOUSE').toUpperCase() + ' HOUSE', 'WHAT IF IDEAS');
+    this.hud = new FeltStatusBar(this, this.house.name, this.house.what);
     this.hud.setStories(0, this.boxes.length);
     this.input.keyboard!.on('keydown-ESC', () => !ui.blocking && this.leave());
     cam.fadeIn(250);
@@ -158,13 +177,13 @@ export class HouseScene extends Phaser.Scene {
     p.update();
     this.host.animate(this.game.loop.delta / 1000, 0, false);
     const box = this.boxes.find((b) => Math.abs(p.x - b.x) < 14 && p.body.bottom > FLOOR - 4);
-    this.boxes.forEach((b) => b.hint.setVisible(b === box && !ui.blocking).setText(b.opened ? 'S: READ' : 'S: OPEN'));
+    this.boxes.forEach((b) => b.hint.setVisible(b === box && !ui.blocking).setText(b.opened ? `${KEYS.s}: READ` : `${KEYS.s}: OPEN`));
     if (box && p.downPressed) void this.open(box);
   }
 
   private async open(box: Box) {
     const i = this.boxes.indexOf(box);
-    const post = this.node.boxes![i];
+    const post = this.house.boxes[i];
     this.busy = true;
     if (!box.opened) {
       box.opened = true;
@@ -175,11 +194,11 @@ export class HouseScene extends Phaser.Scene {
       await new Promise((r) => this.time.delayedCall(350, r));
     } else sfx.select();
     await showStory({
-      kicker: 'WHAT IF…',
+      kicker: this.house.kicker,
       title: post.title,
       body: post.body,
       image: post.image,
-      progress: `${i + 1} / ${this.boxes.length}`,
+      progress: this.boxes.length > 1 ? `${i + 1} / ${this.boxes.length}` : undefined,
     });
     this.input.keyboard!.resetKeys();
     this.busy = false;
@@ -189,7 +208,7 @@ export class HouseScene extends Phaser.Scene {
     if (this.leaving) return;
     this.leaving = this.busy = true;
     this.cameras.main.fadeOut(200);
-    this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Overworld'));
+    this.cameras.main.once('camerafadeoutcomplete', () => (this.back ? this.scene.start('Course', this.back) : this.scene.start('Overworld')));
   }
 }
 
