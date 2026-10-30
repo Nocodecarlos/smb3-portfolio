@@ -287,6 +287,14 @@ export class OverworldScene extends Phaser.Scene {
       return;
     }
     if (n.type === 'step' || n.type === 'lock') return;
+    if (n.boxes?.length) {
+      // a house with boxes is a room you walk into
+      sfx.select();
+      this.moving = true;
+      this.cameras.main.fadeOut(250);
+      this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('House', { node: n.id }));
+      return;
+    }
     if (n.type === 'castle') await showLetter();
     else if (n.about) await showIntro();
     else if (n.title || n.body) await showDialog(n.title ?? '', n.body ?? '');

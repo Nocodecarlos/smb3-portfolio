@@ -35,8 +35,36 @@
       {"id": "lock", "type": "lock", "x": 839, "y": 521, "requires": ["pause"]},
       {"id": "fortress", "type": "fortress", "x": 1114, "y": 660, "label": "FORTRESS", "title": "Fortress", "body": "This stop is still being built. Check back soon."},
       {"id": "spade", "type": "spade", "x": 1402, "y": 660, "label": "BONUS", "title": "Bonus game", "body": "This stop is still being built. Check back soon."},
-      {"id": "house1", "type": "house", "x": 1969, "y": 368, "label": "ABOUT", "about": true},
-      {"id": "house2", "type": "house", "x": 1129, "y": 960, "label": "BLOG", "title": "Blog house", "body": "This stop is still being built. Check back soon."},
+      {"id": "house2", "type": "house", "x": 1129, "y": 960, "label": "ABOUT", "about": true},
+      {"id": "house1", "type": "house", "x": 1969, "y": 368, "label": "BLOG", "title": "Blog house", "intro": "Pick a box. Each one holds one of my \"What if\" ideas: an app I use, reimagined with something I think it should have.", "boxes": [
+          {
+            "title": "Instagram Algo Reset",
+            "body": "Are you tired of your Instagram content? A few days ago, I read in the news that Instagram is developing a feature allowing users to reset their algorithms to favor different types of content. I believe this is a highly requested feature — I don't remember ever being interested in Formula 1, yet it seems to dominate my \"Explore\" feed nowadays.\n\nWith that in mind, I wanted to suggest how this functionality to \"reset your algorithm\" might look.\n\nWhat if Instagram automatically prompted a banner every three months, giving users a chance to correct their feed?\n\nWhile a periodic prompt might seem counterproductive since it doesn't allow users to choose when to reset, it could be the most user-friendly approach compared to hiding the option deep in the settings menu. I also imagine that \"resetting\" an algorithm requires substantial computing resources, so Instagram might prefer to control this process rather than leave it entirely up to users.\n\nSo, Instagram, if you're listening, here's my UI exploration of this upcoming feature. Feel free to take it!",
+            "image": {
+              "src": "content/what-if/algo-reset.jpg",
+              "caption": "A banner in Explore: refresh your Instagram algorithm",
+              "alt": "Instagram's Explore grid with a banner on top: Refresh your Instagram algorithm and explore a whole new world of content, with No thanks and Yes, finally buttons"
+            }
+          },
+          {
+            "title": "Instagram's Growing Heart",
+            "body": "Most of the time, I intentionally stay off Instagram because, for me, it is the biggest time suck among social media platforms. I mostly log in when I know friends or family are traveling to amazing places worldwide, and I want to see their passport-infused photos and stories. When the inevitable \"carousel of photos\" from these trips arrives, I can't help but like every photo. The problem is that there is very little systematic feedback or reward for liking the same post, which got me thinking…\n\nWhat If… Instagram's \"like\" or \"heart\" reaction grew more prominent with each like. Not that we are already too dependent on reactions like this, which would only exacerbate our social media addiction.\n\nHowever, it could provide a delightful feedback experience that helps you express how much you appreciate a post. It would align with your feelings digitally, a psychological phenomenon known as affective priming. Visuals, animations, colors, and micro interactions can subconsciously reinforce or shift your emotional state to match the app's intended experience.\n\nNonetheless, the downside of having one more reason to be addicted to your phone or to post on social media isn't worth the trouble. Therefore, I think I'll rate this idea as unfeasible.\n\nThanks for coming to my TED Talk.",
+            "image": {
+              "src": "content/what-if/growing-heart.jpg",
+              "caption": "A like that grows with every photo in the carousel",
+              "alt": "An Instagram carousel post where the heart icon gets bigger with each like"
+            }
+          },
+          {
+            "title": "Rough & Tumble Play",
+            "body": "Did you know Apple released a new \"Events\" app last week? While it's a great addition, many of Apple's existing apps could use some much-needed attention.\n\nI got an Apple Watch for Christmas, and I have to admit, I'm a bit obsessed with filling my daily activity rings. Although I consider myself active, these rings have motivated me to get off the couch every day. It's incredible how a little user interface and experience can significantly influence behavior. This new obsession got me thinking about the opportunities for tracking activities that Apple currently overlooks.\n\nWhat If… Apple added \"rough and tumble play\" with your kids as a recognized workout activity. I have two young children, aged 5 and 2, and trust me when I say that this type of play is both physically and mentally demanding. I am lifting and tossing 40 and 30 lbs again and again, again, and again, and again, and again, and five more \"last one\" for good measure.\n\nIf Apple could track this activity, I would likely maintain a daily calorie deficit of over 1,000 calories. I enjoy playing with my kids and would love to have that activity documented on my Apple Watch. It would serve as an additional source of motivation and a dopamine boost.\n\nFor fellow exhausted parents out there, what do you think? Would this feature be valuable, or is it a bit too far-fetched?",
+            "image": {
+              "src": "content/what-if/rough-tumble.jpg",
+              "caption": "Rough and tumble play, as an Apple Watch workout",
+              "alt": "Apple Watch Workout list with a Rough and tumble play workout between Outdoor Running and Outdoor Walk"
+            }
+          }
+      ]},
       {"id": "castle", "type": "castle", "x": 1979, "y": 908, "label": "LET'S CHAT!"}
     ],
     "edges": [

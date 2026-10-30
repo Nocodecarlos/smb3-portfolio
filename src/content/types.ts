@@ -136,6 +136,16 @@ export interface MapNode {
   about?: boolean;
   /** For a lock: world slugs that must be cleared before it opens. */
   requires?: string[];
+  /** A house you walk into: what the panel on its wall says, and the treasure boxes to open. */
+  intro?: string;
+  boxes?: HouseBox[];
+}
+
+/** A treasure box in a house: opening it reads one of my blog posts in full. */
+export interface HouseBox {
+  title: string;
+  body: string;
+  image: { src: string; caption: string; alt?: string };
 }
 
 export interface Site {

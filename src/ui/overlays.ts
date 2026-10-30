@@ -157,8 +157,12 @@ export function showStory(c: StoryCard): Promise<void> {
       </article>
     </div>`);
   node.addEventListener('click', () => node.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
+  const text = node.querySelector<HTMLElement>('.story-text')!;
   return open<void>(node, (e, close) => {
-    if (CLOSE_KEYS.has(e.key) || e.key === 'l' || e.key === 'L') close();
+    // longer pieces scroll: arrows or W/S
+    const scroll = { ArrowDown: 1, s: 1, S: 1, ArrowUp: -1, w: -1, W: -1 }[e.key];
+    if (scroll) text.scrollBy({ top: scroll * 40, behavior: 'smooth' });
+    else if (CLOSE_KEYS.has(e.key) || e.key === 'l' || e.key === 'L') close();
   });
 }
 
