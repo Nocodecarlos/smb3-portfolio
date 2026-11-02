@@ -170,7 +170,7 @@ kbd {
 #qv-btn:hover { border-color: var(--ink); }
 .legend-ways { display: flex; align-items: center; gap: 12px; }
 #qv-btn { position: relative; box-shadow: 0 0 8px rgba(34, 211, 238, 0.12); }
-#resume-btn {
+#resume-btn, .resume-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -182,8 +182,8 @@ kbd {
   padding: 6px 12px;
 }
 #resume-btn[hidden] { display: none; }
-#resume-btn svg { width: 14px; height: 14px; }
-#resume-btn:hover { border-color: var(--ink); }
+#resume-btn svg, .resume-btn svg { width: 14px; height: 14px; }
+#resume-btn:hover, .resume-btn:hover { border-color: var(--ink); }
 /* The neon string round the Skip button's border (src/ui/orbit.ts) */
 .orbit { position: absolute; inset: -1px; width: calc(100% + 2px); height: calc(100% + 2px); overflow: visible; pointer-events: none; filter: drop-shadow(0 0 3px rgba(34, 211, 238, 0.45)); }
 .orbit path { fill: none; stroke-width: 1.5px; animation: orbit 4s linear infinite; }
@@ -609,15 +609,7 @@ body.phone .story-img img { max-height: calc(var(--px) * 85); }
 .pad-start { left: 56.9%; }
 
 /* ---------- Title: what this is and the ways in ---------- */
-.title-entry { position: absolute; inset: 0; z-index: 3; container-type: inline-size; pointer-events: none; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; font-family: Fredoka, sans-serif; }
-.title-ways { display: flex; gap: 1.2cqw; margin-bottom: 1.1cqw; pointer-events: auto; }
-.title-way { font: 600 2.1cqw/1 Fredoka, sans-serif; padding: 1cqw 1.8cqw; color: #2a2218; text-decoration: none; cursor: pointer; background: #fff6e0; border: 0.25cqw solid #5a3518; border-radius: 99px; white-space: nowrap; }
-.title-way.primary { color: #fff; background: #c9472b; border-color: #7c2a16; }
-.title-way small { font-size: 0.8em; opacity: 0.8; margin-left: 0.4em; }
-.title-way:hover { filter: brightness(1.08); }
-.title-way:focus-visible { outline: 0.4cqw solid #2a58c0; outline-offset: 0.2cqw; }
-body.phone body.phone .title-way { font-size: 2.9cqw; padding: 1.4cqw 2cqw; }
-body.phone .title-ways { gap: 1cqw; }
+.title-resume { position: absolute; z-index: 3; right: 3cqw; bottom: 3cqw; background: #141414; white-space: nowrap; }
 
 /* ---------- Quick view: project grid, pages, enlarged pictures ---------- */
 #quickview.home .qv-top-in, .qv-home { max-width: 1040px; }

@@ -107,26 +107,22 @@ export class TitleScene extends Phaser.Scene {
     k.on('keydown-SPACE', start);
     k.on('keydown-L', start);
     k.on('keydown-Q', () => !ui.blocking && showQuickView(undefined, 'title_key'));
-    if (PHONE) this.addEntryChoices(start);
+    if (PHONE) this.addResume();
     setChoice(this.choice);
     stopMusic(); // the title is silent
     this.cameras.main.fadeIn(300);
     raiseCurtain();
   }
 
-  /** The ways in over the title art: a phone has no legend under the screen to hold them. */
-  private addEntryChoices(start: () => void) {
+  /** A phone has no legend under the screen, so Resume sits over the title art: the legend's own button. */
+  private addResume() {
     const resume = getSite().contact.resume;
-    const node = document.createElement('div');
-    node.className = 'title-entry';
-    node.innerHTML = `
-      <div class="title-ways">
-        <button class="title-way primary" type="button" data-way="play">▶ Play the portfolio <small>A</small></button>
-        <button class="title-way" type="button" data-way="read">Read the case studies</button>
-        ${resume ? `<a class="title-way" href="${resolveSrc(resume)}" download="Carlos-Velasquez-Resume.pdf">Resume</a>` : ''}
-      </div>`;
-    node.querySelector('[data-way="play"]')!.addEventListener('click', start);
-    node.querySelector('[data-way="read"]')!.addEventListener('click', () => !ui.blocking && showQuickView(undefined, 'title_choice'));
+    if (!resume) return;
+    const node = document.getElementById('resume-btn')!.cloneNode(true) as HTMLAnchorElement;
+    node.removeAttribute('id');
+    node.hidden = false;
+    node.href = resolveSrc(resume);
+    node.className = 'title-resume resume-btn';
     document.getElementById('screen')!.appendChild(node);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => node.remove());
   }
