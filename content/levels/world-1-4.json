@@ -11,6 +11,7 @@
   ],
   "goal": 152,
   "autoscroll": 26,
+  "parallax": { "sky": 0.15, "clouds": 0.4, "hills": 0.55 },
   "ground": [
     [
       0,

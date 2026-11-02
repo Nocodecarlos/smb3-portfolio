@@ -7,6 +7,7 @@
   "sky": "#9cf7e7",
   "spawn": [2, 25],
   "goal": 154,
+  "parallax": { "sky": 0.15, "clouds": 0.4, "hills": 0.55 },
   "ground": [[0, 68], [71, 22], [95, 5], [103, 36], [140, 20]],
   "platforms": [
     { "x": 17, "y": 21, "w": 3, "h": 5, "color": "#acddeb" },

@@ -3,7 +3,7 @@ import Phaser from 'phaser';
 import { ART, FELT, PIPE_INSET, PIPE_RUN, SKY, Z, feltImage, feltOnGround, feltPlatform, feltPost, feltSprite, haze, preloadFelt, setupFelt } from '../art/felt';
 import { HeroRig, preloadHeroes } from '../art/hero';
 import { CAPY, preloadCapy, setupCapy } from '../art/capy';
-import { drawKnit, preloadKnit } from '../art/knit';
+import { drawFarRange, drawKnit, preloadKnit } from '../art/knit';
 import { getWorld, getWorlds } from '../content/store';
 import type { World } from '../content/types';
 import { CourseStory, STORY_TEXTURE } from '../game/courseStory';
@@ -47,8 +47,12 @@ export interface CourseLevel {
    */
   bounceClouds?: [Bounce, number, number][];
   ground: [number, number][];
+  /** Far layers that scroll slower than the course: how fast each moves against it (0 stays put, 1 is the course). `hills` adds a distant knit range. */
+  parallax?: { sky: number; clouds: number; hills?: number };
   /** Knit ground with slopes (in place of `ground`): each piece's top edge as [tile x, tiles above the ground row]. */
   terrain?: [number, number][][];
+  /** Full-colour bushes in front of the hero's walk behind the course, so it's clear they went behind: [px x, w, h of the bush art]. */
+  stubs?: [number, number, number][];
   platforms: { x: number; y: number; w: number; h: number; color: string }[];
   blocks: [string, number, number][];
   notes: [number, number][];
@@ -157,6 +161,8 @@ export class CourseScene extends Phaser.Scene {
   private doorHold = 0;
   /** Set after a flip until S is let go, so holding it doesn't flip straight back. */
   private doorLatch = false;
+  /** Layers on their own slower scroll: they'd slide into rooms and the sky section, so they hide there. */
+  private farLayers: Phaser.GameObjects.Image[] = [];
   /** Dropped through the white platform: walking on the ground behind everything, where nothing else touches you. */
   private behind = false;
   /** The ground's solid rectangles, the only solids there are behind the scenery. */
@@ -208,7 +214,7 @@ export class CourseScene extends Phaser.Scene {
 
   preload() {
     preloadFelt(this);
-    if (this.level.terrain) preloadKnit(this);
+    if (this.level.terrain || this.level.parallax) preloadKnit(this);
     if (this.level.skySection || this.level.slingshot !== undefined) preloadCapy(this);
     preloadHeroes(this);
     CourseStory.preload(this, this.world);
@@ -240,7 +246,26 @@ export class CourseScene extends Phaser.Scene {
     setupFelt(this);
     setupCapy(this);
     this.cameras.main.setBackgroundColor(L.sky);
-    this.add.image(0, 0, SKY).setOrigin(0).setDisplaySize(this.W, this.H).setDepth(-20);
+    // far layers stay still for anyone who's asked their device for less motion
+    const px = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? undefined : L.parallax;
+    /** The camera's height with the hero on the ground: far layers line up with the level's layout from there. */
+    const groundScroll = this.H + BAR - HEIGHT;
+    const FAR_Y = 0.35; // climbing shifts far layers far less than walking does, or tall hills feel floaty
+    const SKY_Y = 0.1;
+    // the zoomed camera's scroll is measured from these, so a layer at speed f starts (1 - f) of the way along
+    const zoomX = (WIDTH * Z - WIDTH) / 2;
+    const zoomY = (HEIGHT * Z - HEIGHT) / 2;
+    this.farLayers = [];
+    /** Put a far object where the level has it when the camera is centred on it, moving at speed f. */
+    const far = <O extends Phaser.GameObjects.Image>(o: O, f: number, fy = FAR_Y) => {
+      this.farLayers.push(o);
+      return o.setScrollFactor(f, fy).setPosition(WIDTH / 2 + f * (o.x - WIDTH / 2) + (1 - f) * zoomX, o.y + (1 - fy) * (zoomY - groundScroll));
+    };
+    const skyImage = this.add.image(0, 0, SKY).setOrigin(0).setDepth(-20);
+    if (px) {
+      // only as big as the viewport plus how far this slow layer travels
+      this.farLayers.push(skyImage.setDisplaySize(WIDTH + (this.W - WIDTH) * px.sky, HEIGHT + groundScroll * SKY_Y).setScrollFactor(px.sky, SKY_Y).setPosition((1 - px.sky) * zoomX, (1 - SKY_Y) * zoomY));
+    } else skyImage.setDisplaySize(this.W, this.H);
 
     this.solids = this.physics.add.staticGroup();
     this.semis = this.physics.add.staticGroup();
@@ -262,16 +287,33 @@ export class CourseScene extends Phaser.Scene {
     const groundAt = (x: number) => (sky && x >= this.SX ? sky.floor * T : (this.terrain?.surface(x) ?? G));
 
     // ---- Scenery ----
-    for (const [x, y, s] of L.scenery.glints) {
+    for (const [i, [x, y, s]] of L.scenery.glints.entries()) {
+      // the slow sky packs them together: keep a few so it doesn't sparkle more than before
+      if (px && i % 4) continue;
       const g = feltImage(this, x, y, 'glint').setDepth(-10).setScale(s / 5 / ART).setAlpha(0.8);
+      if (px) far(g, px.sky, SKY_Y).setDepth(-14);
       this.tweens.add({ targets: g, alpha: 0.2, yoyo: true, repeat: -1, duration: 900 + ((x * 7) % 900), delay: (y * 13) % 1200 });
     }
     // clouds and the big bushes are the far layer: hazed toward the sky so the course reads first
-    for (const [x, y, w] of L.scenery.clouds) haze(feltImage(this, x, y, w > 50 ? 'cloud-l' : w > 40 ? 'cloud-m' : 'cloud-s').setOrigin(0).setDepth(-8), 0.45, 0.8);
+    for (const [x, y, w] of L.scenery.clouds) {
+      const cloud = haze(feltImage(this, x, y, w > 50 ? 'cloud-l' : w > 40 ? 'cloud-m' : 'cloud-s').setOrigin(0).setDepth(-8), 0.2, 0.95);
+      if (px) far(cloud, px.clouds).setDepth(-13); // behind the black goal wall, which doesn't move
+    }
+    if (px?.hills) {
+      // a soft rolling range with mushroom villages and a castle, as long as this slow layer travels
+      const span = WIDTH + (this.W - WIDTH) * px.hills;
+      // the first castle comes into view near the end, about a third across the screen by the goal: you're getting there
+      const castleX = span - WIDTH * 0.7;
+      for (const img of drawFarRange(this, `${L.id}-far`, span, G, this.H + BAR, -12, castleX)) {
+        img.setScrollFactor(px.hills, FAR_Y).setPosition(img.x + (1 - px.hills) * zoomX, img.y + (1 - FAR_Y) * (zoomY - groundScroll));
+        this.farLayers.push(img);
+      }
+    }
     // Plants stand on the ground line (their felt art has empty rows underneath)
     // on knit ground the big bushes sink in a little, so their round bottoms sit behind its stitched edge
     const sink = terrain ? 3 : 0;
     for (const [x, , w, h] of L.scenery.bushes) haze(feltOnGround(this, x, groundAt(x + w / 2) + sink, `bush2-${w}x${h}`).setDepth(-6), 0.22, 0.85);
+    for (const [x, w, h] of L.stubs ?? []) feltOnGround(this, x, groundAt(x + w / 2) + sink, `bush2-${w}x${h}`).setDepth(-6);
     for (const [x] of L.scenery.shrubs) feltOnGround(this, x * T, groundAt(x * T + 8), 'shrub').setDepth(-6);
 
     // ---- Platforms: drawn back to front, tops are jump-through ----
@@ -714,6 +756,7 @@ export class CourseScene extends Phaser.Scene {
     const S = this.level.skySection!;
     const cam = this.cameras.main;
     cam.setBackgroundColor(0x111622);
+    for (const o of this.farLayers) o.setVisible(false);
     cam.setBounds(this.SX, 0, Math.max(S.width * T, WIDTH), S.height * T + BAR);
   }
 
@@ -759,6 +802,7 @@ export class CourseScene extends Phaser.Scene {
 
   private useMainCamera() {
     const cam = this.cameras.main;
+    for (const o of this.farLayers) o.setVisible(true);
     cam.setBackgroundColor(this.level.sky);
     cam.setBounds(0, 0, this.W, this.H + BAR);
     // an auto-scroller moves the camera itself (in update)
@@ -791,6 +835,7 @@ export class CourseScene extends Phaser.Scene {
   private useRoomCamera() {
     const R = this.level.room!;
     const cam = this.cameras.main;
+    for (const o of this.farLayers) o.setVisible(false);
     cam.setBackgroundColor(0x000000);
     cam.setBounds(this.RX - this.roomMargin, 0, Math.max(R.tiles[0].length * T, WIDTH), Math.max(R.tiles.length * T + BAR, HEIGHT));
   }
