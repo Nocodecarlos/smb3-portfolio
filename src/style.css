@@ -194,9 +194,8 @@ kbd {
 @media (min-aspect-ratio: 3 / 2) {
   body:not(.dev) #legend {
     top: calc(var(--screen-bottom) + var(--s) * 0.084 - 15px);
-    left: calc((100% - var(--side)) / 2 - var(--s) * 0.8894);
-    translate: none;
-    width: calc(var(--s) * 1.7787);
+    /* out toward the TV's edges, leaving the badge on its own; never past the window */
+    width: min(calc(var(--s) * 1.94), calc(100vw - var(--side) - 32px));
     max-width: none;
     flex-wrap: nowrap;
     justify-content: flex-start;
@@ -204,6 +203,14 @@ kbd {
     column-gap: min(16px, calc(var(--s) * 0.012));
   }
   body:not(.dev) .legend-ways { margin-left: auto; }
+}
+/* smaller TVs: smaller keys, then fewer of them, so they stay clear of the badge */
+@media (min-aspect-ratio: 3 / 2) and (max-height: 770px), (min-aspect-ratio: 3 / 2) and (max-width: 1340px) {
+  body:not(.dev) #legend { font-size: 10px; }
+  body:not(.dev) #legend kbd { font-size: 8px; padding: 2px 3px 1px; margin-right: 2px; }
+}
+@media (min-aspect-ratio: 3 / 2) and (max-height: 640px), (min-aspect-ratio: 3 / 2) and (max-width: 1120px) {
+  body:not(.dev) #legend > span:nth-child(4), body:not(.dev) #legend > span:nth-child(6) { display: none; }
 }
 /* in the secret world the editor panel takes over */
 body.dev #legend { display: none; }
