@@ -9,7 +9,7 @@ import { playMusic } from '../game/music';
 import { sfx } from '../game/sfx';
 import { BAR, HEIGHT, WIDTH, progress, saveProgress, ui } from '../game/state';
 import { px } from '../game/text';
-import { showDialog, showIntro, showLetter, showQuickView } from '../ui/overlays';
+import { showDialog, showIntro, showQuickView } from '../ui/overlays';
 import { devBus } from '../ui/devBus';
 import { asset } from '../assets';
 
@@ -273,7 +273,7 @@ export class OverworldScene extends Phaser.Scene {
     }
     let label = 'START  »  PICK A WORLD';
     if (n.type === 'house') label = `${name || 'HOUSE'}  »  ENTER`;
-    else if (n.type === 'castle') label = `${name || 'CASTLE'}  »  READ LETTER`;
+    else if (n.type === 'castle') label = `${name || 'CASTLE'}  »  ENTER`;
     else if (n.type === 'spade' || n.type === 'fortress') label = `${name || n.type.toUpperCase()}  »  ENTER`;
     else if (n.type !== 'start') label = '';
     this.hud.setStop('WORLD 1', label.slice(0, 30));
@@ -309,9 +309,16 @@ export class OverworldScene extends Phaser.Scene {
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Spade', { node: n.id }));
       return;
     }
-    if (n.type !== 'start') track('stop_opened', { stop: n.id, kind: n.type === 'castle' ? 'letter' : n.about ? 'about' : 'coming_soon' });
-    if (n.type === 'castle') await showLetter();
-    else if (n.about) await showIntro();
+    if (n.type === 'castle') {
+      sfx.select();
+      track('stop_opened', { stop: n.id, kind: 'castle' });
+      this.moving = true;
+      this.cameras.main.fadeOut(250);
+      this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Castle'));
+      return;
+    }
+    if (n.type !== 'start') track('stop_opened', { stop: n.id, kind: n.about ? 'about' : 'coming_soon' });
+    if (n.about) await showIntro();
     else if (n.title || n.body) await showDialog(n.title ?? '', n.body ?? '');
     else if (n.type === 'start') {
       await showDialog('Welcome!', 'Walk the roads with WASD and press ENTER on a numbered panel to play that project. Mushroom houses, the bonus panel and the fortress open up as they are built.\n\nIn a hurry? Press Q for Quick View, a plain case-study page.');

@@ -5,6 +5,7 @@ import { onContentChange } from './content/store';
 import { isMuted, toggleMute } from './game/sfx';
 import { HEIGHT, PHONE, WIDTH, ui } from './game/state';
 import { BootScene } from './scenes/BootScene';
+import { CastleScene } from './scenes/CastleScene';
 import { CourseScene } from './scenes/CourseScene';
 import { HouseScene } from './scenes/HouseScene';
 import { SpadeScene } from './scenes/SpadeScene';
@@ -49,7 +50,7 @@ async function start() {
     fps: { forceSetTimeOut: new URLSearchParams(location.search).has('timer'), target: 60 },
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.NO_CENTER },
     physics: { default: 'arcade', arcade: { gravity: { x: 0, y: 1000 }, debug: false } },
-    scene: [BootScene, TitleScene, OverworldScene, WorldScene, CourseScene, HouseScene, SpadeScene],
+    scene: [BootScene, TitleScene, OverworldScene, WorldScene, CourseScene, HouseScene, SpadeScene, CastleScene],
   });
 
   game.sound.mute = isMuted();

@@ -269,17 +269,31 @@ async function sendToDesktop(btn: HTMLElement) {
 export function showLetter(): Promise<void> {
   const c = getSite().contact;
   const node = el(`
-    <div class="ov ov-letter" role="dialog" aria-label="Letter">
-      <div class="letter">
-        <div class="letter-body">${richText(c.letter)}</div>
-        <div class="letter-sign">${esc(c.signoff)}</div>
-        <div class="letter-links">
-          ${c.email ? `<a href="mailto:${esc(c.email)}">✉ ${esc(c.email)}</a>` : ''}
-          ${c.linkedin ? `<a href="${esc(c.linkedin)}" target="_blank" rel="noopener">in LinkedIn ↗</a>` : ''}
+    <div class="ov ov-story" role="dialog" aria-label="Letter">
+      <article class="story letter-story">
+        <header class="story-head"><span>LET'S CHAT</span></header>
+        <div class="story-text">
+          <div class="story-body">${richText(c.letter)}</div>
+          <div class="letter-sign">${esc(c.signoff)}</div>
+          <div class="letter-links">
+            ${c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : ''}
+            ${c.email ? `<button class="letter-copy" type="button">Copy email</button>` : ''}
+            ${c.linkedin ? `<a href="${esc(c.linkedin)}" target="_blank" rel="noopener">LinkedIn ↗</a>` : ''}
+          </div>
         </div>
-        <button class="pixel-btn" data-close="">Close</button>
-      </div>
+        <footer class="story-foot"><button class="story-btn" data-close="">back to the castle</button></footer>
+      </article>
     </div>`);
+  const copy = node.querySelector<HTMLButtonElement>('.letter-copy');
+  copy?.addEventListener('click', async () => {
+    track('contact_clicked', { channel: 'email_copy' });
+    try {
+      await navigator.clipboard.writeText(c.email);
+      copy.textContent = 'Copied!';
+    } catch {
+      copy.textContent = c.email;
+    }
+  });
   return open<void>(node, (e, close) => {
     if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') close();
   });
