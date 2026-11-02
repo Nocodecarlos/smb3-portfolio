@@ -15,8 +15,8 @@ export type Placement =
   | { as: 'story'; x: number; y: number }
   /** Decision: two story blocks; bumping `a` or `b` reads that option. */
   | { as: 'decision'; a: [number, number]; b: [number, number] }
-  /** Image beat on a felt billboard at tile `at` (raised `lift` px on taller posts); press S in front of it to see it full size. */
-  | { as: 'sign'; at: number; lift?: number }
+  /** Image beat on a felt billboard at tile `at` (raised `lift` px on taller posts, `h` px tall where a ceiling is low); press S in front of it to see it full size. */
+  | { as: 'sign'; at: number; lift?: number; h?: number }
   /** Stepping on the P-switch / first entering the secret room opens the beat. */
   | { as: 'switch' | 'room' }
   /** Picking up the feather floats `lines[0]` (a wink, not content). */
@@ -89,6 +89,8 @@ export interface World {
   theme: ThemeName;
   /** Icon shown in the status-bar card slot once the world is cleared. */
   card: 'star' | 'heart' | 'pencil' | 'seed';
+  /** Listed first on the case studies page. */
+  featured?: boolean;
   summary: string;
   outcomes: string[];
   links: { label: string; url: string }[];

@@ -1,0 +1,329 @@
+{
+  "slug": "covenant-eyes",
+  "title": "Covenant Eyes",
+  "thumb": "content/covenant-eyes/final.jpg",
+  "tagline": "Designing for behavior change, for people who aren't ready to ask for help yet.",
+  "headline": "How do you help someone who isn't ready to ask for help?",
+  "role": "Lead Product Designer",
+  "timeline": "Q2 – Q4 2024",
+  "platform": "Mobile app",
+  "featured": true,
+  "theme": "sky",
+  "card": "star",
+  "level": "fortress",
+  "summary": "At Covenant Eyes I led the design of two features that guide people early in recovery: Commit and Reflect, and a Lessons widget.",
+  "outcomes": [
+    "Commit and Reflect drove a 26% increase in adoption",
+    "The Lessons widget boosted retention by 32%"
+  ],
+  "lessons": [
+    "Before a feature launches, ask how you'll learn it's working besides the data",
+    "Every launch is an opportunity to receive feedback"
+  ],
+  "article": "Covenant Eyes helps Christians in the US who struggle with pornography addiction. It blocks, filters, monitors, and reports screenshots to an accountability partner.\n\nIt comes as two apps. Victory Shield monitors the device, and Victory is where you manage your journey. The full value only shows up with two people: the person who wants accountability, and the partner who provides it.\n\n![Victory Shield](content/covenant-eyes/shield.jpg)\n\n![Victory](content/covenant-eyes/victory.jpg)\n\n## The problem\n\nAsking someone to hold you accountable is hard, and many people early on aren't ready. There's shame and a lot of emotional friction, so upgrading gets put off.\n\nFree users landed on a home screen that offered them recent activity they couldn't access and a suggested course. Courses were the only useful thing there, and they were left to find their own way through them.\n\n![The home screen free users saw](content/covenant-eyes/before.jpg)\n\nPicture Jake. He hears about Covenant Eyes at his congregation. He's tired of breaking promises to himself and wants a way out, but he isn't ready to tell anyone yet.\n\n> How might we help people early in the process and guide them to real recovery?\n\n## Commit and Reflect\n\n### Starting from recovery itself\n\nA year-long research effort with users, licensed therapists, and recovery leadership had landed on three pillars: Clarity, Commitment, and Connection. I used them to shape the experience.\n\nI looked at how Duolingo, Headway, and Livestrong use streaks, progress, achievements, and community. I sorted the ideas by effort and impact, then by how well they fit those three pillars.\n\n### The first idea was too literal\n\nMy early explorations turned the path to recovery into an actual path, with badges along the way. The goal was for people opening the app to feel in control, hopeful, and not alone. I kept exploring from there, adding a progress bar, a pledge, and redesigned suggested readings.\n\n![An early exploration of The Path](content/covenant-eyes/path.jpg)\n\n![Badges and achievements](content/covenant-eyes/badges.jpg)\n\n![A home screen built around a pledge](content/covenant-eyes/pledge.jpg)\n\n### Two designers, one feature\n\nAnother designer was working on a Daily Pledge, to show people they aren't alone, while I was working on a daily reflection, to give them clarity. We were building two versions of the same moment, so we merged them into one flow.\n\n![An early version of the merged flow: a pledge plus a self-reflection](content/covenant-eyes/merge.jpg)\n\nMarketing wanted to convert people from the start. Product wanted to attract and keep new, free users. Working with marketing, research, and product, we agreed this feature could serve both the short and the long term.\n\n### What people told us\n\nWith a research partner, I tested prototypes with people further along in recovery, since people early in the journey often weren't ready to talk about it. Pledges resonated. Power Ups fell flat because they were hard to grasp, so we kept going with pledges.\n\n### A word can carry too much weight\n\nWhen we showed the prototype at a company-wide meeting, the feedback was clear: in the Christian world \"pledge\" holds too much weight to use lightly. I sat down with the Director of Recovery, we brainstormed names, and \"pledge\" became \"commit.\" That's how Commit and Reflect got its name.\n\n![Commit and Reflect, as it shipped](content/covenant-eyes/final.jpg)\n\n**+26%** increase in adoption.\n\n## Lessons\n\n### A big library with no way in\n\nEven with just the courses, people arriving in Victory felt lost. The team saw a chance to guide them through the learning journey instead of dropping all that content in their lap.\n\n![The course library](content/covenant-eyes/library.jpg)\n\nImprint, Noom, and Atomic Habits pointed toward bite-size learning. The Director of Recovery and I took inventory of every lesson, then sorted them into three journeys: men, women, and allies.\n\n### Designing the widget\n\nIt had to save vertical space on the home page, be clear about which lesson it was showing, encourage people to tap in, and stay inside the existing design system.\n\n![Iterations on the Lessons widget](content/covenant-eyes/iterations.jpg)\n\nThe widget lived inside a 30-day journey, so I planned for every state, including what happens when you finish everything recommended.\n\n![Widget states across the 30-day journey](content/covenant-eyes/states.jpg)\n\n### Read on, or come back tomorrow?\n\nI let people keep reading. If they wanted more, they could go on to the next lesson. If they completed all the lessons, they reached a state showing just that.\n\n![Letting people keep reading](content/covenant-eyes/agency-a.jpg)\n\n![The state for completing all the lessons](content/covenant-eyes/done.jpg)\n\nA usability test confirmed this was a familiar pattern. It also showed that the main call to action pulled some people away from the widget.\n\n![Lessons on the home screen, as it shipped](content/covenant-eyes/after.jpg)\n\n**+32%** increase in retention.\n\n## Where it was heading\n\nCommit and Reflect and Lessons were early pieces of a bigger plan for guided recovery in Victory, with a daily tracker and a clear view of your progress.\n\n![The daily tracker](content/covenant-eyes/vision.jpg)\n\n![The end goal](content/covenant-eyes/endgoal.jpg)\n\n## What I learned\n\nWhen we first launched Commit and Reflect, I forgot to put a feedback loop on it. A lot of people wanted to give feedback, but for the first two weeks we couldn't get any in, because I hadn't designed for it.\n\nNow I ask this before a feature launches: besides the data, how am I going to learn that it's working as intended? Every launch is an opportunity to receive feedback.",
+  "links": [],
+  "chapters": [
+    {
+      "id": "problem",
+      "at": 0,
+      "title": "THE PROBLEM",
+      "subtitle": "Not ready to ask for help"
+    },
+    {
+      "id": "design",
+      "at": 63,
+      "title": "COMMIT AND REFLECT",
+      "subtitle": "Pledge became commit"
+    },
+    {
+      "id": "results",
+      "at": 122,
+      "title": "LESSONS",
+      "subtitle": "A guided way in"
+    }
+  ],
+  "beats": [
+    {
+      "id": "ce-apps",
+      "type": "copy",
+      "chapter": "problem",
+      "headline": "Two apps, one promise",
+      "body": "Covenant Eyes helps Christians in the US who struggle with pornography addiction. It blocks, filters, monitors, and reports screenshots to an accountability partner.\n\nIt comes as two apps. Victory Shield monitors the device, and Victory is where you manage your journey. The full value only shows up with two people.",
+      "place": {
+        "as": "sign",
+        "at": 13
+      },
+      "image": {
+        "src": "content/covenant-eyes/victory.jpg",
+        "caption": "Victory, where you manage your journey",
+        "alt": "Victory app showing an activity feed"
+      }
+    },
+    {
+      "id": "ce-before",
+      "type": "copy",
+      "chapter": "problem",
+      "headline": "What free users saw",
+      "body": "Asking someone to hold you accountable is hard, and many people early on aren't ready. So upgrading gets put off.\n\nFree users landed on a home screen offering recent activity they couldn't access and a suggested course. Courses were the only useful thing there.",
+      "place": {
+        "as": "sign",
+        "at": 33
+      },
+      "image": {
+        "src": "content/covenant-eyes/before.jpg",
+        "caption": "The home screen free users saw",
+        "alt": "Victory home screen with a locked recent activity card"
+      }
+    },
+    {
+      "id": "ce-hmw",
+      "type": "copy",
+      "chapter": "problem",
+      "headline": "How might we help people earlier?",
+      "body": "Picture Jake. He hears about Covenant Eyes at his congregation. He's tired of breaking promises to himself and wants a way out, but he isn't ready to tell anyone yet.\n\nHow might we help people early in the process and guide them to real recovery?",
+      "place": {
+        "as": "sign",
+        "at": 42
+      }
+    },
+    {
+      "id": "ce-jake",
+      "type": "copy",
+      "chapter": "problem",
+      "headline": "Meet Jake",
+      "body": "Jake is frustrated with his compulsive behavior. It's hurting his relationship with God, and he's tired of the cycle. He's the person I kept designing for.",
+      "place": {
+        "as": "sign",
+        "at": 54,
+        "h": 34,
+        "lift": -18
+      }
+    },
+    {
+      "id": "ce-pillars",
+      "type": "copy",
+      "chapter": "design",
+      "headline": "Clarity, Commitment, Connection",
+      "body": "A year-long research effort with users, licensed therapists, and recovery leadership had landed on three pillars. I used them to shape the experience.\n\nI looked at how Duolingo, Headway, and Livestrong use streaks, progress, achievements, and community, then sorted the ideas by effort, impact, and fit with the pillars.",
+      "place": {
+        "as": "sign",
+        "at": 63.7
+      }
+    },
+    {
+      "id": "ce-path",
+      "type": "copy",
+      "chapter": "design",
+      "headline": "The first idea was too literal",
+      "body": "My early explorations turned the path to recovery into an actual path, with badges along the way. The goal was for people opening the app to feel in control, hopeful, and not alone.",
+      "place": {
+        "as": "sign",
+        "at": 68
+      },
+      "image": {
+        "src": "content/covenant-eyes/path.jpg",
+        "caption": "An early exploration of The Path",
+        "alt": "Early home screen with a path to freedom"
+      }
+    },
+    {
+      "id": "ce-pledge",
+      "type": "copy",
+      "chapter": "design",
+      "headline": "Adding a pledge",
+      "body": "I kept exploring from there, adding a progress bar, a pledge, and redesigned suggested readings.",
+      "place": {
+        "as": "sign",
+        "at": 73
+      },
+      "image": {
+        "src": "content/covenant-eyes/pledge.jpg",
+        "caption": "A home screen built around a pledge",
+        "alt": "Home screen with a progress bar and a pledge card"
+      }
+    },
+    {
+      "id": "ce-testing",
+      "type": "copy",
+      "chapter": "design",
+      "headline": "Testing it with people",
+      "body": "With a research partner, I tested prototypes with people further along in recovery, since people early in the journey often weren't ready to talk about it.\n\nPledges resonated. Power Ups fell flat because they were hard to grasp, so we kept going with pledges.",
+      "place": {
+        "as": "sign",
+        "at": 89.4
+      }
+    },
+    {
+      "id": "ce-merge",
+      "type": "copy",
+      "chapter": "design",
+      "headline": "Two designers, one feature",
+      "body": "Another designer was working on a Daily Pledge, to show people they aren't alone, while I was working on a daily reflection, to give them clarity. We were building two versions of the same moment, so we merged them into one flow.",
+      "place": {
+        "as": "sign",
+        "at": 96.5
+      },
+      "image": {
+        "src": "content/covenant-eyes/merge.jpg",
+        "caption": "An early version of the merged flow: a pledge plus a self-reflection",
+        "alt": "Four screens of the merged pledge and reflection flow"
+      }
+    },
+    {
+      "id": "ce-commit",
+      "type": "copy",
+      "chapter": "design",
+      "headline": "Pledge became Commit",
+      "body": "When we showed the prototype at a company-wide meeting, the feedback was clear: in the Christian world \"pledge\" holds too much weight to use lightly.\n\nI sat down with the Director of Recovery, we brainstormed names, and \"pledge\" became \"commit.\"",
+      "place": {
+        "as": "sign",
+        "at": 101.3
+      },
+      "image": {
+        "src": "content/covenant-eyes/final.jpg",
+        "caption": "Commit and Reflect, as it shipped",
+        "alt": "Home screen with an I Commit Today button"
+      }
+    },
+    {
+      "id": "ce-adoption",
+      "type": "copy",
+      "chapter": "design",
+      "headline": "+26% adoption",
+      "body": "Commit and Reflect drove a 26% increase in adoption.\n\nMy lesson: I launched it without a feedback loop. A lot of people wanted to give feedback, but for the first two weeks we couldn't get any in, because I hadn't designed for it.",
+      "place": {
+        "as": "sign",
+        "at": 106.25,
+        "h": 30,
+        "lift": 3
+      }
+    },
+    {
+      "id": "ce-library",
+      "type": "copy",
+      "chapter": "results",
+      "headline": "Too many courses",
+      "body": "Even with just the courses, people arriving in Victory felt lost. The team saw a chance to guide them through the learning journey instead of dropping all that content in their lap.\n\nThe Director of Recovery and I took inventory of every lesson, then sorted them into three journeys: men, women, and allies.",
+      "place": {
+        "as": "sign",
+        "at": 125,
+        "lift": -16
+      },
+      "image": {
+        "src": "content/covenant-eyes/library.jpg",
+        "caption": "The course library",
+        "alt": "Grid of course cards"
+      }
+    },
+    {
+      "id": "ce-widget",
+      "type": "copy",
+      "chapter": "results",
+      "headline": "A widget, many tries",
+      "body": "It had to save vertical space on the home page, be clear about which lesson it was showing, encourage people to tap in, and stay inside the existing design system.",
+      "place": {
+        "as": "sign",
+        "at": 130,
+        "lift": -16
+      },
+      "image": {
+        "src": "content/covenant-eyes/iterations.jpg",
+        "caption": "Iterations on the Lessons widget",
+        "alt": "Many versions of a lesson widget"
+      }
+    },
+    {
+      "id": "ce-states",
+      "type": "copy",
+      "chapter": "results",
+      "headline": "Thirty days of states",
+      "body": "The widget lived inside a 30-day journey, so I planned for every state along the way.",
+      "place": {
+        "as": "sign",
+        "at": 135,
+        "lift": -16
+      },
+      "image": {
+        "src": "content/covenant-eyes/states.jpg",
+        "caption": "Widget states across the 30-day journey",
+        "alt": "Row of home screens showing widget states"
+      }
+    },
+    {
+      "id": "ce-agency",
+      "type": "copy",
+      "chapter": "results",
+      "headline": "Read on, or come back tomorrow?",
+      "body": "Should people read as much as they wanted, or pace themselves?\n\nI let people keep reading. If they wanted more, they could go on to the next lesson.",
+      "place": {
+        "as": "sign",
+        "at": 140,
+        "lift": -16
+      },
+      "image": {
+        "src": "content/covenant-eyes/agency-a.jpg",
+        "caption": "Letting people keep reading",
+        "alt": "Home screen with the next lesson in the widget"
+      }
+    },
+    {
+      "id": "ce-done",
+      "type": "copy",
+      "chapter": "results",
+      "headline": "When you finish everything",
+      "body": "If people completed all the lessons, they reached a state showing just that, and pointing them to the Learning tab for more.",
+      "place": {
+        "as": "sign",
+        "at": 145
+      },
+      "image": {
+        "src": "content/covenant-eyes/done.jpg",
+        "caption": "The state for completing all the lessons",
+        "alt": "Widget reading All Lessons Completed"
+      }
+    },
+    {
+      "id": "ce-retention",
+      "type": "copy",
+      "chapter": "results",
+      "headline": "+32% retention",
+      "body": "The Lessons widget boosted retention by 32%.",
+      "place": {
+        "as": "sign",
+        "at": 150
+      }
+    },
+    {
+      "id": "ce-vision",
+      "type": "copy",
+      "chapter": "results",
+      "headline": "Where it was heading",
+      "body": "Commit and Reflect and Lessons were early pieces of a bigger plan for guided recovery in Victory, with a daily tracker and a clear view of your progress.\n\nYou found the secret room!",
+      "place": {
+        "as": "sign",
+        "at": 179
+      },
+      "image": {
+        "src": "content/covenant-eyes/vision.jpg",
+        "caption": "The daily tracker",
+        "alt": "Home screen with a daily tracker and daily victory list"
+      }
+    },
+    {
+      "id": "ce-endgoal",
+      "type": "copy",
+      "chapter": "results",
+      "headline": "The end goal",
+      "body": "Check in, connect, learn, all in one daily journey.",
+      "place": {
+        "as": "sign",
+        "at": 189.8
+      },
+      "image": {
+        "src": "content/covenant-eyes/endgoal.jpg",
+        "caption": "The end goal",
+        "alt": "Home screen with a check-in card"
+      }
+    }
+  ]
+}

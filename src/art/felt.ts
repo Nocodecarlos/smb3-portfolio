@@ -22,7 +22,7 @@ export const POST = 'felt-post';
 export function preloadFelt(scene: Phaser.Scene) {
   if (!scene.textures.exists(FELT)) scene.load.atlas(FELT, asset('felt/course.webp'), asset('felt/course.json'));
   if (!scene.textures.exists(SKY)) scene.load.image(SKY, asset('felt/sky.jpg'));
-  if (!scene.textures.exists(POST)) scene.load.image(POST, asset('felt/post-knit.png'));
+  if (!scene.textures.exists(POST)) scene.load.image(POST, asset('felt/post-wood.png'));
 }
 
 /** Empty rows under the plush art in some frames (measured on the 4x art), so they can sit on the ground. */
@@ -36,7 +36,7 @@ export function feltOnGround(scene: Phaser.Scene, x: number, groundY: number, fr
   return feltImage(scene, x, groundY + (BOTTOM_PAD[frame] ?? 0) / 4, frame).setOrigin(0, 1);
 }
 
-/** A knitted brown post (sign and billboard legs), `w` wide, from y down to the ground. */
+/** A whittled wooden post (sign and billboard legs), `w` wide, from y down to the ground. */
 export function feltPost(scene: Phaser.Scene, x: number, y: number, w: number, h: number) {
   scene.textures.get(POST).setFilter(Phaser.Textures.FilterMode.LINEAR);
   return scene.add.tileSprite(x, y, w, h, POST).setOrigin(0).setTileScale(w / 88);

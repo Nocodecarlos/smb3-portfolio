@@ -27,7 +27,7 @@ export class CourseStory {
   private cells = new Map<string, { id: string; open: () => StoryCard }>();
   private stories: string[] = [];
   private read = new Set<string>();
-  private signs: { beat: Beat; x: number; top: number; hint: Phaser.GameObjects.Text; parts: { setTint(color: number): unknown }[] }[] = [];
+  private signs: { beat: Beat; x: number; top: number; h: number; hint: Phaser.GameObjects.Text; parts: { setTint(color: number): unknown }[] }[] = [];
   private hints: { x: number; id: string; tag: Phaser.GameObjects.Text }[] = [];
   private chapter = -1;
   private roomShown = false;
@@ -100,10 +100,11 @@ export class CourseStory {
     for (const b of this.world.beats) {
       if (b.place?.as !== 'sign') continue;
       const x = b.place.at * T;
+      const h = b.place.h ?? SIGN_H;
       const legs = [x + 9, x + SIGN_W - 14];
-      const top = Math.min(...legs.map((l) => groundAt(l + 2.5))) - SIGN_H - 30 - (b.place.lift ?? 0);
-      for (const l of legs) feltPost(this.scene, l, top + SIGN_H - 2, 5, legEnd(l + 2.5) - top - SIGN_H + 2).setDepth(-3.1);
-      const board = this.scene.add.nineslice(x, top, FELT, 'platform-f4faf4', SIGN_W * ART, SIGN_H * ART, 9 * ART, 9 * ART, 9 * ART, 9 * ART).setOrigin(0).setScale(1 / ART).setDepth(-3);
+      const top = Math.min(...legs.map((l) => groundAt(l + 2.5))) - h - 30 - (b.place.lift ?? 0);
+      for (const l of legs) feltPost(this.scene, l, top + h - 2, 5, legEnd(l + 2.5) - top - h + 2).setDepth(-3.1);
+      const board = this.scene.add.nineslice(x, top, FELT, 'platform-f4faf4', SIGN_W * ART, h * ART, 9 * ART, 9 * ART, 9 * ART, 9 * ART).setOrigin(0).setScale(1 / ART).setDepth(-3);
       const parts: { setTint(color: number): unknown }[] = [board];
       const src = picture(b);
       const label = (s: string, y: number, size: number, color: string) =>
@@ -113,8 +114,8 @@ export class CourseStory {
           .setResolution(Z)
           .setDepth(-2.9);
       if (src && this.scene.textures.exists(`img:${src}`)) {
-        const img = this.scene.add.image(x + SIGN_W / 2, top + SIGN_H / 2, `img:${src}`).setDepth(-2.9);
-        img.setScale(Math.min((SIGN_W - 10) / img.width, (SIGN_H - 10) / img.height));
+        const img = this.scene.add.image(x + SIGN_W / 2, top + h / 2, `img:${src}`).setDepth(-2.9);
+        img.setScale(Math.min((SIGN_W - 10) / img.width, (h - 10) / img.height));
         parts.push(img);
       } else if (b.type === 'image') {
         label('IMAGE COMING SOON', top + 9, 4, '#a9461d');
@@ -123,13 +124,13 @@ export class CourseStory {
         // no picture: the headline is painted on the board, centred
         const card = this.card(b);
         const t = label(b.type === 'decision' ? b.question : card.title, 0, 6.5, '#5a3518');
-        t.setY(top + (SIGN_H - t.height) / 2);
+        t.setY(top + (h - t.height) / 2);
         parts.push(t);
       }
       const hint = px(this.scene, x + SIGN_W / 2, top - 9, `${KEYS.s}: ${b.type === 'image' ? 'LOOK' : 'READ'}`, { size: 6, color: '#000' }).setOrigin(0.5).setDepth(20).setVisible(false);
       hint.setBackgroundColor('#ffffff').setPadding(2, 2, 2, 1);
       this.scene.tweens.add({ targets: hint, y: hint.y - 2, yoyo: true, repeat: -1, duration: 450 });
-      this.signs.push({ beat: b, x, top, hint, parts });
+      this.signs.push({ beat: b, x, top, h, hint, parts });
     }
   }
 
@@ -170,7 +171,7 @@ export class CourseStory {
       const label = pair.length > 1 ? (pair[0][0] === key ? 'A' : 'B') : 'EDIT';
       return { id: c.id, label, x: x * T, y: y * T, w: T, h: T };
     });
-    const signs = this.signs.map((s) => ({ id: s.beat.id, label: s.beat.type === 'image' ? 'EDIT IMAGE' : 'EDIT', x: s.x, y: s.top, w: SIGN_W, h: SIGN_H }));
+    const signs = this.signs.map((s) => ({ id: s.beat.id, label: s.beat.type === 'image' ? 'EDIT IMAGE' : 'EDIT', x: s.x, y: s.top, w: SIGN_W, h: s.h }));
     return [...blocks, ...signs];
   }
 

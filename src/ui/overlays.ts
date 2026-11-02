@@ -136,6 +136,9 @@ export interface StoryCard {
   link?: { label: string; href: string; download?: string };
 }
 
+/** From this width-to-height ratio on, a reading card's picture goes across the top. */
+const WIDE_PICTURE = 1.6;
+
 /**
  * Felt reading card for a story block (Figma: ui-felt/dialog-box). The game
  * is paused underneath; one idea per card, no typing effect, closes on
@@ -155,6 +158,7 @@ export function showStory(c: StoryCard): Promise<void> {
         <div class="story-text">
           <h2 class="story-title">${esc(c.title)}</h2>
           <div class="story-body">${richText(c.body)}</div>
+          ${img?.src ? `<p class="story-caption">${esc(img.caption)}</p>` : ''}
         </div>
         <footer class="story-foot">${
           c.link
@@ -167,6 +171,11 @@ export function showStory(c: StoryCard): Promise<void> {
   // the link downloads without closing the card
   node.querySelector('.story-link')?.addEventListener('click', (e) => e.stopPropagation());
   const text = node.querySelector<HTMLElement>('.story-text')!;
+  // a wide picture goes across the top of the card; anything narrower stands full height beside the text
+  const picture = node.querySelector<HTMLImageElement>('.story-img img');
+  const fit = () => node.querySelector('.story')!.classList.toggle('is-wide', picture!.naturalWidth / picture!.naturalHeight >= WIDE_PICTURE);
+  if (picture?.complete) fit();
+  else picture?.addEventListener('load', fit);
   return open<void>(node, (e, close) => {
     // longer pieces scroll: arrows or W/S
     const scroll = { ArrowDown: 1, s: 1, S: 1, ArrowUp: -1, w: -1, W: -1 }[e.key];
@@ -444,7 +453,7 @@ export function showQuickView(focus?: string, source = 'other') {
   const openedAt = Date.now();
   const site = getSite();
   const root = document.getElementById('quickview')!;
-  const worlds = getWorlds();
+  const worlds = [...getWorlds()].sort((a, b) => Number(!!b.featured) - Number(!!a.featured));
   const c = site.contact;
   let seen: IntersectionObserver | undefined;
   const reported = new Set<string>();

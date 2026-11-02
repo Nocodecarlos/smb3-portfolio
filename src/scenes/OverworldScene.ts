@@ -317,10 +317,10 @@ export class OverworldScene extends Phaser.Scene {
   private updateLabel() {
     const n = this.current;
     const name = (n.label ?? n.title ?? '').toUpperCase();
-    if (n.type === 'world') {
+    if (n.type === 'world' || n.world) {
       // a world teases its story: app icon, name and headline
       const w = n.world ? getWorld(n.world) : undefined;
-      const world = `WORLD ${n.number ?? '?'}`;
+      const world = n.type === 'fortress' ? 'FORTRESS' : `WORLD ${n.number ?? '?'}`;
       if (w) this.hud.setStop(world, w.title.toUpperCase(), w.headline || w.tagline, w.icon && `icon:${w.icon}`);
       else this.hud.setStop(world, 'COMING SOON', n.body);
       return;
@@ -335,7 +335,7 @@ export class OverworldScene extends Phaser.Scene {
 
   private async enter() {
     const n = this.current;
-    if (n.type === 'world' && n.world && getWorld(n.world)) {
+    if (n.world && getWorld(n.world)) {
       sfx.select();
       this.moving = true;
       track('world_entered', { world: n.world, replay: progress.cleared.includes(n.world) });

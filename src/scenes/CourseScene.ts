@@ -6,6 +6,7 @@ import { CAPY, preloadCapy, setupCapy } from '../art/capy';
 import { drawFarRange, drawKnit, preloadKnit } from '../art/knit';
 import { getWorld, getWorlds } from '../content/store';
 import type { World } from '../content/types';
+import { Castle, type CastleDoor, type CastleLayout, preloadCastle } from '../game/castle';
 import { CourseStory, STORY_TEXTURE } from '../game/courseStory';
 import { FeltStatusBar } from '../game/feltHud';
 import { Player, createControls, held, type Controls } from '../game/Player';
@@ -81,6 +82,8 @@ export interface CourseLevel {
    * launches you up into it at column `entry`, through the cloud floor on row `floor`; the pipe at column `pipe`
    * takes you back down. `moon` is [x, y, size in px].
    */
+  /** The fortress: stone walls from a tile map, lava, fire spirits and doors, in place of ground and platforms. */
+  castle?: CastleLayout;
   skySection?: { width: number; height: number; floor: number; entry: number; pipe: number; coins: [number, number][]; moon: [number, number, number] };
 }
 
@@ -155,6 +158,7 @@ export class CourseScene extends Phaser.Scene {
   /** The slingshot: where it stands, how far it's pulled back (0..1) and its prompt. */
   private sling?: { x: number; pull: number; band: Phaser.GameObjects.Graphics; hint: Phaser.GameObjects.Text; art: Phaser.GameObjects.Image };
   private terrain?: Terrain;
+  private castle?: Castle;
   /** The tall white platform: S on top flips to the secret editor world. */
   private door?: { x0: number; x1: number; top: number };
   /** How long S has been held on the door. */
@@ -209,13 +213,14 @@ export class CourseScene extends Phaser.Scene {
     this.feet = [];
     this.busy = this.finished = this.inRoom = this.inSky = this.skyBound = false;
     this.exits = {};
-    this.warp = this.skyPipe = this.sling = this.terrain = undefined;
+    this.warp = this.skyPipe = this.sling = this.terrain = this.castle = undefined;
   }
 
   preload() {
     preloadFelt(this);
     if (this.level.terrain || this.level.parallax) preloadKnit(this);
     if (this.level.skySection || this.level.slingshot !== undefined) preloadCapy(this);
+    if (this.level.castle) preloadCastle(this);
     preloadHeroes(this);
     CourseStory.preload(this, this.world);
   }
@@ -284,7 +289,19 @@ export class CourseScene extends Phaser.Scene {
     if (terrain) this.terrain = new Terrain(terrain);
     /** Where things stand at x: the sky section's cloud floor, the slope there, or the flat ground row. */
     const sky = L.skySection;
-    const groundAt = (x: number) => (sky && x >= this.SX ? sky.floor * T : (this.terrain?.surface(x) ?? G));
+    const groundAt = (x: number) => this.castle?.groundAt(x, this.H - 24) ?? (sky && x >= this.SX ? sky.floor * T : (this.terrain?.surface(x) ?? G));
+
+    if (L.castle) {
+      this.castle = new Castle(this, L.castle, this.RX, solidRect);
+      this.castle.roomTiles = L.room?.tiles ?? [];
+      this.castle.drawFar(this.W, this.H, (o, f) => {
+        // with less motion asked for, far layers simply move with the course
+        const fx = px ? f : 1;
+        const fy = px ? FAR_Y : 1;
+        this.farLayers.push(o as unknown as Phaser.GameObjects.Image);
+        o.setScrollFactor(fx, fy).setPosition(o.x + (1 - fx) * zoomX, o.y + (1 - fy) * (zoomY - groundScroll));
+      });
+    }
 
     // ---- Scenery ----
     for (const [i, [x, y, s]] of L.scenery.glints.entries()) {
@@ -377,7 +394,7 @@ export class CourseScene extends Phaser.Scene {
     for (const pl of this.plants) this.cyclePlant(pl);
 
     // ---- Status bar and story (story blocks replace level blocks on their tiles) ----
-    this.hud = new FeltStatusBar(this, `WORLD ${this.levelNumber}`, this.world.title.toUpperCase().slice(0, 26));
+    this.hud = new FeltStatusBar(this, L.castle ? 'FORTRESS' : `WORLD ${this.levelNumber}`, this.world.title.toUpperCase().slice(0, 26));
     this.story = new CourseStory(this, this.world, this.hud);
     const storyCells = new Set(this.story.storyCells.map(([x, y]) => `${x},${y}`));
 
@@ -435,7 +452,7 @@ export class CourseScene extends Phaser.Scene {
 
     // ---- Goal: black end zone with the spinning card box ----
     const gx = L.goal * T;
-    this.add.rectangle(gx - 6 * T, 0, this.W - (gx - 6 * T), this.H, 0x000000).setOrigin(0).setDepth(-9);
+    if (!L.castle) this.add.rectangle(gx - 6 * T, 0, this.W - (gx - 6 * T), this.H, 0x000000).setOrigin(0).setDepth(-9);
     // low enough to reach with a hop from the ground, unless the level sets it high (World 1-3: up the slingshot)
     const goalY = L.goalRow !== undefined ? L.goalRow * T : G - 2.5 * T;
     this.goal = feltImage(this, gx, goalY, `icon-${this.world.card}`).setDepth(5);
@@ -479,7 +496,8 @@ export class CourseScene extends Phaser.Scene {
     this.startedAt = this.time.now;
     if (L.autoscroll) this.autoX = at ? Phaser.Math.Clamp(at.x - 100, 0, this.W - WIDTH) : 0;
     this.useMainCamera();
-    this.introSign(G);
+    // the fortress's entry is a low tunnel, with no room for the world billboard
+    if (!L.castle) this.introSign(G);
     // over an auto-scroller's gaps the billboard posts run down out of sight
     const overGround = (x: number) => L.ground.some(([gx, w]) => x >= gx * T && x < (gx + w) * T);
     this.story.buildSigns(L.autoscroll ? () => G : groundAt, L.autoscroll ? (x) => (overGround(x) ? G : this.H + 8) : groundAt);
@@ -496,7 +514,7 @@ export class CourseScene extends Phaser.Scene {
     // back from the secret house it fades in like a fresh start; an editor rebuild cuts straight back
     if (!at || this.readBefore) this.cameras.main.fadeIn(250);
     // each course has its own track; any course without one plays World 1-1's
-    playMusic(this, L.id === 'world-1-2' || L.id === 'world-1-3' ? L.id : 'world-1-1');
+    playMusic(this, L.id === 'world-1-2' || L.id === 'world-1-3' || L.id === 'fortress' ? L.id : 'world-1-1');
   }
 
   /** The world billboard at the start of the course (Figma: screen/gameplay · world 1 start). */
@@ -618,6 +636,11 @@ export class CourseScene extends Phaser.Scene {
 
   private buildRoom() {
     const R = this.level.room!;
+    if (this.castle) {
+      this.castle.drawRoom(R.tiles);
+      for (const [x, y] of R.coins) this.coins.add(feltImage(this, this.RX + x * T + 8, y * T + 8, 'coin').setDepth(4));
+      return;
+    }
     const w = R.tiles[0].length * T;
     const h = R.tiles.length * T;
     this.add.rectangle(this.RX - this.roomMargin, 0, Math.max(w, WIDTH), Math.max(h, HEIGHT), 0x000000).setOrigin(0).setDepth(-9);
@@ -867,6 +890,26 @@ export class CourseScene extends Phaser.Scene {
     if (numbers) this.time.delayedCall(500, () => void this.read(numbers));
   }
 
+  /** Through a fortress door: fade out here, fade in at the door it leads to. */
+  private async throughDoor(d: CastleDoor) {
+    this.busy = true;
+    sfx.pipe();
+    const p = this.player;
+    if (d.to.room) track('secret_found', { secret: 'fortress_room', world: this.world.slug });
+    p.setVelocity(0, 0);
+    this.cameras.main.fadeOut(180);
+    await new Promise((r) => this.cameras.main.once('camerafadeoutcomplete', r));
+    const out = this.castle!.exitOf(d);
+    this.inRoom = out.room;
+    if (out.room) this.useRoomCamera();
+    else this.useMainCamera();
+    p.setPosition(out.x, out.y);
+    p.body.reset(out.x, out.y);
+    this.input.keyboard!.resetKeys();
+    this.cameras.main.fadeIn(180);
+    this.busy = false;
+  }
+
   private async exitRoom() {
     this.busy = true;
     sfx.pipe();
@@ -945,6 +988,13 @@ export class CourseScene extends Phaser.Scene {
       return;
     }
 
+    // The fortress's doors: S at one to go through
+    const door = this.castle?.doorAt(p.x, p.body.bottom, this.inRoom);
+    if (door && p.downPressed) {
+      void this.throughDoor(door);
+      return;
+    }
+
     // Felt billboards (the secret room can have them too): press S in front of one to read it, or see its picture
     if (p.downPressed) {
       const look = this.story.signAt(p.x);
@@ -983,6 +1033,8 @@ export class CourseScene extends Phaser.Scene {
     this.story.update(p.x, this.inRoom);
     this.updateEnemies();
     this.updateFeathers();
+    const fire = this.castle?.update(this.time.now, p.getBounds());
+    if (fire !== undefined) p.hurt(fire);
     for (const pl of this.plants) {
       if (!this.behind && pl.sprite.y < pl.top - 4 && Phaser.Geom.Intersects.RectangleToRectangle(p.getBounds(), new Phaser.Geom.Rectangle(pl.cx - 6, pl.sprite.y + 2, 12, pl.top - pl.sprite.y))) {
         p.hurt(pl.cx);

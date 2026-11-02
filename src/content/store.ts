@@ -38,7 +38,7 @@ export function getWorld(slug: string): World | undefined {
 /** Worlds in overworld order. */
 export function getWorlds(): World[] {
   return site.map.nodes
-    .filter((n) => n.type === 'world' && n.world && worlds.has(n.world))
+    .filter((n) => (n.type === 'world' || n.type === 'fortress') && n.world && worlds.has(n.world))
     .map((n) => worlds.get(n.world!)!);
 }
 
