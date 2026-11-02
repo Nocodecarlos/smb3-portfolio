@@ -578,7 +578,7 @@ body.qv-open #stage, body.qv-open #dev-panel { visibility: hidden; }
 
 /* ---------- Phone: the game in a Game Boy Color ---------- */
 
-/* The Game Boy is a photo (gameboy-color.webp, 305x546 at 3x, exported from Figma) as wide as the phone allows; the game sits on its
+/* The Game Boy is a photo (gameboy-color.webp, 305x546 at 3x, its controls cut out into gb-*.png) as wide as the phone allows; the game sits on its
    screen and touch buttons sit on its own (src/ui/phone.ts). Positions are % of the photo. */
 body.phone #stage { perspective: none; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 body.phone #tv {
@@ -592,6 +592,7 @@ body.phone #tv {
 }
 body.phone #tv-flip {
   aspect-ratio: 305 / 546;
+  container-type: inline-size;
   background: url("./art/page/gameboy-color.webp") center / 100% 100% no-repeat;
   filter: drop-shadow(0 16px 26px rgba(0, 0, 0, 0.5));
 }
@@ -614,17 +615,23 @@ body.phone .story-img img { max-height: calc(var(--px) * 85); }
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
 }
-#pad > .down { background: radial-gradient(circle, rgba(0, 0, 0, 0.3), transparent 70%); }
-.pad-dpad { left: 22.1%; top: 67.8%; width: 36%; aspect-ratio: 1; }
-.pad-dpad[data-dir~="ArrowLeft"] { background: radial-gradient(circle at 20% 50%, rgba(0, 0, 0, 0.3), transparent 30%); }
-.pad-dpad[data-dir~="ArrowRight"] { background: radial-gradient(circle at 80% 50%, rgba(0, 0, 0, 0.3), transparent 30%); }
-.pad-dpad[data-dir~="ArrowUp"] { background: radial-gradient(circle at 50% 20%, rgba(0, 0, 0, 0.3), transparent 30%); }
-.pad-dpad[data-dir~="ArrowDown"] { background: radial-gradient(circle at 50% 80%, rgba(0, 0, 0, 0.3), transparent 30%); }
-.pad-a, .pad-b, .pad-ab { aspect-ratio: 1; border-radius: 50%; }
-.pad-a { left: 83%; top: 66.5%; width: 18%; }
-.pad-b { left: 65.9%; top: 69.6%; width: 18%; }
-/* the seam between B and A presses both, for running jumps */
-.pad-ab { left: 74.4%; top: 68%; width: 7%; z-index: 1; }
+#pad > .down { background: radial-gradient(circle, rgba(255, 255, 255, 0.55), transparent 70%); }
+/* the name printed on the shell, as on the TV */
+#pad > .pad-brand { right: 48.8%; top: 50.5%; translate: 0 -50%; margin: 0; font: 400 5.8cqw/1 "Young Serif", Georgia, serif; letter-spacing: 0.02em; color: #7d90a6; pointer-events: none; }
+/* the controls grow and light up while pressed, so a thumb can feel where it is */
+.pad-dpad { left: 22.3%; top: 67.9%; width: 36%; aspect-ratio: 1; }
+.pad-dpad i { position: absolute; inset: 13.6%; background: url("./art/page/gb-dpad.png") center / contain no-repeat; filter: drop-shadow(0 0.6cqw 0.8cqw rgba(0, 0, 0, 0.35)); transition: scale 0.07s, transform 0.07s, filter 0.07s; pointer-events: none; }
+.pad-dpad[data-dir*="Arrow"] i { scale: 1.1; filter: brightness(1.5) drop-shadow(0 0 2cqw rgba(255, 255, 255, 0.75)); }
+.pad-dpad[data-dir~="ArrowLeft"] i { transform: perspective(40cqw) rotateY(-14deg); }
+.pad-dpad[data-dir~="ArrowRight"] i { transform: perspective(40cqw) rotateY(14deg); }
+.pad-dpad[data-dir~="ArrowUp"] i { transform: perspective(40cqw) rotateX(14deg); }
+.pad-dpad[data-dir~="ArrowDown"] i { transform: perspective(40cqw) rotateX(-14deg); }
+/* B above A, so a thumb rolls from one to the other; both are worked through the zone behind them */
+.pad-face { left: 74%; top: 68%; width: 50%; height: 19%; }
+#pad > .pad-a, #pad > .pad-b { aspect-ratio: 1; border-radius: 50%; pointer-events: none; background: var(--art) center / contain no-repeat; filter: drop-shadow(0 0.6cqw 0.8cqw rgba(0, 0, 0, 0.35)); transition: scale 0.07s, filter 0.07s; }
+.pad-b { --art: url("./art/page/gb-btn-b.png"); left: 65.9%; top: 66.4%; width: 13.55%; }
+.pad-a { --art: url("./art/page/gb-btn-a.png"); left: 83.06%; top: 69.6%; width: 13.1%; }
+#pad > .pad-a.down, #pad > .pad-b.down { scale: 1.22; filter: brightness(1.6) drop-shadow(0 0 2.4cqw rgba(255, 255, 255, 0.85)); background: var(--art) center / contain no-repeat; }
 .pad-select, .pad-start { top: 83.9%; width: 14%; height: 6%; border-radius: 999px; }
 .pad-select { left: 41.8%; }
 .pad-start { left: 56.9%; }

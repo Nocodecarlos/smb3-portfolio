@@ -6,14 +6,14 @@ import { showQuickView } from './overlays';
 // laid out in style.css) and its buttons are touch buttons that press the
 // same keys the keyboard does: the D-pad moves (down is S: pipes, billboards,
 // the slingshot), A jumps, picks and closes cards, B runs, SELECT is Esc (back
-// to the map) and START always opens the case studies. A press on the seam between B and A presses both, for
-// running jumps.
+// to the map) and START always opens the case studies. B sits above A, so a thumb resting on B rolls down
+// onto A for a running jump; every press grows and lights up its button.
 
 const CODES: Record<string, number> = { ArrowLeft: 37, ArrowUp: 38, ArrowRight: 39, ArrowDown: 40, ' ': 32, k: 75, Escape: 27, Enter: 13 };
 const A = ' ';
 const B = 'k';
 
-/** Keys held by the touch buttons, counted, so two buttons on one key (A and the seam) don't let it go early. */
+/** Keys held by the touch buttons, counted, so two fingers on one key don't let it go early. */
 const held = new Map<string, number>();
 
 /** Keeps a finger's moves and lift on the button it went down on, even if it slides off. */
@@ -65,6 +65,57 @@ function button(el: HTMLElement, keys: string[], onPress?: () => void) {
   el.addEventListener('pointerup', () => onPress && el.classList.remove('down'));
 }
 
+/**
+ * B and A share one touch zone, so a single thumb can work both: it holds B once it has touched it, and presses
+ * A only while it's on A, rolling on and off to jump again and again. Between them it presses both.
+ */
+function faceButtons(zone: HTMLElement, a: HTMLElement, b: HTMLElement) {
+  const fingers = new Map<number, { a: boolean; b: boolean }>();
+  const show = () => {
+    a.classList.toggle('down', held.has(A));
+    b.classList.toggle('down', held.has(B));
+  };
+  const set = (e: PointerEvent, first: boolean) => {
+    const box = (el: HTMLElement) => {
+      const r = el.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2, r: r.width / 2 };
+    };
+    const ra = box(a);
+    const rb = box(b);
+    const da = Math.hypot(e.clientX - ra.x, e.clientY - ra.y);
+    const db = Math.hypot(e.clientX - rb.x, e.clientY - rb.y);
+    const seam = Math.hypot(e.clientX - (ra.x + rb.x) / 2, e.clientY - (ra.y + rb.y) / 2) < ra.r * 0.55;
+    const prev = fingers.get(e.pointerId) ?? { a: false, b: false };
+    const next = { a: seam || da < ra.r * 1.2, b: prev.b || seam || db < rb.r * 1.2 };
+    // a first touch anywhere in the zone counts as the nearer button
+    if (first && !next.a && !next.b) {
+      if (da < db) next.a = true;
+      else next.b = true;
+    }
+    if (next.a !== prev.a) (next.a ? press : release)(A);
+    if (next.b !== prev.b) (next.b ? press : release)(B);
+    fingers.set(e.pointerId, next);
+    show();
+  };
+  zone.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    capture(zone, e.pointerId);
+    navigator.vibrate?.(8);
+    set(e, true);
+  });
+  zone.addEventListener('pointermove', (e) => fingers.has(e.pointerId) && set(e, false));
+  const end = (e: PointerEvent) => {
+    const f = fingers.get(e.pointerId);
+    if (!f) return;
+    if (f.a) release(A);
+    if (f.b) release(B);
+    fingers.delete(e.pointerId);
+    show();
+  };
+  zone.addEventListener('pointerup', end);
+  zone.addEventListener('pointercancel', end);
+}
+
 /** The D-pad: the finger's offset from its centre picks one or two arrows, and it can slide between them. */
 function dpad(el: HTMLElement) {
   const fingers = new Map<number, Set<string>>();
@@ -108,18 +159,17 @@ export function setupPhone(game: Phaser.Game) {
   const pad = document.createElement('div');
   pad.id = 'pad';
   pad.innerHTML = `
-    <div class="pad-dpad" aria-label="D-pad"></div>
-    <button class="pad-b" type="button" aria-label="B: run"></button>
-    <button class="pad-ab" type="button" aria-label="B and A"></button>
-    <button class="pad-a" type="button" aria-label="A: jump"></button>
+    <p class="pad-brand">C-V-ision</p>
+    <div class="pad-dpad" aria-label="D-pad"><i></i></div>
+    <div class="pad-face" aria-label="B: run. A: jump."></div>
+    <span class="pad-b"></span>
+    <span class="pad-a"></span>
     <button class="pad-select" type="button" aria-label="Select: back to the map"></button>
     <button class="pad-start" type="button" aria-label="Start: read the case studies"></button>`;
   shell.appendChild(pad);
   const $ = (s: string) => pad.querySelector<HTMLElement>(s)!;
   dpad($('.pad-dpad'));
-  button($('.pad-a'), [A]);
-  button($('.pad-b'), [B]);
-  button($('.pad-ab'), [B, A]);
+  faceButtons($('.pad-face'), $('.pad-a'), $('.pad-b'));
   button($('.pad-select'), ['Escape']);
   button($('.pad-start'), [], () => {
     if (!ui.blocking) {

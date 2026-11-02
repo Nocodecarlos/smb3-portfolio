@@ -1342,7 +1342,7 @@ export class CourseScene extends Phaser.Scene {
         sfx.clear();
         const power = this.story.feather();
         const t = this.add
-          .text(p.x, p.y - 22, `${power ?? 'FEATHER!'}\nRUN + JUMP TO FLY`, { fontFamily: '"Luckiest Guy", sans-serif', fontSize: '8px', color: '#ffffff', stroke: '#5a3518', strokeThickness: 2, align: 'center' })
+          .text(p.x, p.y - 22, `${power ?? 'CAPE!'}\nRUN UNTIL P FLASHES, THEN HOLD JUMP TO FLY`, { fontFamily: '"Luckiest Guy", sans-serif', fontSize: '8px', color: '#ffffff', stroke: '#5a3518', strokeThickness: 2, align: 'center' })
           .setOrigin(0.5)
           .setResolution(Z)
           .setDepth(20);
