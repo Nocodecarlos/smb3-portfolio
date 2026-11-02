@@ -59,15 +59,18 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   /** Felt courses draw the chosen felt hero as a puppet; this sprite then only carries the physics body. */
   private rig?: ChibiRig;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, controls: Controls, hero?: Hero) {
+  /** `height` is the puppet's, feet to hat; the body grows with it, feet staying where they are. */
+  constructor(scene: Phaser.Scene, x: number, y: number, controls: Controls, hero?: Hero, height = 19) {
     super(scene, x, y, 'player-0');
     this.controls = controls;
     scene.add.existing(this);
     scene.physics.add.existing(this);
-    this.body.setSize(10, 15).setOffset(3, 1);
+    const w = Math.round((10 * height) / 19);
+    const h = Math.round((15 * height) / 19);
+    this.body.setSize(w, h).setOffset((16 - w) / 2, 16 - h);
     if (hero) {
       // a little taller than the 15px body, like the Figma sprite
-      const rig = new ChibiRig(scene, hero, 19);
+      const rig = new ChibiRig(scene, hero, height);
       rig.root.setDepth(10);
       this.rig = rig;
       this.setVisible(false);

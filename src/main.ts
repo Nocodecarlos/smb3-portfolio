@@ -1,7 +1,7 @@
 import { initAnalytics } from './analytics';
 import Phaser from 'phaser';
 import { setRenderZoom } from './art/felt';
-import { onContentChange } from './content/store';
+import { getSite, onContentChange, resolveSrc } from './content/store';
 import { isMuted, toggleMute } from './game/sfx';
 import { HEIGHT, PHONE, WIDTH, ui } from './game/state';
 import { BootScene } from './scenes/BootScene';
@@ -14,8 +14,9 @@ import { TitleScene } from './scenes/TitleScene';
 import { WorldScene } from './scenes/WorldScene';
 import { initDevMode } from './ui/devmode';
 import { setupPhone } from './ui/phone';
+import { setupOrbit } from './ui/orbit';
 import { isTyping } from './ui/typing';
-import { showQuickView } from './ui/overlays';
+import { openQuickViewFromLink, showQuickView } from './ui/overlays';
 
 async function start() {
   // phones play in a Game Boy Color: lay it out before the game measures its screen
@@ -79,7 +80,15 @@ async function start() {
     if (e.key === 'm' || e.key === 'M') game.sound.mute = toggleMute();
   });
 
-  document.getElementById('qv-btn')!.addEventListener('click', () => showQuickView(undefined, 'skip_button'));
+  const skip = document.getElementById('qv-btn')!;
+  skip.addEventListener('click', () => showQuickView(undefined, 'skip_button'));
+  setupOrbit(skip);
+  const resume = getSite().contact.resume;
+  if (resume) {
+    const link = document.getElementById('resume-btn') as HTMLAnchorElement;
+    link.href = resolveSrc(resume);
+    link.hidden = false;
+  }
 
   // Live rebuild: edits in dev mode restart whichever scene shows that content.
   let pending = 0;
@@ -98,6 +107,7 @@ async function start() {
   });
 
   initDevMode(game);
+  openQuickViewFromLink();
 }
 
 void start();

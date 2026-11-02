@@ -7,13 +7,13 @@ import { sfx } from '../game/sfx';
 import { HEIGHT, type Hero, PHONE, WIDTH, progress, saveProgress, ui } from '../game/state';
 import { raiseCurtain } from '../ui/curtain';
 import { showQuickView } from '../ui/overlays';
+import { getSite, resolveSrc } from '../content/store';
 import { asset } from '../assets';
 
 // Felt title screen (Figma: 02 · Screens / screen/title). The static art is
-// one exported background; the hero menu, arrow, puppet, bugs and PRESS
-// ENTER are live. Laid out in the art's own pixels (4x the game grid,
-// TW x 960) and zoomed to the render size; the images are exported at 2x
-// that (Figma: screen/title · 16:9), so they're drawn at half size.
+// one exported background; the hero menu, arrow, puppets and bug are live.
+// Laid out in the art's own pixels (4x the game grid, TW x 960) and zoomed to the render size; the images are exported at 2x
+// that (Figma: Intro Screen, 4248:2), so they're drawn at half size.
 
 // Two looks to pick from, named by what they wear rather than who they are.
 const HEROES: Hero[] = ['hat', 'helmet'];
@@ -35,7 +35,7 @@ export class TitleScene extends Phaser.Scene {
   preload() {
     preloadFelt(this);
     preloadHeroes(this);
-    for (const [key, file] of [['title-bg', 'title-bg.jpg'], ['title-arrow', 'title-arrow.png'], ['title-press', 'title-press.png']]) {
+    for (const [key, file] of [['title-bg', 'title-bg.jpg'], ['title-arrow', 'title-arrow.png']]) {
       if (!this.textures.exists(key)) this.load.image(key, asset(`felt/${file}`));
     }
   }
@@ -49,7 +49,7 @@ export class TitleScene extends Phaser.Scene {
       document.body.classList.remove('felt');
     });
     setupFelt(this);
-    for (const key of ['title-bg', 'title-arrow', 'title-press']) this.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR);
+    for (const key of ['title-bg', 'title-arrow']) this.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR);
 
     this.choice = Math.max(0, HEROES.indexOf(progress.hero));
     this.add.image(TW / 2, 0, 'title-bg').setOrigin(0.5, 0).setScale(0.5);
@@ -79,16 +79,6 @@ export class TitleScene extends Phaser.Scene {
     const arrow = this.add.image(0, LABEL_Y + 11, 'title-arrow').setOrigin(1, 0.5).setScale(0.5);
     this.tweens.add({ targets: arrow, scale: 0.59, yoyo: true, repeat: -1, duration: 380, ease: 'Sine.easeInOut' });
 
-    const art = this.add.image(452 + OX, 868, 'title-press').setOrigin(0).setScale(0.5);
-    // the art says PRESS ENTER; the Game Boy has no Enter key
-    const press = PHONE
-      ? this.add
-          .text(art.x + art.displayWidth / 2, art.y + art.displayHeight / 2, 'PRESS A', { fontFamily: '"Press Start 2P"', fontSize: `${art.displayHeight * 0.5}px`, color: '#000000', backgroundColor: '#fff6e0', padding: { x: 16, y: 10 } })
-          .setOrigin(0.5)
-      : art;
-    if (PHONE) art.setVisible(false);
-    this.tweens.add({ targets: press, alpha: 0, yoyo: true, repeat: -1, duration: 500, hold: 300 });
-
     const setChoice = (c: number) => {
       if (ui.blocking) return;
       this.choice = (c + HEROES.length) % HEROES.length;
@@ -117,9 +107,27 @@ export class TitleScene extends Phaser.Scene {
     k.on('keydown-SPACE', start);
     k.on('keydown-L', start);
     k.on('keydown-Q', () => !ui.blocking && showQuickView(undefined, 'title_key'));
+    if (PHONE) this.addEntryChoices(start);
     setChoice(this.choice);
     stopMusic(); // the title is silent
     this.cameras.main.fadeIn(300);
     raiseCurtain();
+  }
+
+  /** The ways in over the title art: a phone has no legend under the screen to hold them. */
+  private addEntryChoices(start: () => void) {
+    const resume = getSite().contact.resume;
+    const node = document.createElement('div');
+    node.className = 'title-entry';
+    node.innerHTML = `
+      <div class="title-ways">
+        <button class="title-way primary" type="button" data-way="play">▶ Play the portfolio <small>A</small></button>
+        <button class="title-way" type="button" data-way="read">Read the case studies</button>
+        ${resume ? `<a class="title-way" href="${resolveSrc(resume)}" download="Carlos-Velasquez-Resume.pdf">Resume</a>` : ''}
+      </div>`;
+    node.querySelector('[data-way="play"]')!.addEventListener('click', start);
+    node.querySelector('[data-way="read"]')!.addEventListener('click', () => !ui.blocking && showQuickView(undefined, 'title_choice'));
+    document.getElementById('screen')!.appendChild(node);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => node.remove());
   }
 }

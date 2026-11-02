@@ -1,17 +1,18 @@
 {
   "name": "Carlos Velasquez",
   "year": "2026",
-  "title": "Product Builder",
+  "title": "Product Designer",
   "roles": ["Product Designer", "Product Builder"],
   "about": {
     "title": "Hi, I'm Carlos.",
-    "body": "I'm a product designer and builder. I take ideas from a napkin sketch and transform them to a shipped app: researching, designing the flows and UI, then building it with AI.\n\nWelcome to my portfolio. It's a video game, so my goal is simple: have fun exploring and get a sense of how far I can push an idea.\n\nEvery world on this map is a product or feature I designed and shipped. As you play, you'll stumble on little nuggets of info and screenshots along the way.\n\nPrefer a more traditional read? Tap \"Skip the game → read the case studies\" in the bottom right corner anytime. No hard feelings.\n\nEnjoy!"
+    "body": "I'm a product designer who builds what I design, with AI. This game is my portfolio: every world on the map is a product I shipped.\n\nPick a stop on the map to walk there, and read the billboards as you go.\n\nPrefer a traditional read? Tap \"Skip the game → read the case studies\" anytime. No hard feelings."
   },
   "contact": {
     "letter": "Thank you for playing!\n\nIf you made it to the castle, we should talk. I'm looking for a team where design and building happen in the same room.\n\nSend me a note and tell me what you're working on.",
     "email": "carlos.a.velasquez0290@gmail.com",
     "linkedin": "https://www.linkedin.com/in/velasquezcarlos",
-    "signoff": "— Carlos"
+    "signoff": "— Carlos",
+    "resume": "content/bonus/resume.pdf"
   },
   "repo": { "owner": "Nocodecarlos", "name": "smb3-portfolio", "branch": "main" },
   "map": {

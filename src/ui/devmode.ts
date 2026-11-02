@@ -174,6 +174,7 @@ function siteForm(s: Site): string {
     ${field('Sign-off', 'contact.signoff', s.contact.signoff)}
     ${field('Email', 'contact.email', s.contact.email)}
     ${field('LinkedIn URL', 'contact.linkedin', s.contact.linkedin)}
+    ${field('Resume file', 'contact.resume', s.contact.resume ?? '')}
     <div class="row"><div>${field('Repo owner', 'repo.owner', s.repo.owner)}</div><div>${field('Repo name', 'repo.name', s.repo.name)}</div><div>${field('Branch', 'repo.branch', s.repo.branch)}</div></div>
     <p class="sub" style="margin-top:12px">Map layout (node positions and paths) is in the JSON tab.</p>`;
 }

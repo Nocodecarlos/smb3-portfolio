@@ -129,6 +129,13 @@ export class OverworldScene extends Phaser.Scene {
     for (const key of ['ENTER', 'SPACE', 'L', 'Z']) k.on(`keydown-${key}`, enter);
     k.on('keydown-Q', () => !ui.blocking && showQuickView(this.current.world, 'map_key'));
 
+    // click a stop to walk there along the roads and go in
+    for (const n of nodes) {
+      if (n.type === 'step' || n.type === 'lock') continue;
+      const p = at(n);
+      this.add.zone(p.x, p.y, 36, 36).setInteractive({ useHandCursor: true }).on('pointerdown', () => void this.walkTo(n));
+    }
+
     const offDev = devBus.on('dev', () => this.updateLabel());
     this.events.once('shutdown', offDev);
     cam.fadeIn(250);
@@ -234,30 +241,77 @@ export class OverworldScene extends Phaser.Scene {
     if (this.moving) return;
     const next = this.neighbors().find((n) => n.dir === d);
     if (!next) return;
-    if (!this.isOpen(next.node)) {
-      sfx.bump();
-      const need = (next.node.requires ?? []).map((slug) => getWorlds().findIndex((w) => w.slug === slug) + 1).filter(Boolean);
-      this.hud.setStop('WORLD 1', 'LOCKED', `Clear World ${need.join(' + ') || '?'} to open this road.`);
-      this.tweens.add({ targets: this.lockArt, angle: { from: -6, to: 6 }, yoyo: true, repeat: 2, duration: 60, onComplete: () => this.lockArt?.setAngle(0) });
+    if (!this.isOpen(next.node)) return this.refuse(next.node);
+    this.moving = true;
+    void this.stepTo(next.node, 14).then(() => (this.moving = false));
+  }
+
+  /** A locked road: the lock shakes and says what opens it. */
+  private refuse(lock: MapNode) {
+    sfx.bump();
+    const need = (lock.requires ?? []).map((slug) => getWorlds().findIndex((w) => w.slug === slug) + 1).filter(Boolean);
+    this.hud.setStop('WORLD 1', 'LOCKED', `Clear World ${need.join(' + ') || '?'} to open this road.`);
+    this.tweens.add({ targets: this.lockArt, angle: { from: -6, to: 6 }, yoyo: true, repeat: 2, duration: 60, onComplete: () => this.lockArt?.setAngle(0) });
+  }
+
+  /** Walk one road, at this many ms per map px. */
+  private stepTo(node: MapNode, pace: number) {
+    sfx.select();
+    const from = at(this.current);
+    const to = at(node);
+    return new Promise<void>((done) => {
+      this.tweens.add({
+        targets: this.marker,
+        x: to.x,
+        y: to.y + MARKER_FEET,
+        duration: Math.max(120, Phaser.Math.Distance.Between(from.x, from.y, to.x, to.y) * pace),
+        onComplete: () => {
+          this.current = node;
+          progress.mapNode = node.id;
+          saveProgress();
+          this.updateLabel();
+          done();
+        },
+      });
+    });
+  }
+
+  /** The stops on the way to `target` over open roads, or null if a lock is in the way. */
+  private route(target: MapNode): MapNode[] | null {
+    const { nodes, edges } = getSite().map;
+    const cameFrom = new Map<string, MapNode | null>([[this.current.id, null]]);
+    const queue = [this.current];
+    while (queue.length) {
+      const here = queue.shift()!;
+      if (here.id === target.id) {
+        const path: MapNode[] = [];
+        for (let n: MapNode | null = here; n && n.id !== this.current.id; n = cameFrom.get(n.id) ?? null) path.unshift(n);
+        return path;
+      }
+      for (const [a, b] of edges) {
+        if (a !== here.id && b !== here.id) continue;
+        const next = nodes.find((n) => n.id === (a === here.id ? b : a));
+        if (next && this.isOpen(next) && !cameFrom.has(next.id)) {
+          cameFrom.set(next.id, here);
+          queue.push(next);
+        }
+      }
+    }
+    return null;
+  }
+
+  private async walkTo(target: MapNode) {
+    if (ui.blocking || this.moving) return;
+    const path = this.route(target);
+    if (!path) {
+      const lock = getSite().map.nodes.find((n) => n.type === 'lock');
+      if (lock) this.refuse(lock);
       return;
     }
     this.moving = true;
-    sfx.select();
-    const from = at(this.current);
-    const to = at(next.node);
-    this.tweens.add({
-      targets: this.marker,
-      x: to.x,
-      y: to.y + MARKER_FEET,
-      duration: Math.max(180, Phaser.Math.Distance.Between(from.x, from.y, to.x, to.y) * 14),
-      onComplete: () => {
-        this.current = next.node;
-        progress.mapNode = next.node.id;
-        saveProgress();
-        this.moving = false;
-        this.updateLabel();
-      },
-    });
+    for (const node of path) await this.stepTo(node, 7);
+    this.moving = false;
+    await this.enter();
   }
 
   private updateLabel() {

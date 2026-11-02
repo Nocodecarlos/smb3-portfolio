@@ -107,6 +107,8 @@ export interface World {
    * path shows "image coming soon"), **bold**.
    */
   article?: string;
+  /** Picture on this world's card in the case studies grid; the article's first picture if unset. */
+  thumb?: string;
   /**
    * A hidden mushroom house past the end of the course (World 1-3). Holding S on the white platform drops you
    * behind the scenery, in place of flipping sides, and walking on behind the black end zone finds it.
@@ -165,7 +167,7 @@ export interface Site {
   title?: string;
   roles: [string, string];
   about: { title: string; body: string };
-  contact: { letter: string; email: string; linkedin: string; signoff: string };
+  contact: { letter: string; email: string; linkedin: string; signoff: string; resume?: string };
   repo: { owner: string; name: string; branch: string };
   map: { nodes: MapNode[]; edges: [string, string][] };
 }

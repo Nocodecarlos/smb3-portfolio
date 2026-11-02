@@ -278,7 +278,8 @@ export function showLetter(): Promise<void> {
           <div class="letter-links">
             ${c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : ''}
             ${c.email ? `<button class="letter-copy" type="button">Copy email</button>` : ''}
-            ${c.linkedin ? `<a href="${esc(c.linkedin)}" target="_blank" rel="noopener">LinkedIn ↗</a>` : ''}
+            ${c.linkedin ? `<a href="${esc(c.linkedin)}" target="_blank" rel="noopener">LinkedIn</a>` : ''}
+            ${c.resume ? `<a href="${esc(resolveSrc(c.resume))}" download="Carlos-Velasquez-Resume.pdf">Resume</a>` : ''}
           </div>
         </div>
         <footer class="story-foot"><button class="story-btn" data-close="">back to the castle</button></footer>
@@ -334,7 +335,7 @@ function articleHtml(md: string, slug: string): { html: string; toc: { id: strin
       const img = /^!\[(.*)\]\((.*)\)$/.exec(first);
       // an empty path is a picture that isn't added yet
       // loaded up front: pictures that pop in later would push the jump-link targets out of place
-      if (img) return `<figure>${img[2] ? `<img src="${esc(resolveSrc(img[2]))}" alt="${esc(img[1])}">` : placeholder(img[1])}<figcaption>${inline(img[1])}</figcaption></figure>`;
+      if (img) return `<figure>${img[2] ? `<img src="${esc(resolveSrc(img[2]))}" alt="${esc(img[1])}" tabindex="0">` : placeholder(img[1])}<figcaption>${inline(img[1])}</figcaption></figure>`;
       if (lines.every((l) => l.startsWith('>'))) return `<blockquote>${inline(lines.map((l) => l.replace(/^>\s?/, '')).join(' '))}</blockquote>`;
       if (lines.every((l) => /^\s*[-•]\s+/.test(l))) return `<ul>${lines.map((l) => `<li>${inline(l.replace(/^\s*[-•]\s+/, ''))}</li>`).join('')}</ul>`;
       if (lines.every((l) => /^\d+\.\s+/.test(l))) return `<ol>${lines.map((l) => `<li>${inline(l.replace(/^\d+\.\s+/, ''))}</li>`).join('')}</ol>`;
@@ -356,7 +357,7 @@ function beatHtml(b: Beat): string {
     case 'copy':
       return `<section><h3>${esc(b.headline)}</h3>${richText(b.body)}</section>`;
     case 'image':
-      return `<figure>${b.src ? `<img loading="lazy" src="${esc(resolveSrc(b.src))}" alt="${esc(b.alt || b.caption)}">` : placeholder(b.caption)}<figcaption>${esc(b.caption)}</figcaption></figure>`;
+      return `<figure>${b.src ? `<img loading="lazy" src="${esc(resolveSrc(b.src))}" alt="${esc(b.alt || b.caption)}" tabindex="0">` : placeholder(b.caption)}<figcaption>${esc(b.caption)}</figcaption></figure>`;
     case 'decision': {
       const pick = b.chosen === 'A' ? b.optionA : b.optionB;
       return `<section class="qv-decision"><h3>Decision: ${esc(b.question)}</h3>
@@ -370,97 +371,192 @@ function beatHtml(b: Beat): string {
   }
 }
 
+/** A world's picture for its card: its own thumb, or the article's first picture. */
+function thumbOf(w: World): string | undefined {
+  return w.thumb || (w.article && /!\[.*\]\((.+)\)/.exec(w.article)?.[1]) || undefined;
+}
+
+function contactHtml(): string {
+  const c = getSite().contact;
+  return `<section class="qv-contact"><h2>Say hi</h2>${richText(c.letter)}
+    <p class="qv-contact-links">
+      ${c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : ''}
+      ${c.linkedin ? `<a href="${esc(c.linkedin)}" target="_blank" rel="noopener">LinkedIn ↗</a>` : ''}
+      ${c.resume ? `<a href="${esc(resolveSrc(c.resume))}" download="Carlos-Velasquez-Resume.pdf">Resume (PDF)</a>` : ''}
+    </p></section>`;
+}
+
+/** The front page: every project as a card. */
+function homeHtml(worlds: World[]): string {
+  return `
+    <div class="qv-inner qv-home">
+      <p class="qv-intro">${esc(getSite().about.title)} I'm a product designer who builds what I design. Here's the work.</p>
+      <div class="qv-grid">
+        ${worlds
+          .map((w) => {
+            const thumb = thumbOf(w);
+            return `<a class="qv-card" href="#work/${esc(w.slug)}" data-page="${esc(w.slug)}">
+              <div class="qv-thumb">${thumb ? `<img loading="lazy" src="${esc(resolveSrc(thumb))}" alt="">` : ''}</div>
+              <p class="qv-kicker">${esc(w.platform)} · ${esc(w.timeline)}</p>
+              <h2>${esc(w.title)}</h2>
+              <p class="qv-card-line">${esc(w.tagline)}</p>
+              <p class="qv-card-role">${esc(w.role)}</p>
+            </a>`;
+          })
+          .join('')}
+      </div>
+      ${contactHtml()}
+    </div>`;
+}
+
+/** One project on its own page, with a way on to the next. */
+function projectHtml(w: World, worlds: World[]): string {
+  const article = w.article ? articleHtml(w.article, w.slug) : null;
+  const links = w.links.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>`).join(' ');
+  const next = worlds[(worlds.indexOf(w) + 1) % worlds.length];
+  return `
+    <div class="qv-inner">
+      <article id="qv-${esc(w.slug)}">
+        <a class="qv-back" href="#work" data-page="">← All projects</a>
+        <p class="qv-kicker">${esc(w.platform)} · ${esc(w.timeline)}</p>
+        <h2>${esc(w.title)}</h2>
+        <p class="qv-tagline">${esc(w.tagline)}</p>
+        <p class="qv-role"><b>Role:</b> ${esc(w.role)}</p>
+        ${article ? `<nav class="qv-toc" aria-label="${esc(w.title)} sections">${article.toc.map((t) => `<a href="#${esc(t.id)}">${esc(t.label)}</a>`).join('')}</nav>` : ''}
+        ${
+          // the full case study when there is one; otherwise the game's beats, read in order
+          article
+            ? `<div class="qv-article">${article.html}</div><section class="qv-summary">${links}</section>`
+            : `${w.beats.map(beatHtml).join('')}
+        <section class="qv-summary"><h3>Outcome</h3>${richText(w.summary)}
+          ${w.outcomes.length ? `<ul>${w.outcomes.map((o) => `<li>${esc(o)}</li>`).join('')}</ul>` : ''}
+          ${links}
+        </section>`
+        }
+      </article>
+      ${next && next !== w ? `<a class="qv-next" href="#work/${esc(next.slug)}" data-page="${esc(next.slug)}"><span>Next project</span>${esc(next.title)} →</a>` : ''}
+      ${contactHtml()}
+    </div>`;
+}
+
 export function showQuickView(focus?: string, source = 'other') {
   track('case_studies_opened', { source, focus });
   const openedAt = Date.now();
   const site = getSite();
   const root = document.getElementById('quickview')!;
   const worlds = getWorlds();
-  root.innerHTML = `
-    <div class="qv-band" aria-hidden="true"></div>
-    <header class="qv-top">
-      <div class="qv-top-in">
-        <div class="qv-head-row">
-          <h1>${esc(site.name)}</h1>
-          <button class="qv-close" aria-label="Close">✕ Back to the game</button>
+  const c = site.contact;
+  let seen: IntersectionObserver | undefined;
+  const reported = new Set<string>();
+
+  /** Draw the front page ('') or a project, and report what gets read. */
+  const show = (page: string) => {
+    const world = worlds.find((w) => w.slug === page);
+    root.classList.toggle('home', !world);
+    root.innerHTML = `
+      <div class="qv-band" aria-hidden="true"></div>
+      <header class="qv-top">
+        <div class="qv-top-in">
+          <div class="qv-head-row">
+            <h1><a href="#work" data-page="">${esc(site.name)}</a></h1>
+            <button class="qv-close" aria-label="Close">▶ Play the game</button>
+          </div>
+          <p class="qv-roles">${esc(site.title || site.roles.join(' · '))}</p>
+          <nav aria-label="Projects and contact">
+            ${worlds.map((w) => `<a href="#work/${esc(w.slug)}" data-page="${esc(w.slug)}"${w === world ? ' aria-current="page"' : ''}>${esc(w.title)}</a>`).join('')}
+            ${c.resume ? `<a class="qv-nav-resume" href="${esc(resolveSrc(c.resume))}" download="Carlos-Velasquez-Resume.pdf">Resume</a>` : ''}
+          </nav>
         </div>
-        <p class="qv-roles">${esc(site.title || site.roles.join(' · '))}</p>
-        <nav aria-label="Case studies">${worlds.map((w, i) => `<a href="#qv-${esc(w.slug)}">W${i + 1} · ${esc(w.title)}</a>`).join('')}</nav>
-      </div>
-    </header>
-    <div class="qv-inner">
-      ${worlds
-        .map((w, i) => {
-          const article = w.article ? articleHtml(w.article, w.slug) : null;
-          return `
-        <article id="qv-${esc(w.slug)}">
-          <p class="qv-kicker">World ${i + 1} · ${esc(w.platform)} · ${esc(w.timeline)}</p>
-          <h2>${esc(w.title)}</h2>
-          <p class="qv-tagline">${esc(w.tagline)}</p>
-          <p class="qv-role"><b>Role:</b> ${esc(w.role)}</p>
-          ${article ? `<nav class="qv-toc" aria-label="${esc(w.title)} sections">${article.toc.map((t) => `<a href="#${esc(t.id)}">${esc(t.label)}</a>`).join('')}</nav>` : ''}
-          ${
-            // the full case study when there is one; otherwise the game's beats, read in order
-            article
-              ? `<div class="qv-article">${article.html}</div>
-          <section class="qv-summary">${w.links.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>`).join(' ')}</section>`
-              : `${w.beats.map(beatHtml).join('')}
-          <section class="qv-summary"><h3>Outcome</h3>${richText(w.summary)}
-            ${w.outcomes.length ? `<ul>${w.outcomes.map((o) => `<li>${esc(o)}</li>`).join('')}</ul>` : ''}
-            ${w.links.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>`).join(' ')}
-          </section>`
-          }
-        </article>`;
-        })
-        .join('')}
-      <section class="qv-contact"><h2>Say hi</h2>${richText(site.contact.letter)}
-        ${site.contact.email ? `<p><a href="mailto:${esc(site.contact.email)}">${esc(site.contact.email)}</a></p>` : ''}
-        ${site.contact.linkedin ? `<p><a href="${esc(site.contact.linkedin)}" target="_blank" rel="noopener">LinkedIn ↗</a></p>` : ''}
-      </section>
-    </div>`;
-  root.hidden = false;
-  ui.blocking = true;
-  document.body.classList.add('qv-open');
+      </header>
+      ${world ? projectHtml(world, worlds) : homeHtml(worlds)}`;
+    root.querySelector('.qv-close')!.addEventListener('click', close);
+    root.scrollTop = 0;
+    seen?.disconnect();
+    if (!world) return;
+    const viewed = `case_study_viewed${world.slug}`;
+    if (!reported.has(viewed)) {
+      reported.add(viewed);
+      track('case_study_viewed', { world: world.slug });
+    }
+    seen = new IntersectionObserver(
+      (entries) => {
+        const finished = `case_study_finished${world.slug}`;
+        if (!entries.some((e) => e.isIntersecting) || reported.has(finished)) return;
+        reported.add(finished);
+        track('case_study_finished', { world: world.slug });
+      },
+      { root },
+    );
+    const end = root.querySelector('.qv-summary');
+    if (end) seen.observe(end);
+  };
+  const pageFromHash = () => /^#work\/(.+)$/.exec(location.hash)?.[1] ?? '';
+
   const close = () => {
+    closeZoom();
     root.hidden = true;
     document.body.classList.remove('qv-open');
     ui.blocking = overlay().children.length > 0;
     window.removeEventListener('keydown', onKey, true);
-    seen.disconnect();
+    window.removeEventListener('popstate', onPop);
+    seen?.disconnect();
+    history.replaceState(null, '', location.pathname + location.search);
     track('case_studies_closed', { seconds: Math.round((Date.now() - openedAt) / 1000) });
   };
-  // which case studies get opened, and read through to their last section
-  const reported = new Set<string>();
-  const seen = new IntersectionObserver(
-    (entries) => {
-      for (const e of entries) {
-        if (!e.isIntersecting) continue;
-        const article = e.target.closest('article')!;
-        const world = article.id.replace(/^qv-/, '');
-        const event = e.target === article ? 'case_study_viewed' : 'case_study_finished';
-        if (reported.has(event + world)) continue;
-        reported.add(event + world);
-        track(event, { world });
-      }
-    },
-    { root },
-  );
-  root.querySelectorAll('article').forEach((a) => {
-    seen.observe(a);
-    const end = a.querySelector('.qv-summary');
-    if (end) seen.observe(end);
-  });
+  // the browser's back button walks the pages, and past the first one back to the game
+  const onPop = () => (location.hash.startsWith('#work') ? show(pageFromHash()) : close());
+
+  // ---- a picture, full size
+  let zoom: HTMLElement | null = null;
+  const closeZoom = () => {
+    zoom?.remove();
+    zoom = null;
+  };
+  const openZoom = (img: HTMLImageElement) => {
+    track('image_enlarged', { src: img.getAttribute('src') ?? '' });
+    zoom = el(`
+      <div class="qv-zoom" role="dialog" aria-label="Enlarged image">
+        <button class="qv-zoom-close" type="button" aria-label="Close image">✕</button>
+        <img src="${esc(img.currentSrc || img.src)}" alt="${esc(img.alt)}">
+      </div>`);
+    zoom.addEventListener('click', (e) => {
+      const big = (e.target as HTMLElement).closest<HTMLImageElement>('.qv-zoom img');
+      // the picture itself toggles between fitting the screen and its full size
+      if (big) big.classList.toggle('full');
+      else closeZoom();
+    });
+    root.appendChild(zoom);
+  };
+
   const onKey = (e: KeyboardEvent) => {
+    const activate = (e.key === 'Enter' || e.key === ' ') && (e.target as HTMLElement).matches?.('.qv-inner figure img');
+    if (activate) {
+      e.preventDefault();
+      openZoom(e.target as HTMLImageElement);
+      return;
+    }
     if (e.key === 'Escape' || e.key === 'q' || e.key === 'Q') {
       e.stopImmediatePropagation();
-      close();
+      if (zoom) closeZoom();
+      else close();
     }
   };
   window.addEventListener('keydown', onKey, true);
-  root.querySelector('.qv-close')!.addEventListener('click', close);
-  // the jump links scroll this page smoothly (and don't touch the address bar)
+  window.addEventListener('popstate', onPop);
+
   root.onclick = (e) => {
-    const a = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#"]');
+    const t = e.target as HTMLElement;
+    const pic = t.closest<HTMLImageElement>('.qv-inner figure img');
+    if (pic) return openZoom(pic);
+    const pageLink = t.closest<HTMLAnchorElement>('a[data-page]');
+    if (pageLink) {
+      e.preventDefault();
+      const page = pageLink.dataset.page!;
+      history.pushState(null, '', page ? `#work/${page}` : '#work');
+      return show(page);
+    }
+    // the jump links scroll this page smoothly (and don't touch the address bar)
+    const a = t.closest<HTMLAnchorElement>('a[href^="#"]');
     const target = a && document.getElementById(a.getAttribute('href')!.slice(1));
     if (!target) return;
     e.preventDefault();
@@ -474,6 +570,17 @@ export function showQuickView(focus?: string, source = 'other') {
       if (Math.abs(target.getBoundingClientRect().top - gap()) > 6) go(false);
     }, 900);
   };
-  if (focus) requestAnimationFrame(() => document.getElementById(`qv-${focus}`)?.scrollIntoView());
-  else root.scrollTop = 0;
+
+  root.hidden = false;
+  ui.blocking = true;
+  document.body.classList.add('qv-open');
+  const page = worlds.some((w) => w.slug === focus) ? focus! : '';
+  history.pushState(null, '', page ? `#work/${page}` : '#work');
+  show(page);
+}
+
+/** A shared link straight to the work: site/#work or site/#work/pause. */
+export function openQuickViewFromLink() {
+  const m = /^#work(?:\/(.+))?$/.exec(location.hash);
+  if (m) showQuickView(m[1], 'link');
 }

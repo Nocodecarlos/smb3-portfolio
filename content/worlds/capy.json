@@ -1,6 +1,7 @@
 {
   "slug": "capy",
   "title": "Launch the Capy",
+  "thumb": "content/capy/capy-thumb.jpg",
   "tagline": "Slingshot a capybara as high as you can. Bounce off clouds, dodge birds, upgrade your gear.",
   "headline": "How high can a capybara fly? I built a whole game, solo, to find out.",
   "icon": "content/capy/icon.png",

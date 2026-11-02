@@ -27,8 +27,12 @@ const STEPS: [number, number, number][] = [
 ];
 const CARLOS_X = 324;
 const CARLOS_H = 42;
+/** The hero in this room: nearly Carlos's size, up close. */
+const HERO_H = 36;
 /** Close enough to talk: from the lower step on. */
 const TALK_REACH = 62;
+/** What Carlos calls out until you're close enough to talk. */
+const CALL = "COME OVER HERE, LET'S TALK!";
 
 export class CastleScene extends Phaser.Scene {
   private player!: Player;
@@ -78,15 +82,17 @@ export class CastleScene extends Phaser.Scene {
     carlos.setScale(CARLOS_H / carlos.height);
     this.tweens.add({ targets: carlos, scaleY: carlos.scaleY * 1.025, yoyo: true, repeat: -1, duration: 1100, ease: 'Sine.easeInOut' });
 
-    this.hint = px(this, CARLOS_X, STEPS[1][2] - CARLOS_H - 10, `${KEYS.s}: TALK`, { size: 6, color: '#000' }).setOrigin(0.5).setDepth(20).setVisible(false);
+    // always up, so it's clear from the door who to go to; clicking Carlos works from anywhere
+    carlos.setInteractive({ useHandCursor: true }).on('pointerdown', () => !this.busy && !ui.blocking && void this.talk());
+    this.hint = px(this, CARLOS_X, STEPS[1][2] - CARLOS_H - 10, CALL, { size: 6, color: '#000' }).setOrigin(0.5).setDepth(20);
     this.hint.setBackgroundColor('#ffffff').setPadding(2, 2, 2, 1);
     this.tweens.add({ targets: this.hint, y: this.hint.y - 2, yoyo: true, repeat: -1, duration: 450 });
 
-    this.player = new Player(this, 40, FLOOR - 8, createControls(this), progress.hero);
+    this.player = new Player(this, 40, FLOOR - 8, createControls(this), progress.hero, HERO_H);
     this.physics.add.collider(this.player, solids);
     if (ROOM_W > WIDTH) cam.startFollow(this.player, true, 0.15, 0.15);
 
-    new FeltStatusBar(this, 'CONTACT CASTLE', "LET'S CHAT");
+    new FeltStatusBar(this, 'CONTACT CASTLE', 'WALK UP TO CARLOS');
     this.input.keyboard!.on('keydown-ESC', () => !ui.blocking && this.leave());
     cam.fadeIn(250);
   }
@@ -96,7 +102,7 @@ export class CastleScene extends Phaser.Scene {
     const p = this.player;
     p.update();
     const near = Math.abs(p.x - CARLOS_X) < TALK_REACH;
-    this.hint.setVisible(near && !ui.blocking);
+    this.hint.setText(near ? `${KEYS.s}: TALK` : CALL);
     if (near && p.downPressed) void this.talk();
   }
 

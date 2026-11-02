@@ -1,6 +1,7 @@
 {
   "slug": "portfolio",
   "title": "This Portfolio",
+  "thumb": "content/portfolio/title.jpg",
   "tagline": "A playable portfolio: walk through my work like a Super Mario Bros. 3 level.",
   "headline": "Why I made my portfolio a video game, and how I built it.",
   "role": "Design, art direction and build",
