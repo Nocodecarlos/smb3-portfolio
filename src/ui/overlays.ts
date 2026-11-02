@@ -233,7 +233,7 @@ export function showEndCard(world: World, iconUrl: string): Promise<void> {
 export function showIntro(): Promise<void> {
   const about = getSite().about;
   // on a phone there's no "Skip the game" button to point at (START does it), and a wider screen plays better
-  const body = PHONE ? about.body.replace(/Tap "Skip the game[^.]*\./, 'Press START anytime.') : about.body;
+  const body = PHONE ? about.body.replace(/Tap [“"]Skip the game[^.]*\.[”"]?/, 'Press START anytime.') : about.body;
   const node = el(`
     <div class="ov ov-story" role="dialog" aria-label="${esc(about.title)}">
       <article class="story intro-story">
