@@ -322,6 +322,7 @@ body.dev #legend { display: none; }
 .intro-story { max-width: calc(var(--px) * 300); }
 .intro-story .story-body { font-size: calc(var(--px) * 5.2); }
 .intro-story .story-foot { opacity: 1; text-align: center; }
+.intro-send { font: inherit; font-weight: 700; color: #2038a0; text-decoration: underline; background: none; border: 0; padding: 12px 6px; margin: -12px -6px; cursor: pointer; overflow-wrap: anywhere; }
 .end-story .story-head img { width: calc(var(--px) * 14); }
 .end-story .end-links { display: flex; gap: calc(var(--px) * 6); margin: calc(var(--px) * 2) 0; }
 .end-story .end-links a { font: 600 calc(var(--px) * 5) / 1.3 Fredoka, sans-serif; color: #2f3f8f; }
@@ -537,24 +538,26 @@ body.qv-open #stage, body.qv-open #dev-panel { visibility: hidden; }
 
 /* ---------- Phone: the game in a Game Boy Color ---------- */
 
-/* The Game Boy is a photo (gameboy-color.png, 305x501 at 3x, exported from Figma) as wide as the phone allows; the game sits on its
+/* The Game Boy is a photo (gameboy-color.webp, 305x546 at 3x, exported from Figma) as wide as the phone allows; the game sits on its
    screen and touch buttons sit on its own (src/ui/phone.ts). Positions are % of the photo. */
-body.phone #stage { display: grid; place-items: center; perspective: none; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+body.phone #stage { perspective: none; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 body.phone #tv {
-  position: relative;
-  left: auto; top: auto; translate: none;
-  width: min(100vw, calc((100vh - 12px) * 305 / 501));
-  width: min(100vw, calc((100dvh - 12px) * 305 / 501));
+  position: absolute;
+  /* the screen runs edge to edge and flush with the top: the bezel and shell around it bleed off.
+     On short phones it shrinks just enough to keep the printed labels (94% down the photo) in view. */
+  left: 50%; top: 0; translate: -49.84% -9.89%; /* the screen sits a hair left of the photo's centre */
+  width: min(calc(100vw / 0.8984), calc(100vh / 1.505));
+  width: min(calc(100vw / 0.8984), calc(100dvh / 1.505));
   transition: none;
 }
 body.phone #tv-flip {
-  aspect-ratio: 305 / 501;
-  background: url("./art/page/gameboy-color.png") center / 100% 100% no-repeat;
+  aspect-ratio: 305 / 546;
+  background: url("./art/page/gameboy-color.webp") center / 100% 100% no-repeat;
   filter: drop-shadow(0 16px 26px rgba(0, 0, 0, 0.5));
 }
 body.phone #tv-flip::after, body.phone .tv-power, body.phone #legend, body.phone #secret, body.phone #screen::after { display: none; }
-/* the device's screen, widescreen like the game */
-body.phone #screen { left: 4.92%; top: 10.93%; width: 89.84%; aspect-ratio: 427 / 240; }
+/* the device's screen, 4:3 like the game on a phone */
+body.phone #screen { left: 4.92%; top: 9.89%; width: 89.84%; aspect-ratio: 320 / 240; }
 /* cards and dialogs fill the phone (the overlay is moved out to <body>) */
 body.phone #overlay { position: fixed; z-index: 50; }
 body.phone .ov-story { padding: calc(var(--px) * 8); background: none; }
@@ -572,16 +575,16 @@ body.phone .story-img img { max-height: calc(var(--px) * 85); }
   -webkit-tap-highlight-color: transparent;
 }
 #pad > .down { background: radial-gradient(circle, rgba(0, 0, 0, 0.3), transparent 70%); }
-.pad-dpad { left: 21.3%; top: 66.9%; width: 36%; aspect-ratio: 1; }
+.pad-dpad { left: 22.1%; top: 67.8%; width: 36%; aspect-ratio: 1; }
 .pad-dpad[data-dir~="ArrowLeft"] { background: radial-gradient(circle at 20% 50%, rgba(0, 0, 0, 0.3), transparent 30%); }
 .pad-dpad[data-dir~="ArrowRight"] { background: radial-gradient(circle at 80% 50%, rgba(0, 0, 0, 0.3), transparent 30%); }
 .pad-dpad[data-dir~="ArrowUp"] { background: radial-gradient(circle at 50% 20%, rgba(0, 0, 0, 0.3), transparent 30%); }
 .pad-dpad[data-dir~="ArrowDown"] { background: radial-gradient(circle at 50% 80%, rgba(0, 0, 0, 0.3), transparent 30%); }
 .pad-a, .pad-b, .pad-ab { aspect-ratio: 1; border-radius: 50%; }
-.pad-a { left: 82.1%; top: 65.2%; width: 18%; }
-.pad-b { left: 65.4%; top: 68.9%; width: 18%; }
+.pad-a { left: 83%; top: 66.5%; width: 18%; }
+.pad-b { left: 65.9%; top: 69.6%; width: 18%; }
 /* the seam between B and A presses both, for running jumps */
-.pad-ab { left: 73.8%; top: 67%; width: 7%; z-index: 1; }
-.pad-select, .pad-start { top: 84.2%; width: 14%; height: 6%; border-radius: 999px; }
-.pad-select { left: 41.5%; }
-.pad-start { left: 56.6%; }
+.pad-ab { left: 74.4%; top: 68%; width: 7%; z-index: 1; }
+.pad-select, .pad-start { top: 83.9%; width: 14%; height: 6%; border-radius: 999px; }
+.pad-select { left: 41.8%; }
+.pad-start { left: 56.9%; }

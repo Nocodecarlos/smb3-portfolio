@@ -4,7 +4,7 @@ import { ART, FELT, Z, preloadFelt, setupFelt } from '../art/felt';
 import { ChibiRig, preloadHeroes } from '../art/hero';
 import { stopMusic } from '../game/music';
 import { sfx } from '../game/sfx';
-import { HEIGHT, type Hero, WIDTH, progress, saveProgress, ui } from '../game/state';
+import { HEIGHT, type Hero, PHONE, WIDTH, progress, saveProgress, ui } from '../game/state';
 import { raiseCurtain } from '../ui/curtain';
 import { showQuickView } from '../ui/overlays';
 import { asset } from '../assets';
@@ -79,7 +79,14 @@ export class TitleScene extends Phaser.Scene {
     const arrow = this.add.image(0, LABEL_Y + 11, 'title-arrow').setOrigin(1, 0.5).setScale(0.5);
     this.tweens.add({ targets: arrow, scale: 0.59, yoyo: true, repeat: -1, duration: 380, ease: 'Sine.easeInOut' });
 
-    const press = this.add.image(452 + OX, 868, 'title-press').setOrigin(0).setScale(0.5);
+    const art = this.add.image(452 + OX, 868, 'title-press').setOrigin(0).setScale(0.5);
+    // the art says PRESS ENTER; the Game Boy has no Enter key
+    const press = PHONE
+      ? this.add
+          .text(art.x + art.displayWidth / 2, art.y + art.displayHeight / 2, 'PRESS A', { fontFamily: '"Press Start 2P"', fontSize: `${art.displayHeight * 0.5}px`, color: '#000000', backgroundColor: '#fff6e0', padding: { x: 16, y: 10 } })
+          .setOrigin(0.5)
+      : art;
+    if (PHONE) art.setVisible(false);
     this.tweens.add({ targets: press, alpha: 0, yoyo: true, repeat: -1, duration: 500, hold: 300 });
 
     const setChoice = (c: number) => {

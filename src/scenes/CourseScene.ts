@@ -25,7 +25,7 @@ import { showEndCard } from '../ui/overlays';
 // Holding S for two seconds on the tall white platform flips to the other side: the same
 // course in black and white, where story blocks and billboards are editable
 // in the dev panel (src/ui/devmode.ts). In a world with a secret house (World 1-3) it
-// drops you behind the scenery instead, and the house is past the black end zone.
+// drops you behind the scenery instead, and the house is a few steps behind the black end zone.
 
 export interface CourseLevel {
   id: string;
@@ -88,8 +88,10 @@ export function getLevel(id: string): CourseLevel | undefined {
 const T = 16;
 /** How long S has to be held on the white platform to flip sides, in ms. */
 const DOOR_HOLD = 2000;
-/** Behind the scenery the hero is drawn behind platforms, billboards and bushes, but in front of the black end zone. */
-const BEHIND = -8.5;
+/** Behind the scenery the hero is drawn behind platforms, billboards, bushes and the black end zone (depth -9). */
+const BEHIND = -9.5;
+/** Tiles walked out of sight behind the black end zone before the secret house opens. */
+const HOUSE_STEPS = 3;
 type Bounce = 'white' | 'blue' | 'dark';
 /** Each Capy cloud's width in px (the art is twice as wide as tall) and the speed it bounces you up at, no jump needed. */
 const BOUNCE: Record<Bounce, { key: string; w: number; speed: number }> = {
@@ -532,7 +534,7 @@ export class CourseScene extends Phaser.Scene {
     this.player.setLayer(10);
   }
 
-  /** Off the right edge behind the black end zone: into the secret house. Coming out puts you back by the slingshot. */
+  /** A few steps behind the black end zone: into the secret house. Coming out puts you back by the slingshot. */
   private async enterSecretHouse() {
     this.busy = true;
     sfx.pipe();
@@ -893,7 +895,7 @@ export class CourseScene extends Phaser.Scene {
       else void this.flipSides();
       return;
     }
-    if (this.behind && p.x > this.W - 10) {
+    if (this.behind && p.x > (this.level.goal - 6 + HOUSE_STEPS) * T) {
       void this.enterSecretHouse();
       return;
     }

@@ -18,8 +18,8 @@ export const PHONE = (() => {
 })();
 /** What on-screen hints call the keys: S and Esc on a keyboard; on the Game Boy, the D-pad's down, SELECT, and A to stop the bonus game. */
 export const KEYS = PHONE ? { s: 'DOWN', esc: 'SELECT', stop: 'A' } : { s: 'S', esc: 'ESC', stop: 'S' };
-/** 16:9 at the NES's 240 lines (426.7, rounded), on the desktop TV and the phone's Game Boy alike. */
-export const WIDTH = 427;
+/** 16:9 at the NES's 240 lines (426.7, rounded) on the desktop TV; 4:3 on the phone's Game Boy screen. */
+export const WIDTH = PHONE ? 320 : 427;
 export const HEIGHT = 240;
 export const BAR = 32; // SMB3-style status bar at the bottom
 export const FIELD = HEIGHT - BAR; // 208px playfield = 13 tiles

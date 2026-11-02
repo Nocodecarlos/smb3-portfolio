@@ -223,23 +223,47 @@ export function showEndCard(world: World, iconUrl: string): Promise<void> {
  */
 export function showIntro(): Promise<void> {
   const about = getSite().about;
+  // on a phone there's no "Skip the game" button to point at (START does it), and a wider screen plays better
+  const body = PHONE ? about.body.replace(/Tap "Skip the game[^.]*\./, 'Press START anytime.') : about.body;
   const node = el(`
     <div class="ov ov-story" role="dialog" aria-label="${esc(about.title)}">
       <article class="story intro-story">
         <header class="story-head"><span>WELCOME</span></header>
         <div class="story-text">
           <h2 class="story-title">${esc(about.title)}</h2>
-          <div class="story-body">${richText(about.body)}</div>
+          <div class="story-body">${richText(body)}${PHONE ? `<p class="intro-wide">This portfolio is better played on a wider screen. <button class="intro-send" type="button">Send to desktop?</button></p>` : ''}</div>
         </div>
         <footer class="story-foot"><button class="story-btn" data-close="">ok let's a-go</button></footer>
       </article>
     </div>`);
+  node.querySelector<HTMLElement>('.intro-send')?.addEventListener('click', (e) => void sendToDesktop(e.currentTarget as HTMLElement));
   const shown = performance.now();
   return open<void>(node, (e, close) => {
     // the Enter that left the title screen can still be repeating: ignore keys for a moment
     if (performance.now() - shown < 500) return;
     if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') close();
   });
+}
+
+/** Gets the site's link off the phone: the share sheet, or the clipboard, or at worst the link itself to copy by hand. */
+async function sendToDesktop(btn: HTMLElement) {
+  const url = location.origin + location.pathname;
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: document.title, text: 'Play this portfolio on a computer', url });
+      track('send_to_desktop', { method: 'share' });
+      return;
+    }
+  } catch (err) {
+    if ((err as Error).name === 'AbortError') return;
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    track('send_to_desktop', { method: 'copy' });
+    btn.textContent = 'Link copied!';
+  } catch {
+    btn.textContent = url;
+  }
 }
 
 export function showLetter(): Promise<void> {

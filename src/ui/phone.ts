@@ -2,12 +2,11 @@ import type Phaser from 'phaser';
 import { ui } from '../game/state';
 import { showQuickView } from './overlays';
 
-// On a phone the game sits in a Game Boy Color (src/art/page/gameboy-color.png,
+// On a phone the game sits in a Game Boy Color (src/art/page/gameboy-color.webp,
 // laid out in style.css) and its buttons are touch buttons that press the
 // same keys the keyboard does: the D-pad moves (down is S: pipes, billboards,
 // the slingshot), A jumps, picks and closes cards, B runs, SELECT is Esc (back
-// to the map) and START opens the case studies (on the title screen, it
-// starts the game). A press on the seam between B and A presses both, for
+// to the map) and START always opens the case studies. A press on the seam between B and A presses both, for
 // running jumps.
 
 const CODES: Record<string, number> = { ArrowLeft: 37, ArrowUp: 38, ArrowRight: 39, ArrowDown: 40, ' ': 32, k: 75, Escape: 27, Enter: 13 };
@@ -123,10 +122,7 @@ export function setupPhone(game: Phaser.Game) {
   button($('.pad-ab'), [B, A]);
   button($('.pad-select'), ['Escape']);
   button($('.pad-start'), [], () => {
-    if (game.scene.isActive('Title')) {
-      fire('keydown', 'Enter');
-      fire('keyup', 'Enter');
-    } else if (!ui.blocking) {
+    if (!ui.blocking) {
       // in a level, the case studies open at that level's own
       const course = game.scene.isActive('Course') ? (game.scene.getScene('Course') as unknown as { slug: string }) : undefined;
       showQuickView(course?.slug, 'phone_start');
@@ -139,7 +135,7 @@ export function setupPhone(game: Phaser.Game) {
   document.body.appendChild(overlay);
   const fit = () => {
     const r = shell.getBoundingClientRect();
-    overlay.style.bottom = `${window.innerHeight - (r.top + r.height * 0.56)}px`;
+    overlay.style.bottom = `${window.innerHeight - (r.top + r.height * 0.535)}px`;
   };
   new ResizeObserver(fit).observe(shell);
   window.addEventListener('resize', fit);
