@@ -139,7 +139,7 @@ export function setupPhone(game: Phaser.Game) {
   document.body.appendChild(overlay);
   const fit = () => {
     const r = shell.getBoundingClientRect();
-    overlay.style.bottom = `${window.innerHeight - (r.top + r.height * 0.535)}px`;
+    overlay.style.bottom = `${window.innerHeight - (r.top + r.height * 0.56)}px`;
   };
   new ResizeObserver(fit).observe(shell);
   window.addEventListener('resize', fit);

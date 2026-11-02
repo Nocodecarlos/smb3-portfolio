@@ -14,9 +14,9 @@
     "intro": "You found the secret house! Open the box for a trip back in time.",
     "boxes": [
       {
-        "title": "One of my early works",
-        "body": "You found it. Congratulations!\n\nThis is one of my early works. I designed it about 10 years ago, and I wanted to share it just to show you how much progress I've made since.",
-        "image": { "src": "", "caption": "One of my early works, from about 10 years ago" }
+        "title": "Remi, one of my early works",
+        "body": "You found it. Congratulations!\n\nThis is Remi, an AI assistant for restaurant owners. The idea came to me while I was working at Sysco, and it was my first foray into product and web design: I wanted to see how the landing page would look.\n\nIt's embarrassing to look at! There are SO many things I'd do differently today.",
+        "image": { "src": "content/capy/remi.jpg", "caption": "Remi's landing page, my first try at product design", "alt": "A long landing page for Remi, an AI restaurant marketer, with a hand-drawn robot" }
       }
     ]
   },
