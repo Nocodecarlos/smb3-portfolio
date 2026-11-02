@@ -1,3 +1,4 @@
+import { setContext, track } from '../analytics';
 import Phaser from 'phaser';
 import { Z, preloadFelt, setupFelt } from '../art/felt';
 import { heroFront, preloadHeroes } from '../art/hero';
@@ -126,7 +127,7 @@ export class OverworldScene extends Phaser.Scene {
     }
     const enter = () => !ui.blocking && !this.moving && void this.enter();
     for (const key of ['ENTER', 'SPACE', 'L', 'Z']) k.on(`keydown-${key}`, enter);
-    k.on('keydown-Q', () => !ui.blocking && showQuickView(this.current.world));
+    k.on('keydown-Q', () => !ui.blocking && showQuickView(this.current.world, 'map_key'));
 
     const offDev = devBus.on('dev', () => this.updateLabel());
     this.events.once('shutdown', offDev);
@@ -283,6 +284,8 @@ export class OverworldScene extends Phaser.Scene {
     if (n.type === 'world' && n.world && getWorld(n.world)) {
       sfx.select();
       this.moving = true;
+      track('world_entered', { world: n.world, replay: progress.cleared.includes(n.world) });
+      setContext({ current_world: n.world });
       this.cameras.main.fadeOut(250);
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start(getWorld(n.world!)?.level ? 'Course' : 'World', { slug: n.world }));
       return;
@@ -291,6 +294,7 @@ export class OverworldScene extends Phaser.Scene {
     if (n.boxes?.length) {
       // a house with boxes is a room you walk into
       sfx.select();
+      track('stop_opened', { stop: n.id, kind: 'house' });
       this.moving = true;
       this.cameras.main.fadeOut(250);
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('House', { node: n.id }));
@@ -299,11 +303,13 @@ export class OverworldScene extends Phaser.Scene {
     if (n.bonus) {
       // the spade panel is the picture-matching game
       sfx.select();
+      track('stop_opened', { stop: n.id, kind: 'bonus' });
       this.moving = true;
       this.cameras.main.fadeOut(250);
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Spade', { node: n.id }));
       return;
     }
+    if (n.type !== 'start') track('stop_opened', { stop: n.id, kind: n.type === 'castle' ? 'letter' : n.about ? 'about' : 'coming_soon' });
     if (n.type === 'castle') await showLetter();
     else if (n.about) await showIntro();
     else if (n.title || n.body) await showDialog(n.title ?? '', n.body ?? '');

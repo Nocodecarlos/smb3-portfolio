@@ -129,7 +129,7 @@ export function setupPhone(game: Phaser.Game) {
     } else if (!ui.blocking) {
       // in a level, the case studies open at that level's own
       const course = game.scene.isActive('Course') ? (game.scene.getScene('Course') as unknown as { slug: string }) : undefined;
-      showQuickView(course?.slug);
+      showQuickView(course?.slug, 'phone_start');
     }
   });
 

@@ -1,3 +1,4 @@
+import { track } from '../analytics';
 import Phaser from 'phaser';
 import { ART, FELT, Z, feltPost } from '../art/felt';
 import { resolveSrc } from '../content/store';
@@ -178,7 +179,10 @@ export class CourseStory {
     const s = this.signFor(playerX);
     if (!s) return;
     const b = s.beat;
-    if (b.type === 'image') return () => showImage(b.src, b.caption, b.alt);
+    if (b.type === 'image') return () => {
+      track('billboard_viewed', { world: this.world.slug, beat: b.id, title: b.caption });
+      return showImage(b.src, b.caption, b.alt);
+    };
     return () => {
       // read boards fade a little, like read story blocks
       s.parts.forEach((p) => p.setTint(0xd2d2d2));
@@ -244,6 +248,7 @@ export class CourseStory {
   }
 
   private openCard(id: string, card: StoryCard) {
+    if (!this.read.has(id)) track('story_read', { world: this.world.slug, beat: id, title: card.title, read: this.read.size + 1, of: this.stories.length });
     this.read.add(id);
     this.hud.setStories(this.read.size, this.stories.length);
     // the seed grows with the stories; full bloom is saved for the goal

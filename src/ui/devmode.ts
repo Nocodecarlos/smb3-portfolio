@@ -1,3 +1,4 @@
+import { track } from '../analytics';
 import Phaser from 'phaser';
 import { CARD_ICONS } from '../art/sprites';
 import { THEME_NAMES } from '../art/themes';
@@ -54,6 +55,7 @@ export function initDevMode(g: Phaser.Game) {
       pos = key === CODE[pos] ? pos + 1 : key === CODE[0] ? 1 : 0;
       if (pos === CODE.length) {
         pos = 0;
+        track('cheat_code_used');
         toggle();
       }
     },

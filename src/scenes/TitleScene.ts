@@ -1,3 +1,4 @@
+import { setContext, track } from '../analytics';
 import Phaser from 'phaser';
 import { ART, FELT, Z, preloadFelt, setupFelt } from '../art/felt';
 import { ChibiRig, preloadHeroes } from '../art/hero';
@@ -100,13 +101,15 @@ export class TitleScene extends Phaser.Scene {
       sfx.clear();
       progress.hero = HEROES[this.choice];
       saveProgress();
+      track('game_started', { hero: progress.hero });
+      setContext({ hero: progress.hero });
       this.cameras.main.fadeOut(300);
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Overworld'));
     };
     k.on('keydown-ENTER', start);
     k.on('keydown-SPACE', start);
     k.on('keydown-L', start);
-    k.on('keydown-Q', () => !ui.blocking && showQuickView());
+    k.on('keydown-Q', () => !ui.blocking && showQuickView(undefined, 'title_key'));
     setChoice(this.choice);
     stopMusic(); // the title is silent
     this.cameras.main.fadeIn(300);

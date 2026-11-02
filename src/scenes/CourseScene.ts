@@ -1,3 +1,4 @@
+import { setContext, track } from '../analytics';
 import Phaser from 'phaser';
 import { ART, FELT, PIPE_INSET, PIPE_RUN, SKY, Z, feltImage, feltOnGround, feltPlatform, feltPost, feltSprite, haze, preloadFelt, setupFelt } from '../art/felt';
 import { HeroRig, preloadHeroes } from '../art/hero';
@@ -439,7 +440,12 @@ export class CourseScene extends Phaser.Scene {
     const overGround = (x: number) => L.ground.some(([gx, w]) => x >= gx * T && x < (gx + w) * T);
     this.story.buildSigns(L.autoscroll ? () => G : groundAt, L.autoscroll ? (x) => (overGround(x) ? G : this.H + 8) : groundAt);
     if (this.readBefore) this.story.restoreRead(this.readBefore);
-    this.input.keyboard!.on('keydown-ESC', () => !ui.blocking && this.exitToMap());
+    this.input.keyboard!.on('keydown-ESC', () => {
+      if (ui.blocking) return;
+      track('world_left', { world: this.world.slug, progress_pct: Math.round((this.player.x / this.W) * 100), stories_read: this.story.readIds.length });
+      setContext({ current_world: undefined });
+      this.exitToMap();
+    });
     this.drawDevLayer();
     // a rebuild from the editor picks up where the player was, without the intro
     if (at) this.story.resume(at.x);
@@ -505,6 +511,7 @@ export class CourseScene extends Phaser.Scene {
   private async flipSides() {
     this.busy = true;
     this.physics.pause();
+    if (!ui.dev) track('secret_found', { secret: 'editor_door', world: this.world.slug });
     setDevMode(!ui.dev);
     await new Promise((r) => this.time.delayedCall(900, r));
     this.physics.resume();
@@ -529,6 +536,7 @@ export class CourseScene extends Phaser.Scene {
   private async enterSecretHouse() {
     this.busy = true;
     sfx.pipe();
+    track('secret_found', { secret: 'secret_house', world: this.world.slug });
     const L = this.level;
     const x = ((L.slingshot ?? L.goal) - 2.5) * T;
     const back = { x, y: (L.groundRow - 1) * T, powered: this.player.powered };
@@ -712,6 +720,7 @@ export class CourseScene extends Phaser.Scene {
     const S = this.level.skySection!;
     this.busy = true;
     this.skyBound = false;
+    track('secret_found', { secret: 'sky_section', world: this.world.slug });
     sfx.secret();
     const p = this.player;
     this.cameras.main.fadeOut(200, 255, 255, 255);
@@ -790,6 +799,7 @@ export class CourseScene extends Phaser.Scene {
   }
 
   private async enterRoom() {
+    track('secret_found', { secret: 'room', world: this.world.slug });
     this.busy = true;
     sfx.pipe();
     const p = this.player;
@@ -1053,6 +1063,7 @@ export class CourseScene extends Phaser.Scene {
 
   /** Bricks turn into coins for a few seconds. */
   private pressSwitch() {
+    track('secret_found', { secret: 'p_switch', world: this.world.slug });
     sfx.secret();
     this.cameras.main.shake(200, 0.004);
     const swapped: [Block, Phaser.GameObjects.Image][] = [];
@@ -1228,6 +1239,7 @@ export class CourseScene extends Phaser.Scene {
       if (f.active && Phaser.Math.Distance.Between(p.x, p.y, f.x, f.y) < 14) {
         f.destroy();
         p.powered = true;
+        track('feather_collected', { world: this.world.slug });
         sfx.clear();
         const power = this.story.feather();
         const t = this.add
@@ -1265,6 +1277,8 @@ export class CourseScene extends Phaser.Scene {
     this.story.bloom();
     this.goal.setTexture(FELT, `icon-${this.world.card}`);
     this.tweens.add({ targets: this.goal, y: this.goal.y - 40, duration: 600, ease: 'Quad.easeOut' });
+    track('world_cleared', { world: this.world.slug, stories_read: this.story.readIds.length, first_time: !progress.cleared.includes(this.world.slug), cleared_total: new Set([...progress.cleared, this.world.slug]).size, coins: progress.coins });
+    setContext({ current_world: undefined });
     markCleared(this.world.slug);
     this.busy = true;
     this.physics.pause();

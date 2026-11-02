@@ -1,3 +1,4 @@
+import { track } from '../analytics';
 import Phaser from 'phaser';
 import { asset } from '../assets';
 import { Z, feltImage, preloadFelt, setupFelt } from '../art/felt';
@@ -187,6 +188,7 @@ export class HouseScene extends Phaser.Scene {
     this.busy = true;
     if (!box.opened) {
       box.opened = true;
+      track('chest_opened', { house: this.house.name, title: post.title });
       box.art.setTexture(CHEST_OPEN).setDisplaySize(30, 34.3);
       sfx.secret();
       this.tweens.add({ targets: box.art, scaleY: { from: box.art.scaleY * 0.85, to: box.art.scaleY }, duration: 260, ease: 'Back.easeOut' });

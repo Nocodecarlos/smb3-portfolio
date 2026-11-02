@@ -1,3 +1,4 @@
+import { track } from '../analytics';
 import { getSite, getWorlds, resolveSrc } from '../content/store';
 import type { Beat, World } from '../content/types';
 import { PHONE, ui } from '../game/state';
@@ -331,7 +332,9 @@ function beatHtml(b: Beat): string {
   }
 }
 
-export function showQuickView(focus?: string) {
+export function showQuickView(focus?: string, source = 'other') {
+  track('case_studies_opened', { source, focus });
+  const openedAt = Date.now();
   const site = getSite();
   const root = document.getElementById('quickview')!;
   const worlds = getWorlds();
@@ -385,7 +388,30 @@ export function showQuickView(focus?: string) {
     document.body.classList.remove('qv-open');
     ui.blocking = overlay().children.length > 0;
     window.removeEventListener('keydown', onKey, true);
+    seen.disconnect();
+    track('case_studies_closed', { seconds: Math.round((Date.now() - openedAt) / 1000) });
   };
+  // which case studies get opened, and read through to their last section
+  const reported = new Set<string>();
+  const seen = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        const article = e.target.closest('article')!;
+        const world = article.id.replace(/^qv-/, '');
+        const event = e.target === article ? 'case_study_viewed' : 'case_study_finished';
+        if (reported.has(event + world)) continue;
+        reported.add(event + world);
+        track(event, { world });
+      }
+    },
+    { root },
+  );
+  root.querySelectorAll('article').forEach((a) => {
+    seen.observe(a);
+    const end = a.querySelector('.qv-summary');
+    if (end) seen.observe(end);
+  });
   const onKey = (e: KeyboardEvent) => {
     if (e.key === 'Escape' || e.key === 'q' || e.key === 'Q') {
       e.stopImmediatePropagation();

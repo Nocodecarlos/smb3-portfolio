@@ -1,3 +1,4 @@
+import { track } from '../analytics';
 import Phaser from 'phaser';
 import { asset } from '../assets';
 import { FELT, Z, preloadFelt, setupFelt } from '../art/felt';
@@ -252,6 +253,7 @@ export class SpadeScene extends Phaser.Scene {
     const win = rest.every((p) => p === top);
     this.result.setText(!win ? 'SO CLOSE!' : top === 'bug' ? "YOU'VE GOT A BUG!" : "IT'S A MATCH!");
     this.tweens.add({ targets: this.result, scale: { from: 1.3, to: 1 }, duration: 300, ease: 'Back.easeOut' });
+    track('bonus_spin', { result: win ? top : 'miss' });
     this.hint.setText(`${KEYS.stop}: PLAY AGAIN   ${KEYS.esc}: MAP`);
     if (!win || top === 'bug') sfx.hurt();
     else sfx.secret();

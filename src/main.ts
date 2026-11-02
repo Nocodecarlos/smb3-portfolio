@@ -1,3 +1,4 @@
+import { initAnalytics } from './analytics';
 import Phaser from 'phaser';
 import { setRenderZoom } from './art/felt';
 import { onContentChange } from './content/store';
@@ -18,6 +19,7 @@ import { showQuickView } from './ui/overlays';
 async function start() {
   // phones play in a Game Boy Color: lay it out before the game measures its screen
   if (PHONE) document.body.classList.add('phone');
+  void initAnalytics();
 
   // Pixel fonts must be ready before the first scene draws text.
   await Promise.race([
@@ -76,7 +78,7 @@ async function start() {
     if (e.key === 'm' || e.key === 'M') game.sound.mute = toggleMute();
   });
 
-  document.getElementById('qv-btn')!.addEventListener('click', () => showQuickView());
+  document.getElementById('qv-btn')!.addEventListener('click', () => showQuickView(undefined, 'skip_button'));
 
   // Live rebuild: edits in dev mode restart whichever scene shows that content.
   let pending = 0;
