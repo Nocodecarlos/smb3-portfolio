@@ -1,7 +1,8 @@
 import { track } from '../analytics';
 import Phaser from 'phaser';
 import { asset } from '../assets';
-import { FELT, Z, preloadFelt, setupFelt } from '../art/felt';
+import { FELT, Z, feltImage, preloadFelt, setupFelt } from '../art/felt';
+import { ChibiRig, preloadHeroes } from '../art/hero';
 import { getSite, resolveSrc } from '../content/store';
 import type { MapNode } from '../content/types';
 import { FeltStatusBar } from '../game/feltHud';
@@ -29,6 +30,13 @@ const RES = 4;
 /** Strip speeds in px a second, top to bottom. */
 const SPEEDS = [330, 230, 140];
 const CREAM = 'house-cream';
+/** Felt me, turned to face the frame (Figma: Generated Image 4290:2293, green keyed out). */
+const ME = 'felt-me-side';
+/** The two of us stand on ledges either side of the frame, like the card game's hosts. */
+const LEDGE_Y = WY0 + PIC_H + 9;
+const SIDE_X = Math.round((WX0 - 9) / 2);
+/** The phone's narrower screen leaves no room beside the frame, so we only stand there on wider ones. */
+const HOSTS = WX0 - 9 >= 60;
 type Pic = 'face' | 'resume' | 'bug';
 const PICS: Pic[] = ['face', 'resume', 'bug'];
 /** How likely each picture is to come up: 60 : 40 : 20, so the resume half the time, the face a third, the bug a sixth. */
@@ -56,6 +64,8 @@ export class SpadeScene extends Phaser.Scene {
   private hint!: Phaser.GameObjects.Text;
   private result!: Phaser.GameObjects.Text;
   private hud!: FeltStatusBar;
+  private hero!: ChibiRig;
+  private me!: Phaser.GameObjects.Image;
   /** The picture this round puts together. */
   private pick: Pic = 'resume';
   /** Waiting for S to spin again, after a round. */
@@ -76,7 +86,9 @@ export class SpadeScene extends Phaser.Scene {
 
   preload() {
     preloadFelt(this);
+    preloadHeroes(this);
     if (!this.textures.exists(CREAM)) this.load.image(CREAM, asset('felt/ui/felt-cream.jpg'));
+    if (!this.textures.exists(ME)) this.load.image(ME, asset('felt/me-side.png'));
     const b = this.node.bonus!;
     for (const src of [b.face, b.resume]) if (src && !this.textures.exists(`img:${src}`)) this.load.image(`img:${src}`, resolveSrc(src));
   }
@@ -112,8 +124,19 @@ export class SpadeScene extends Phaser.Scene {
     this.add.graphics().setDepth(2).lineStyle(3, 0x3a2410).strokeRect(WX0 - 1.5, WY0 - 1.5, PIC_W + 3, PIC_H + 3);
     this.arrow = this.add.graphics().setDepth(3);
 
-    this.result = this.text(WIDTH / 2, WY0 + PIC_H + pad + 10, '', 'heading', 13, '#d82800');
-    this.hint = this.text(WIDTH / 2, WY0 + PIC_H + pad + 23, `${KEYS.stop}: STOP THE TOP STRIP`, 'body', 8, '#5a3518');
+    // a floor of blocks from the frame down, behind the status bar; the player's hero on the left, me on the right
+    for (let y = LEDGE_Y; y < HEIGHT; y += 16) {
+      for (let x = 0; x < WIDTH; x += 16) feltImage(this, x + 8, y + 8, 'diamond').setDepth(3);
+    }
+    this.hero = new ChibiRig(this, progress.hero, 52);
+    this.hero.root.setPosition(SIDE_X, LEDGE_Y).setDepth(4).setVisible(HOSTS);
+    this.textures.get(ME).setFilter(Phaser.Textures.FilterMode.LINEAR);
+    this.me = this.add.image(WIDTH - SIDE_X, LEDGE_Y + 1, ME).setOrigin(0.5, 1).setDepth(4).setVisible(HOSTS);
+    this.me.setScale(60 / this.me.height);
+
+    // outlined, so they read over the blocks
+    this.result = this.text(WIDTH / 2, WY0 + PIC_H + pad + 10, '', 'heading', 13, '#d82800').setStroke('#ffffff', 3);
+    this.hint = this.text(WIDTH / 2, WY0 + PIC_H + pad + 23, `${KEYS.stop}: STOP THE TOP STRIP`, 'body', 8, '#ffffff').setStroke('#3a2410', 3);
     this.pick = draw();
     this.tweens.add({ targets: this.hint, alpha: 0.55, yoyo: true, repeat: -1, duration: 600 });
 
@@ -257,12 +280,26 @@ export class SpadeScene extends Phaser.Scene {
     this.hint.setText(`${KEYS.stop}: PLAY AGAIN   ${KEYS.esc}: MAP`);
     if (!win || top === 'bug') sfx.hurt();
     else sfx.secret();
+    this.react(win && top !== 'bug');
     if (!win) return;
     this.busy = true;
     await new Promise((r) => this.time.delayedCall(700, r));
     await this.prize(top);
     this.input.keyboard!.resetKeys();
     this.busy = false;
+  }
+
+  /** We both hop for a match; for the bug (or a miss) I shake my head and the hero slumps. */
+  private react(happy: boolean) {
+    const hop = (target: Phaser.GameObjects.Components.Transform, y: number, delay: number) =>
+      this.tweens.add({ targets: target, y: y - 8, duration: 160, ease: 'Quad.easeOut', yoyo: true, repeat: 1, delay });
+    if (happy) {
+      hop(this.hero.root, LEDGE_Y, 0);
+      hop(this.me, LEDGE_Y + 1, 80);
+      return;
+    }
+    this.tweens.add({ targets: this.me, angle: { from: -6, to: 6 }, duration: 110, yoyo: true, repeat: 2, onComplete: () => this.me.setAngle(0) });
+    this.tweens.add({ targets: this.hero.root, scaleY: 0.9, duration: 180, yoyo: true, hold: 300 });
   }
 
   /** What a match wins. */
