@@ -98,6 +98,7 @@ export class OverworldScene extends Phaser.Scene {
     for (const n of nodes) {
       const p = at(n);
       if (n.type === 'world' && n.world && n.number && progress.cleared.includes(n.world)) this.checkCard(n.world, n.number, p);
+      if (n.type === 'fortress' && n.world && progress.cleared.includes(n.world)) this.fortressCheck(n.world, p);
       if ((n.type === 'house' || n.type === 'castle') && n.label) {
         const sign = px(this, p.x, p.y - (n.type === 'castle' ? 30 : 16), n.label, { size: 6, color: '#000' }).setOrigin(0.5);
         sign.setBackgroundColor('#ffffff').setPadding(2, 2, 2, 1).setDepth(5);
@@ -217,6 +218,26 @@ export class OverworldScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * A cleared fortress gets the same check card, a little bigger so it covers
+   * the fortress in the map art. The first time back it turns in over the fortress.
+   */
+  private fortressCheck(slug: string, p: { x: number; y: number }) {
+    const s = (K / MAP_TEX) * 1.15;
+    const y = p.y - 3 * K;
+    const check = this.add.image(p.x, y, CARDS, card(1, 'check')).setScale(s);
+    if (progress.flipped.includes(slug)) return;
+    progress.flipped.push(slug);
+    saveProgress();
+    check.setScale(0, s).setDepth(11).setY(y - 4);
+    this.tweens.chain({
+      tweens: [
+        { targets: check, scaleX: s, scaleY: { from: s * 1.08, to: s }, delay: 550, duration: 260, ease: 'Back.easeOut', onStart: () => sfx.coin() },
+        { targets: check, y, delay: 250, duration: 160, ease: 'Sine.easeIn', onComplete: () => void check.setDepth(0) },
+      ],
+    });
+  }
+
   private isOpen(n: MapNode) {
     return n.type !== 'lock' || (n.requires ?? []).every((slug) => progress.cleared.includes(slug));
   }
@@ -249,8 +270,12 @@ export class OverworldScene extends Phaser.Scene {
   /** A locked road: the lock shakes and says what opens it. */
   private refuse(lock: MapNode) {
     sfx.bump();
-    const need = (lock.requires ?? []).map((slug) => getWorlds().findIndex((w) => w.slug === slug) + 1).filter(Boolean);
-    this.hud.setStop('WORLD 1', 'LOCKED', `Clear World ${need.join(' + ') || '?'} to open this road.`);
+    const nodes = getSite().map.nodes;
+    const need = (lock.requires ?? []).map((slug) => {
+      const n = nodes.find((m) => m.world === slug);
+      return n?.type === 'fortress' ? 'the Fortress' : `World ${n?.number ?? '?'}`;
+    });
+    this.hud.setStop('WORLD 1', 'LOCKED', `Clear ${need.join(' + ') || 'more worlds'} to open this road.`);
     this.tweens.add({ targets: this.lockArt, angle: { from: -6, to: 6 }, yoyo: true, repeat: 2, duration: 60, onComplete: () => this.lockArt?.setAngle(0) });
   }
 

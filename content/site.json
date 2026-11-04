@@ -33,7 +33,7 @@
       {"id": "s7", "type": "step", "x": 1154, "y": 1240},
       {"id": "s8", "type": "step", "x": 1434, "y": 982},
       {"id": "s9", "type": "step", "x": 1729, "y": 987},
-      {"id": "lock", "type": "lock", "x": 839, "y": 521, "requires": ["pause"]},
+      {"id": "lock", "type": "lock", "x": 839, "y": 521, "requires": ["covenant-eyes"]},
       {"id": "fortress", "type": "fortress", "x": 1114, "y": 660, "label": "FORTRESS", "world": "covenant-eyes"},
       {"id": "spade", "type": "spade", "x": 1402, "y": 660, "label": "BONUS", "bonus": {"face": "content/bonus/face.jpg", "resume": "content/bonus/resume.jpg", "resumePdf": "content/bonus/resume.pdf"}},
       {"id": "house2", "type": "house", "x": 1129, "y": 960, "label": "ABOUT", "about": true},

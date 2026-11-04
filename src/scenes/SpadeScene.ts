@@ -134,9 +134,9 @@ export class SpadeScene extends Phaser.Scene {
     this.me = this.add.image(WIDTH - SIDE_X, LEDGE_Y + 1, ME).setOrigin(0.5, 1).setDepth(4).setVisible(HOSTS);
     this.me.setScale(60 / this.me.height);
 
-    // outlined, so they read over the blocks
-    this.result = this.text(WIDTH / 2, WY0 + PIC_H + pad + 10, '', 'heading', 13, '#d82800').setStroke('#ffffff', 3);
-    this.hint = this.text(WIDTH / 2, WY0 + PIC_H + pad + 23, `${KEYS.stop}: STOP THE TOP STRIP`, 'body', 8, '#ffffff').setStroke('#3a2410', 3);
+    // outlined, so they read over the blocks: the hint on the first row, the result on the frame's bottom edge
+    this.result = this.text(WIDTH / 2, WY0 + PIC_H, '', 'heading', 13, '#d82800').setStroke('#ffffff', 3);
+    this.hint = this.text(WIDTH / 2, LEDGE_Y + 8, `${KEYS.stop}: STOP THE TOP STRIP`, 'body', 8, '#ffffff').setStroke('#3a2410', 3);
     this.pick = draw();
     this.tweens.add({ targets: this.hint, alpha: 0.55, yoyo: true, repeat: -1, duration: 600 });
 
