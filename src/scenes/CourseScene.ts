@@ -1,9 +1,10 @@
 import { setContext, track } from '../analytics';
 import Phaser from 'phaser';
-import { ART, FELT, PIPE_INSET, PIPE_RUN, SKY, Z, feltImage, feltOnGround, feltPlatform, feltPost, feltSprite, haze, preloadFelt, setupFelt } from '../art/felt';
+import { ART, CANDY_POST, FELT, PIPE_INSET, PIPE_RUN, POST, SKY, Z, feltImage, feltOnGround, feltPlatform, feltPost, feltSprite, haze, preloadFelt, setupFelt } from '../art/felt';
 import { HeroRig, preloadHeroes } from '../art/hero';
 import { CAPY, preloadCapy, setupCapy } from '../art/capy';
 import { drawFarRange, drawKnit, preloadKnit } from '../art/knit';
+import { asset } from '../assets';
 import { getWorld, getWorlds } from '../content/store';
 import type { World } from '../content/types';
 import { Castle, type CastleDoor, type CastleLayout, preloadCastle } from '../game/castle';
@@ -64,7 +65,15 @@ export interface CourseLevel {
    * `warp` drops into the room; `exit` ("room" or "sky") is where you come back out of that area (the warp pipe
    * when a room has none). A hanging exit pipe drops you out of its mouth.
    */
-  pipes: { x: number; y: number; h?: number; w?: number; side?: 'left' | 'right'; capless?: boolean; plant?: boolean; hanging?: boolean; warp?: string; exit?: string }[];
+  pipes: { x: number; y: number; h?: number; w?: number; side?: 'left' | 'right'; capless?: boolean; plant?: boolean; hanging?: boolean; warp?: string; exit?: string; lift?: [number, number] }[];
+  /**
+   * The Christmas world (World 1-5): snow in place of the knit, candy-cane posts, falling snow, felt pines and
+   * snowmen (`decor`: [tree | snowman, tile x, height in px]), sliding on steep slopes, and a midnight sky.
+   * A hanging pipe with `lift` takes you up: jump into its mouth and you come out of the pipe whose top-left
+   * tile is `lift` [x, y].
+   */
+  season?: 'christmas';
+  decor?: [string, number, number][];
   enemies: [string, number, number][];
   scenery: {
     clouds: [number, number, number][];
@@ -157,6 +166,8 @@ export class CourseScene extends Phaser.Scene {
   private skyBound = false;
   /** The slingshot: where it stands, how far it's pulled back (0..1) and its prompt. */
   private sling?: { x: number; pull: number; band: Phaser.GameObjects.Graphics; hint: Phaser.GameObjects.Text; art: Phaser.GameObjects.Image };
+  /** A hanging pipe that takes you up (World 1-5): its mouth, and the pipe top you come out of. */
+  private lift?: { x0: number; x1: number; bottom: number; out: { x: number; top: number }; hint: Phaser.GameObjects.Text };
   private terrain?: Terrain;
   private castle?: Castle;
   /** The tall white platform: S on top flips to the secret editor world. */
@@ -213,7 +224,7 @@ export class CourseScene extends Phaser.Scene {
     this.feet = [];
     this.busy = this.finished = this.inRoom = this.inSky = this.skyBound = false;
     this.exits = {};
-    this.warp = this.skyPipe = this.sling = this.terrain = this.castle = undefined;
+    this.warp = this.skyPipe = this.sling = this.terrain = this.castle = this.lift = undefined;
   }
 
   preload() {
@@ -221,6 +232,7 @@ export class CourseScene extends Phaser.Scene {
     if (this.level.terrain || this.level.parallax) preloadKnit(this);
     if (this.level.skySection || this.level.slingshot !== undefined) preloadCapy(this);
     if (this.level.castle) preloadCastle(this);
+    if (this.level.season === 'christmas') for (const k of ['tree', 'snowman']) if (!this.textures.exists(`winter-${k}`)) this.load.image(`winter-${k}`, asset(`felt/winter/${k}.png`));
     preloadHeroes(this);
     CourseStory.preload(this, this.world);
   }
@@ -266,7 +278,10 @@ export class CourseScene extends Phaser.Scene {
       this.farLayers.push(o);
       return o.setScrollFactor(f, fy).setPosition(WIDTH / 2 + f * (o.x - WIDTH / 2) + (1 - f) * zoomX, o.y + (1 - fy) * (zoomY - groundScroll));
     };
+    const snowy = L.season === 'christmas';
     const skyImage = this.add.image(0, 0, SKY).setOrigin(0).setDepth(-20);
+    // a paler winter sky
+    if (snowy) skyImage.setTint(0xe4f1fa);
     if (px) {
       // only as big as the viewport plus how far this slow layer travels
       this.farLayers.push(skyImage.setDisplaySize(WIDTH + (this.W - WIDTH) * px.sky, HEIGHT + groundScroll * SKY_Y).setScrollFactor(px.sky, SKY_Y).setPosition((1 - px.sky) * zoomX, (1 - SKY_Y) * zoomY));
@@ -321,7 +336,7 @@ export class CourseScene extends Phaser.Scene {
       const span = WIDTH + (this.W - WIDTH) * px.hills;
       // the first castle comes into view near the end, about a third across the screen by the goal: you're getting there
       const castleX = span - WIDTH * 0.7;
-      for (const img of drawFarRange(this, `${L.id}-far`, span, G, this.H + BAR, -12, castleX)) {
+      for (const img of drawFarRange(this, `${L.id}-far`, span, G, this.H + BAR, -12, castleX, snowy ? 'snow' : 'knit')) {
         img.setScrollFactor(px.hills, FAR_Y).setPosition(img.x + (1 - px.hills) * zoomX, img.y + (1 - FAR_Y) * (zoomY - groundScroll));
         this.farLayers.push(img);
       }
@@ -332,6 +347,13 @@ export class CourseScene extends Phaser.Scene {
     for (const [x, , w, h] of L.scenery.bushes) haze(feltOnGround(this, x, groundAt(x + w / 2) + sink, `bush2-${w}x${h}`).setDepth(-6), 0.22, 0.85);
     for (const [x, w, h] of L.stubs ?? []) feltOnGround(this, x, groundAt(x + w / 2) + sink, `bush2-${w}x${h}`).setDepth(-6);
     for (const [x] of L.scenery.shrubs) feltOnGround(this, x * T, groundAt(x * T + 8), 'shrub').setDepth(-6);
+    // felt pines and snowmen standing in the snow, a touch hazed like the bushes
+    for (const [k, x, h] of L.decor ?? []) {
+      const key = `winter-${k}`;
+      this.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR);
+      const img = this.add.image(x * T, groundAt(x * T) + 3, key).setOrigin(0.5, 1).setDepth(-6);
+      haze(img.setScale(h / img.height), 0.12, 0.95);
+    }
 
     // ---- Platforms: drawn back to front, tops are jump-through ----
     for (const p of L.platforms) {
@@ -357,7 +379,7 @@ export class CourseScene extends Phaser.Scene {
     }
     // the knit pieces are drawn in front of the pipes, so pipe feet tuck into the ground,
     // and run on under the status bar so no sky shows around its cards
-    if (terrain) drawKnit(this, L.id, terrain, this.H + BAR, 3);
+    if (terrain) drawKnit(this, L.id, terrain, this.H + BAR, 3, snowy ? 'snow' : 'knit');
     solidRect(this.W, 0, 8, this.H); // end wall
 
     // ---- Pipes ----
@@ -390,6 +412,12 @@ export class CourseScene extends Phaser.Scene {
       }
       if (p.warp) this.warp = { x0: x, x1: x + 32, top };
       if (p.exit === 'room' || p.exit === 'sky') this.exits[p.exit] = { x0: x, x1: x + 32, top, bottom: top + h, hanging: !!p.hanging };
+      if (p.lift) {
+        const hint = this.label(x + 16, top + h + 10, 'JUMP IN').setOrigin(0.5).setDepth(20).setVisible(false);
+        hint.setBackgroundColor('#ffffff').setPadding(2, 2, 2, 1);
+        this.tweens.add({ targets: hint, y: hint.y - 2, yoyo: true, repeat: -1, duration: 450 });
+        this.lift = { x0: x, x1: x + 32, bottom: top + h, out: { x: p.lift[0] * T + 16, top: p.lift[1] * T }, hint };
+      }
     }
     for (const pl of this.plants) this.cyclePlant(pl);
 
@@ -497,10 +525,11 @@ export class CourseScene extends Phaser.Scene {
     if (L.autoscroll) this.autoX = at ? Phaser.Math.Clamp(at.x - 100, 0, this.W - WIDTH) : 0;
     this.useMainCamera();
     // the fortress's entry is a low tunnel, with no room for the world billboard
-    if (!L.castle) this.introSign(G);
+    if (!L.castle) this.introSign(groundAt);
     // over an auto-scroller's gaps the billboard posts run down out of sight
     const overGround = (x: number) => L.ground.some(([gx, w]) => x >= gx * T && x < (gx + w) * T);
-    this.story.buildSigns(L.autoscroll ? () => G : groundAt, L.autoscroll ? (x) => (overGround(x) ? G : this.H + 8) : groundAt);
+    this.story.buildSigns(L.autoscroll ? () => G : groundAt, L.autoscroll ? (x) => (overGround(x) ? G : this.H + 8) : groundAt, snowy ? CANDY_POST : POST);
+    if (snowy) this.snowfall();
     if (this.readBefore) this.story.restoreRead(this.readBefore);
     this.input.keyboard!.on('keydown-ESC', () => {
       if (ui.blocking) return;
@@ -518,13 +547,15 @@ export class CourseScene extends Phaser.Scene {
   }
 
   /** The world billboard at the start of the course (Figma: screen/gameplay · world 1 start). */
-  private introSign(groundY: number) {
+  private introSign(groundAt: (x: number) => number) {
     const w = this.world;
     const x = 40;
-    const y = this.H + BAR - HEIGHT + 4; // near the top of the first screen, clear of the story block below
+    // near the top of the first screen, clear of the story block below; on a hilltop start, standing on the hill
+    const y = Math.min(this.H + BAR - HEIGHT + 4, Math.min(groundAt(x + 23), groundAt(x + 153)) - 92 - 44);
     const sign = this.add.graphics().setDepth(-2);
-    feltPost(this, x + 20, y + 92, 6, groundY - y - 92).setDepth(-2.1);
-    feltPost(this, x + 150, y + 92, 6, groundY - y - 92).setDepth(-2.1);
+    const post = this.level.season === 'christmas' ? CANDY_POST : POST;
+    feltPost(this, x + 20, y + 92, 6, groundAt(x + 23) - y - 92, post).setDepth(-2.1);
+    feltPost(this, x + 150, y + 92, 6, groundAt(x + 153) - y - 92, post).setDepth(-2.1);
     sign.fillStyle(0x000000).fillRect(x, y, 176, 96);
     sign.fillStyle(0xfcfcfc).fillRect(x + 2, y + 2, 172, 92);
     sign.fillStyle(0x000000).fillRect(x + 4, y + 4, 168, 88);
@@ -688,12 +719,27 @@ export class CourseScene extends Phaser.Scene {
     const w = S.width * T;
     const h = S.height * T;
     const floor = S.floor * T;
-    // the stars art is four texture px to a game px, as tall as the section, and tiles sideways
-    this.add.tileSprite(x0, 0, w, h, CAPY.stars).setOrigin(0).setDepth(-20).setTileScale(h / this.textures.get(CAPY.stars).getSourceImage().height);
     const [mx, my, size] = S.moon;
-    this.add.image(x0 + mx * T, my * T, CAPY.moon).setOrigin(0).setDisplaySize(size, size).setDepth(-19);
-    // yarn clouds overlap along the floor; the floor itself is a jump-through top, like the platforms
-    for (let x = -15; x < w; x += 65) this.add.image(x0 + x, floor - 17.5, CAPY.cloud).setOrigin(0).setDisplaySize(96, 48).setDepth(3);
+    if (this.level.season === 'christmas') {
+      // Pause's midnight: navy deepening upward, gold stars twinkling, the yarn moon, and a floor of felt snow clouds
+      const g = this.add.graphics().setDepth(-20);
+      g.fillGradientStyle(0x0f1a36, 0x0f1a36, 0x24365e, 0x24365e, 1).fillRect(x0, 0, w, h);
+      for (let i = 0; i < 70; i++) {
+        const sx = x0 + ((i * 97) % w);
+        const sy = ((i * 53) % (floor - 30)) + 4;
+        const star = feltImage(this, sx, sy, 'glint').setDepth(-19).setScale((3 + (i % 4)) / 5 / ART).setTint(0xf2cf73);
+        this.tweens.add({ targets: star, alpha: 0.25, yoyo: true, repeat: -1, duration: 800 + ((i * 131) % 900), delay: (i * 77) % 1100 });
+      }
+      this.add.image(x0 + mx * T, my * T, CAPY.moon).setOrigin(0).setDisplaySize(size, size).setDepth(-19);
+      for (let x = -20; x < w; x += 44) haze(feltImage(this, x0 + x, floor - 14, 'cloud-l').setOrigin(0).setDisplaySize(64, 30).setDepth(3), 0.05, 1);
+      this.add.rectangle(x0, floor + 10, w, h - floor - 10, 0xf2f6fa).setOrigin(0).setDepth(2.9);
+    } else {
+      // the stars art is four texture px to a game px, as tall as the section, and tiles sideways
+      this.add.tileSprite(x0, 0, w, h, CAPY.stars).setOrigin(0).setDepth(-20).setTileScale(h / this.textures.get(CAPY.stars).getSourceImage().height);
+      this.add.image(x0 + mx * T, my * T, CAPY.moon).setOrigin(0).setDisplaySize(size, size).setDepth(-19);
+      // yarn clouds overlap along the floor; the floor itself is a jump-through top, like the platforms
+      for (let x = -15; x < w; x += 65) this.add.image(x0 + x, floor - 17.5, CAPY.cloud).setOrigin(0).setDisplaySize(96, 48).setDepth(3);
+    }
     const top = this.add.rectangle(x0 + w / 2, floor + 3, w, 6).setVisible(false);
     this.semis.add(top);
     const tb = top.body as Phaser.Physics.Arcade.StaticBody;
@@ -778,7 +824,7 @@ export class CourseScene extends Phaser.Scene {
   private useSkyCamera() {
     const S = this.level.skySection!;
     const cam = this.cameras.main;
-    cam.setBackgroundColor(0x111622);
+    cam.setBackgroundColor(this.level.season === 'christmas' ? 0x0f1a36 : 0x111622);
     for (const o of this.farLayers) o.setVisible(false);
     cam.setBounds(this.SX, 0, Math.max(S.width * T, WIDTH), S.height * T + BAR);
   }
@@ -800,6 +846,68 @@ export class CourseScene extends Phaser.Scene {
     p.launch(420);
     this.cameras.main.fadeIn(250, 255, 255, 255);
     this.busy = false;
+  }
+
+  /** A small black-on-white pixel label (the prompts over pipes and the slingshot). */
+  private label(x: number, y: number, s: string) {
+    return px(this, x, y, s, { size: 6, color: '#000' });
+  }
+
+  /** Up the hanging pipe (World 1-5): pulled up into it, then out of the top of the pipe it leads to. */
+  private async upThePipe() {
+    const L = this.lift!;
+    this.busy = true;
+    sfx.pipe();
+    track('pipe_up', { world: this.world.slug });
+    const p = this.player;
+    p.body.enable = false;
+    p.sliding = false;
+    p.setX((L.x0 + L.x1) / 2);
+    L.hint.setVisible(false);
+    await this.tweenTo(p, { y: p.y - 26 }, 450);
+    this.cameras.main.fadeOut(150);
+    await new Promise((r) => this.cameras.main.once('camerafadeoutcomplete', r));
+    p.setPosition(L.out.x, L.out.top + 10);
+    this.cameras.main.fadeIn(150);
+    await this.tweenTo(p, { y: L.out.top - 10 }, 450);
+    p.body.reset(p.x, p.y);
+    p.body.enable = true;
+    this.busy = false;
+  }
+
+  /** Snow drifting down over everything, in front and (smaller, slower) behind the course. Skipped for reduced motion. */
+  private snowfall() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!this.textures.exists('snowflake')) {
+      const g = this.make.graphics({ x: 0, y: 0 }, false);
+      g.fillStyle(0xffffff, 0.35).fillCircle(8, 8, 8);
+      g.fillStyle(0xffffff, 1).fillCircle(8, 8, 5);
+      g.generateTexture('snowflake', 16, 16);
+      g.destroy();
+    }
+    // a camera that's zoomed in sees the middle of a scrollFactor-0 layer: start the flakes there
+    const zx = (WIDTH * Z - WIDTH) / 2;
+    const zy = (HEIGHT * Z - HEIGHT) / 2;
+    const flakes = (depth: number, scale: [number, number], speed: [number, number], every: number) =>
+      this.add
+        .particles(0, 0, 'snowflake', {
+          x: { min: zx - 30, max: zx + WIDTH + 30 },
+          y: zy - 8,
+          lifespan: 16000,
+          speedY: { min: speed[0], max: speed[1] },
+          speedX: { min: -7, max: 7 },
+          scale: { min: scale[0], max: scale[1] },
+          alpha: { min: 0.55, max: 0.95 },
+          frequency: every,
+          deathZone: { type: 'onLeave', source: new Phaser.Geom.Rectangle(zx - 60, zy - 20, WIDTH + 120, HEIGHT + 40) },
+        })
+        .setScrollFactor(0)
+        .setDepth(depth);
+    const front = flakes(30, [0.18, 0.34], [16, 28], 170);
+    const back = flakes(-7, [0.1, 0.18], [8, 15], 120);
+    // start mid-fall, not with an empty sky
+    front.fastForward(12000);
+    back.fastForward(12000);
   }
 
   /** Down the sky's pipe: drop out of the hanging pipe back on the course. */
@@ -948,6 +1056,13 @@ export class CourseScene extends Phaser.Scene {
   update() {
     if (this.busy) return;
     const p = this.player;
+    // the slope under the hero, for sliding on snow
+    const t = this.terrain;
+    if (t && !this.inSky && !this.inRoom) {
+      const a = t.surface(p.x - 4);
+      const b = t.surface(p.x + 4);
+      p.slope = a !== undefined && b !== undefined ? (b - a) / 8 : 0;
+    } else p.slope = 0;
     p.update();
     this.hud.setMeter(Math.round(p.pMeter * 6));
 
@@ -969,6 +1084,16 @@ export class CourseScene extends Phaser.Scene {
     if (this.inSky && onPipe(this.skyPipe)) {
       void this.exitSky();
       return;
+    }
+    // up a hanging pipe: jump into its mouth
+    const lift = this.lift;
+    if (lift && !this.inSky && !this.inRoom) {
+      const under = p.x > lift.x0 + 2 && p.x < lift.x1 - 2;
+      lift.hint.setVisible(under && p.body.bottom > lift.bottom + 20 && !ui.dev);
+      if (under && (p.body.blocked.up || p.body.touching.up) && Math.abs(p.body.top - lift.bottom) < 5) {
+        void this.upThePipe();
+        return;
+      }
     }
     // shot up by the super note: the sky takes over once you're off the top of the screen
     if (this.skyBound && p.y < -24) {
@@ -1030,7 +1155,8 @@ export class CourseScene extends Phaser.Scene {
       if (this.behind) this.comeOut();
     }
 
-    this.story.update(p.x, this.inRoom);
+    // the sky sits past the course: chapters there stay where they were, like in a room
+    this.story.update(p.x, this.inRoom || this.inSky);
     this.updateEnemies();
     this.updateFeathers();
     const fire = this.castle?.update(this.time.now, p.getBounds());
@@ -1193,6 +1319,11 @@ export class CourseScene extends Phaser.Scene {
     const shell = e.getData('shell') as Shell | undefined;
     // one stomp per landing: the shell shrinks under you, so the next physics step can still overlap it
     if (this.time.now - (e.getData('stompedAt') ?? -1e9) < 200) return;
+    // sliding down the snow knocks anything over
+    if (this.player.sliding && Math.abs(pb.velocity.x) > 40) {
+      this.knockOver(e, Math.sign(pb.velocity.x) || 1);
+      return;
+    }
     if (pb.velocity.y > 0 && pb.bottom - eb.top < 10) {
       e.setData('stompedAt', this.time.now);
       sfx.stomp();
@@ -1213,6 +1344,22 @@ export class CourseScene extends Phaser.Scene {
     // a resting shell is harmless, and a kicked one gives you a moment to get clear
     if (shell === 'still' || (shell === 'slide' && this.time.now - e.getData('kickedAt') < 250)) return;
     this.player.hurt(e.x);
+  }
+
+  /** Hit by a slide: tumbles off, spinning, and is gone. */
+  private knockOver(e: Phaser.Physics.Arcade.Sprite, dir: number) {
+    sfx.stomp();
+    e.setData('dead', true);
+    const rig = e.getData('rig') as HeroRig | undefined;
+    if (rig) {
+      rig.root.destroy();
+      e.setData('rig', undefined);
+      e.setVisible(true).setTexture(FELT, 'hiker-flat');
+    }
+    e.anims.stop();
+    this.tweens.killTweensOf(e);
+    (e.body as Phaser.Physics.Arcade.Body).enable = false;
+    this.tweens.add({ targets: e, x: e.x + dir * 40, y: e.y - 30, angle: dir * 360, alpha: 0, duration: 500, ease: 'Quad.easeOut', onComplete: () => e.destroy() });
   }
 
   /** First stomp: the turtle pulls into its shell and stays put. */

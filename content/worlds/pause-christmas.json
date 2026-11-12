@@ -1,0 +1,227 @@
+{
+  "slug": "pause-christmas",
+  "title": "Pause: Christmas",
+  "thumb": "content/pause-christmas/dashboards.jpg",
+  "tagline": "Making a screen-time app feel like Christmas, without making it feel like a toy.",
+  "headline": "How do you make Christmas feel grown up?",
+  "icon": "content/pause-christmas/icon.png",
+  "role": "Art direction, design & build",
+  "timeline": "Nov 2026",
+  "platform": "iOS · SwiftUI",
+  "theme": "sky",
+  "card": "star",
+  "summary": "Pause's Christmas theme, from moodboard to App Store in about two weeks: hand-pressed clay, one garland lit for day and night, carved type, a new puzzle, and a free December.",
+  "outcomes": [
+    "8 design rounds, from candy clay to carved-in-sand",
+    "74 screens rebuilt from one set of rules",
+    "Premium free all December. Results in January"
+  ],
+  "lessons": [
+    "Say what you don't want",
+    "Separate the layers, keep the best of each round",
+    "Make the last call by hand, let AI scale it",
+    "A theme is a product decision too"
+  ],
+  "links": [
+    {
+      "label": "try-pause.com",
+      "url": "https://try-pause.com"
+    }
+  ],
+  "level": "world-1-5",
+  "chapters": [
+    {
+      "id": "problem",
+      "at": 0,
+      "title": "THE BRIEF",
+      "subtitle": "Christmas, but grown up"
+    },
+    {
+      "id": "design",
+      "at": 52,
+      "title": "THE DESIGN",
+      "subtitle": "Clay you can feel"
+    },
+    {
+      "id": "results",
+      "at": 148,
+      "title": "THE RESULTS",
+      "subtitle": "Free all December"
+    }
+  ],
+  "article": "Every season I give Pause a new look. Halloween got a spooky theme, Thanksgiving got a cozy one with a new Gratitude puzzle. Christmas was the big one, and the brief I gave myself was simple to say and hard to do: make the app feel like Christmas, and playful, without making it feel like a toy. Pause is for adults trying to take back their time, not for kids.\n\nIt also had a hard deadline. The theme had to be in the App Store by December 1, so I had about two weeks to design it, build it and get it approved.\n\nI art directed it, designed it in Figma and built it with Claude Code as my partner. This world is how it went, round by round.\n\n**Tools:** Figma, Claude Code, SwiftUI, PostHog, Applyra\n\n![The moodboard I started from, with a note on every reference](content/pause-christmas/moodboard.jpg)\n\n## 1. A moodboard with a \"not this\"\n\nBefore any screens, I put together an inspiration board: clay icons, 3D clay illustrations, Play-Doh style buttons and cards, and a Santa Tracker page as a reference for dark mode. Every reference had a note saying why. \"I like these clayish icons.\" \"This is good for a dark theme.\" And one said \"this feels too child oriented.\"\n\nThat last note mattered most. It told Claude what to aim for and also what to stay away from, and it set the guardrail for every round that followed. For colour I wanted whites, yellows, browns and reds. I didn't find a Christmas app I liked, so the palette had to be invented, not borrowed.\n\n## 2. Keep the material, change the tone\n\nThe first round was bright, candy-coloured clay: snow, butter, gingerbread, cranberry and pine, with round headings and puffy shadows. I liked the texture of the clay buttons, but it still felt too juvenile.\n\nInstead of throwing the round away, I separated two things: the material (clay) and the tone (too young). I kept the clay and made everything around it more grown up: deeper colours like oxblood, antique gold and ivory, quieter shapes, and a script font for big one-word moments only. The script never goes on buttons or body text, so it stays readable.\n\n## 3. One garland, lit for night\n\nLight mode and dark mode first got different decorations: mistletoe in the light, a string of Christmas lights at night. The lights didn't work. So I asked for the same garland in both, re-lit for the dark side: white, gold, contrasty and shiny.\n\nIt's one decoration that works as a system across both modes, instead of two unrelated ideas. I also watched how much each colour weighed: red stays for the main action and the ornaments, and the big Your Week card went calm.\n\n![The Dashboard in light and midnight: one garland, lit two ways](content/pause-christmas/dashboards.jpg)\n\n## 4. When gold looks like champagne\n\nIn dark mode, the gold and champagne ornaments in Ball Sort were too close to tell apart. That's not a style problem, it's a broken puzzle: a four-colour puzzle needs four colours you can actually tell apart. The palette only gave us three, so velvet red came in as the fourth puzzle colour.\n\nThe same rule shaped every puzzle after. The striped ornaments got a different coloured band per pair, and the memory cards were picked so every pair differs in both shape and main colour.\n\n![Ball Sort in light and midnight](content/pause-christmas/ballsort.jpg)\n\n## 5. Clay you can feel\n\nThe clay looked like clay, but it was missing texture. When you play with clay, nothing is perfectly smooth: the edges are uneven and you can see where it was pressed. So every card and button got a hand-made wobbly edge, no two the same, and a fine grain of sand.\n\nI tuned the grain myself in Figma's noise panel (Duo, size 0.5, density 100%), and Claude carried it across about 70 elements. That's how we worked all the way through: I made the material call by hand, and AI scaled it across the system.\n\n![v5: sandy clay and rough snow hills](content/pause-christmas/v5.jpg)\n\n## 6. A detour on purpose\n\nI liked where the clay was going, but I was worried it could still feel too juvenile for the people who use Pause. So before committing, I asked for a deliberate counter-direction: a calm, adult version made of paper and velvet, with crisp hairlines and soft shadows.\n\nIt felt way too modern. But putting the two side by side made the trade-off visible, so the decision came from comparison, not momentum. I kept the paper version's materials where they helped, brought back the clay's type and decorations, and ended up leaning back into clay.\n\n![v7: the paper and velvet detour, side by side with clay](content/pause-christmas/v7.jpg)\n\n## 7. Carved in sand\n\nThe script and the elegant serif started to feel like they came from a different world than the handmade clay. I still wanted a serif, just one that belonged to the same material. I asked for titles that looked carved into the page, \"as if someone wrote with a finger over sand.\"\n\nWe built the carving from light, not a filter: a shadow on the top wall of each stroke and a lit lip under it. I picked DM Serif Display, pressed, over the font Claude recommended. The carving is what makes it feel handmade, and its sharper contrast keeps the screens adult.\n\n![Carved in sand: Fraunces vs DM Serif Display](content/pause-christmas/carved.jpg)\n\n## 8. 74 screens, one set of rules\n\nWith the look decided, all 37 screens in light and midnight (74 frames) were rebuilt in one pass, from rules written once: the font swaps, a fixed palette map, every card and button turned into clay, the garland placed against each screen's first line. When something broke, we fixed the rule, not the screen.\n\nThe puzzle thumbnails, memory cards, app icon, App Store screenshots and website followed the same rules, so the marketing can't drift from the product.\n\n![The puzzle thumbnails in light and midnight](content/pause-christmas/thumbs.jpg)\n\n## 9. A new puzzle for December: Santa's Traffic\n\nDecember also got a new puzzle. You slide clay cars and trucks along their lanes to clear the road so Santa's car can get out. Santa's red convertible is the only red piece on the board, so you always know which one to free. It has 60 boards.\n\n![Santa's car and the clay traffic](content/pause-christmas/santa.jpg)\n\n## 10. Free all December\n\nThe biggest decision wasn't visual. For the whole month of December, Pause Premium is free for everyone: any number of apps, every puzzle, no ads. No card and nothing to cancel.\n\nThe idea behind it: spend more time with the people you love over the holidays, and less on your phone. With everything unlocked, people get to feel what it's really like to use social media on purpose, not a cut-down version of it. On January 1 it ends by itself, and a one-time New Year screen offers the plans, with the free plan still there.\n\nI looked at Apple's offer codes and a month-long trial, but a simple date switch in the app was the only option that's truly free and needs nothing from Apple.\n\n![Premium is free all December](content/pause-christmas/store-free.jpg)\n\n## 11. What I'm measuring\n\nThe theme goes live on December 1, so the results are still coming. I'm announcing the free month everywhere I can, and this is what I'll be watching:\n\n- **Reach:** how many people the free month brings in.\n- **Retention:** how many stay after Christmas, both still using Pause in January and choosing a plan.\n- **Feedback:** whether reviews and messages pick up, and what they say.\n- **Usage:** with PostHog, how people use Premium when nothing is locked: how many apps they pause, which puzzles they pick, how often they unlock.\n\nI'll update this page in January with the numbers.\n\n## What I learned\n\n- **Say what you don't want.** A \"not this\" on the moodboard did more than any reference.\n- **Separate the layers.** Material, tone, type, decoration and layout can be judged on their own, and the best of each round can be kept.\n- **Make the last call by hand.** I set the grain and the carving myself, and AI carried them across the system.\n- **A theme is a product decision too.** The free month matters more than the garland.",
+  "beats": [
+    {
+      "id": "x-brief",
+      "type": "copy",
+      "chapter": "problem",
+      "headline": "Christmas, but grown up",
+      "body": "Every season I give Pause a new look. For Christmas, the brief was hard: feel like Christmas, and playful, without feeling like a toy. Pause is for adults taking back their time.\n\nAnd it had to be in the App Store by December 1.",
+      "image": {
+        "src": "content/pause-christmas/store-hero.jpg",
+        "caption": "The Christmas theme in the App Store"
+      },
+      "place": {
+        "as": "sign",
+        "at": 24
+      }
+    },
+    {
+      "id": "x-moodboard",
+      "type": "copy",
+      "chapter": "problem",
+      "headline": "A moodboard with a \"not this\"",
+      "body": "Before any screens, I made an inspiration board, with a note on every reference saying why. One said \"this feels too child oriented\".\n\nThat note told Claude what to stay away from, and it guided every round after.",
+      "image": {
+        "src": "content/pause-christmas/moodboard.jpg",
+        "caption": "The moodboard I started from"
+      },
+      "place": {
+        "as": "sign",
+        "at": 36
+      }
+    },
+    {
+      "id": "x-tone",
+      "type": "copy",
+      "chapter": "design",
+      "headline": "Keep the material, change the tone",
+      "body": "The first round was candy-bright clay. I liked the clay, but it felt too juvenile.\n\nSo I kept the material and changed the tone: deeper colours, quieter shapes, and a script font for big one-word moments only.",
+      "image": {
+        "src": "content/pause-christmas/v5.jpg",
+        "caption": "Clay, in a grown-up palette"
+      },
+      "place": {
+        "as": "sign",
+        "at": 56
+      }
+    },
+    {
+      "id": "x-garland",
+      "type": "copy",
+      "chapter": "design",
+      "headline": "One garland, lit for night",
+      "body": "Light and dark first got different decorations, and the Christmas lights didn't work. So the same garland goes in both, re-lit for night: white, gold and shiny.\n\nOne decoration, working as a system across both modes.",
+      "image": {
+        "src": "content/pause-christmas/dashboards.jpg",
+        "caption": "The Dashboard in light and midnight"
+      },
+      "place": {
+        "as": "sign",
+        "at": 72
+      }
+    },
+    {
+      "id": "x-colors",
+      "type": "copy",
+      "chapter": "design",
+      "headline": "When gold looks like champagne",
+      "body": "In dark mode, the gold and champagne ornaments in Ball Sort were too close to tell apart. That's not a style problem, it's a broken puzzle.\n\nVelvet red came in as the fourth colour, and every pair of pieces since differs in both shape and colour.",
+      "image": {
+        "src": "content/pause-christmas/ballsort.jpg",
+        "caption": "Ball Sort in light and midnight"
+      },
+      "place": {
+        "as": "sign",
+        "at": 86
+      }
+    },
+    {
+      "id": "x-clay",
+      "type": "copy",
+      "chapter": "design",
+      "headline": "Clay you can feel",
+      "body": "Real clay is never perfectly smooth. Every card and button got a wobbly, hand-made edge and a fine grain of sand.\n\nI tuned the grain myself in Figma, and Claude carried it across about 70 elements.",
+      "place": {
+        "as": "sign",
+        "at": 101
+      }
+    },
+    {
+      "id": "x-detour",
+      "type": "copy",
+      "chapter": "design",
+      "headline": "A detour on purpose",
+      "body": "I worried the clay could still feel too young for the people who use Pause. So I asked for a calm, adult counter-version in paper and velvet.\n\nIt felt way too modern, but side by side, the trade-off was clear. I leaned back into clay.",
+      "image": {
+        "src": "content/pause-christmas/v7.jpg",
+        "caption": "The paper and velvet detour"
+      },
+      "place": {
+        "as": "sign",
+        "at": 111
+      }
+    },
+    {
+      "id": "x-carved",
+      "type": "copy",
+      "chapter": "design",
+      "headline": "Carved in sand",
+      "body": "I wanted titles that looked carved into the page, \"as if someone wrote with a finger over sand.\"\n\nWe built the carving from light, not a filter. I picked DM Serif Display over the font Claude recommended: the carving is what makes it feel handmade.",
+      "image": {
+        "src": "content/pause-christmas/carved.jpg",
+        "caption": "Fraunces vs DM Serif Display, carved"
+      },
+      "place": {
+        "as": "sign",
+        "at": 127
+      }
+    },
+    {
+      "id": "x-rules",
+      "type": "copy",
+      "chapter": "design",
+      "headline": "74 screens, one set of rules",
+      "body": "All 37 screens in light and midnight were rebuilt in one pass from rules written once. When something broke, we fixed the rule, not the screen.\n\nThe icons, thumbnails and App Store screenshots followed the same rules.",
+      "image": {
+        "src": "content/pause-christmas/thumbs-crop.jpg",
+        "caption": "Puzzle thumbnails in light and midnight"
+      },
+      "place": {
+        "as": "sign",
+        "at": 137
+      }
+    },
+    {
+      "id": "x-free",
+      "type": "copy",
+      "chapter": "results",
+      "headline": "Free all December",
+      "body": "For all of December, Premium is free for everyone. No card, nothing to cancel.\n\nThe idea: spend more time with the people you love, and less on your phone. With everything unlocked, people feel what using social media on purpose is really like.",
+      "image": {
+        "src": "content/pause-christmas/store-free.jpg",
+        "caption": "Premium is free all December"
+      },
+      "place": {
+        "as": "sign",
+        "at": 151
+      }
+    },
+    {
+      "id": "x-measure",
+      "type": "copy",
+      "chapter": "results",
+      "headline": "What I'm measuring",
+      "body": "The theme goes live on December 1. I'll be watching how many people the free month brings in, how many stay after Christmas, what feedback comes in, and how people use Premium when nothing is locked.\n\nI'll update this world in January with the numbers.",
+      "place": {
+        "as": "sign",
+        "at": 164
+      }
+    },
+    {
+      "id": "x-santa",
+      "type": "copy",
+      "chapter": "design",
+      "headline": "Santa's Traffic",
+      "body": "You found the sky! December also got a new puzzle: slide the clay cars and trucks out of the way so Santa's car can get out.\n\nSanta's red convertible is the only red piece on the board, so you always know which one to free. It has 60 boards.",
+      "image": {
+        "src": "content/pause-christmas/store-santa.jpg",
+        "caption": "Santa's Traffic, new for December"
+      },
+      "place": {
+        "as": "sign",
+        "at": 228
+      }
+    }
+  ]
+}

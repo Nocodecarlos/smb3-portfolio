@@ -117,6 +117,11 @@ export class ChibiRig {
     this.root.scaleX = left ? -1 : 1;
   }
 
+  /** Lean the whole hero (degrees, clockwise), easing toward it: sliding down a slope, the body follows the snow. */
+  setTilt(angle: number, dt: number) {
+    this.root.angle += (angle - this.root.angle) * Math.min(1, dt * 14);
+  }
+
   private show(inAir: boolean) {
     const flying = this.powered && inAir;
     this.plain.group.setVisible(!this.powered);

@@ -36,10 +36,47 @@ export function feltOnGround(scene: Phaser.Scene, x: number, groundY: number, fr
   return feltImage(scene, x, groundY + (BOTTOM_PAD[frame] ?? 0) / 4, frame).setOrigin(0, 1);
 }
 
-/** A whittled wooden post (sign and billboard legs), `w` wide, from y down to the ground. */
-export function feltPost(scene: Phaser.Scene, x: number, y: number, w: number, h: number) {
-  scene.textures.get(POST).setFilter(Phaser.Textures.FilterMode.LINEAR);
-  return scene.add.tileSprite(x, y, w, h, POST).setOrigin(0).setTileScale(w / 88);
+/** A whittled wooden post (sign and billboard legs), `w` wide, from y down to the ground. `key` swaps the wood for another post (CANDY_POST). */
+export function feltPost(scene: Phaser.Scene, x: number, y: number, w: number, h: number, key = POST) {
+  if (key === CANDY_POST) candyPost(scene);
+  scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR);
+  return scene.add.tileSprite(x, y, w, h, key).setOrigin(0).setTileScale(w / 88);
+}
+
+/** Candy-cane posts for the Christmas world (World 1-5): red and cream felt stripes winding round a round post. */
+export const CANDY_POST = 'felt-post-candy';
+
+/** Paint the candy-cane post once: 88 px wide like the wood (one post across), its stripes repeating every 128 px down. */
+function candyPost(scene: Phaser.Scene) {
+  if (scene.textures.exists(CANDY_POST)) return;
+  const W = 88;
+  const H = 128;
+  const tex = scene.textures.createCanvas(CANDY_POST, W, H)!;
+  const ctx = tex.getContext();
+  ctx.fillStyle = '#fbf3e6';
+  ctx.fillRect(0, 0, W, H);
+  // one velvet-red stripe per repeat, rising to the right, wrapped top to bottom so the tiles meet
+  ctx.fillStyle = '#b81f2d';
+  for (let x = 0; x < W; x++) for (const k of [-1, 0, 1]) ctx.fillRect(x, k * H + 40 - x * 0.55, 1, 50);
+  // a thin darker edge on each stripe, like a stitched seam
+  ctx.fillStyle = 'rgba(110, 12, 24, 0.35)';
+  for (let x = 0; x < W; x++) for (const k of [-1, 0, 1]) ctx.fillRect(x, k * H + 88 - x * 0.55, 1, 3);
+  // round the post: shade both sides, a soft highlight left of centre
+  const g = ctx.createLinearGradient(0, 0, W, 0);
+  g.addColorStop(0, 'rgba(70, 20, 24, 0.38)');
+  g.addColorStop(0.32, 'rgba(255, 255, 255, 0.22)');
+  g.addColorStop(0.62, 'rgba(0, 0, 0, 0)');
+  g.addColorStop(1, 'rgba(70, 20, 24, 0.42)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+  // felt fuzz: a fine scatter of light and dark fibres (seeded, so it never changes)
+  let s = 7;
+  const rand = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < 900; i++) {
+    ctx.fillStyle = rand() > 0.5 ? 'rgba(255,255,255,0.10)' : 'rgba(60,20,20,0.10)';
+    ctx.fillRect(rand() * W, rand() * H, 1 + rand() * 2, 1);
+  }
+  tex.refresh();
 }
 
 /** The sky's average colour (public/felt/sky.jpg): what distant felt fades toward. */

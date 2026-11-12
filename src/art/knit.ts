@@ -27,7 +27,10 @@ export function preloadKnit(scene: Phaser.Scene) {
  * Draw ground pieces from their top edges (game px, left to right) down to
  * `bottom`. `key` names the canvases so a restart reuses them.
  */
-export function drawKnit(scene: Phaser.Scene, key: string, pieces: [number, number][][], bottom: number, depth: number) {
+/** `snow` (World 1-5): the same knit, whitened into snow, with a cool blue rim and paler stitches. */
+export type KnitStyle = 'knit' | 'snow';
+
+export function drawKnit(scene: Phaser.Scene, key: string, pieces: [number, number][][], bottom: number, depth: number, style: KnitStyle = 'knit') {
   const images: Phaser.GameObjects.Image[] = [];
   const knit = scene.textures.get(KNIT).getSourceImage() as HTMLImageElement;
   const stitch = scene.textures.get(STITCH).getSourceImage() as HTMLImageElement;
@@ -38,14 +41,15 @@ export function drawKnit(scene: Phaser.Scene, key: string, pieces: [number, numb
     for (let cx = x0, j = 0; cx < x1; cx += CHUNK, j++) {
       const w = Math.min(CHUNK, x1 - cx);
       const name = `${key}-${i}-${j}`;
-      if (!scene.textures.exists(name)) paint(scene, name, top, cx, y0, w, bottom, knit, stitch, RES);
+      if (!scene.textures.exists(name)) paint(scene, name, top, cx, y0, w, bottom, knit, stitch, RES, undefined, style);
       images.push(scene.add.image(cx, y0, name).setOrigin(0).setScale(1 / RES).setDepth(depth));
     }
   });
   return images;
 }
 
-function paint(scene: Phaser.Scene, name: string, top: [number, number][], cx: number, cy: number, w: number, bottom: number, knit: HTMLImageElement, stitch: HTMLImageElement, res: number, far?: (ctx: CanvasRenderingContext2D) => void) {
+function paint(scene: Phaser.Scene, name: string, top: [number, number][], cx: number, cy: number, w: number, bottom: number, knit: HTMLImageElement, stitch: HTMLImageElement, res: number, far?: (ctx: CanvasRenderingContext2D) => void, style: KnitStyle = 'knit') {
+  const snow = style === 'snow';
   const tex = scene.textures.createCanvas(name, Math.ceil(w * res), Math.ceil((bottom - cy) * res))!;
   const ctx = tex.getContext();
   ctx.setTransform(res, 0, 0, res, -cx * res, -cy * res);
@@ -64,10 +68,10 @@ function paint(scene: Phaser.Scene, name: string, top: [number, number][], cx: n
   // a soft shadow under the edge, like the felt cut-outs elsewhere
   ctx.save();
   shape();
-  ctx.shadowColor = 'rgba(36, 23, 14, 0.35)';
+  ctx.shadowColor = snow ? 'rgba(40, 70, 110, 0.3)' : 'rgba(36, 23, 14, 0.35)';
   ctx.shadowBlur = 3 * res;
   ctx.shadowOffsetY = 1.5 * res;
-  ctx.fillStyle = '#4c6b25';
+  ctx.fillStyle = snow ? '#e8f0f6' : '#4c6b25';
   ctx.fill();
   ctx.restore();
   // knit, a darker rim inside the edge, then the stitches (Figma: 10px inside stroke at 72%)
@@ -76,13 +80,23 @@ function paint(scene: Phaser.Scene, name: string, top: [number, number][], cx: n
   ctx.clip();
   ctx.fillStyle = pattern(knit, KNIT_W);
   ctx.fill();
+  if (snow) {
+    // whiten the knit to snow, keeping a trace of its texture, and cool it toward blue further down
+    ctx.fillStyle = 'rgba(247, 251, 254, 0.86)';
+    ctx.fill();
+    const depthShade = ctx.createLinearGradient(0, cy, 0, bottom);
+    depthShade.addColorStop(0, 'rgba(180, 208, 232, 0)');
+    depthShade.addColorStop(1, 'rgba(150, 186, 222, 0.45)');
+    ctx.fillStyle = depthShade;
+    ctx.fill();
+  }
   ctx.lineJoin = 'round';
-  ctx.strokeStyle = 'rgba(20, 34, 6, 0.16)';
+  ctx.strokeStyle = snow ? 'rgba(70, 120, 170, 0.16)' : 'rgba(20, 34, 6, 0.16)';
   for (const lw of [8, 4]) {
     ctx.lineWidth = lw;
     ctx.stroke();
   }
-  ctx.globalAlpha = 0.72;
+  ctx.globalAlpha = snow ? 0.4 : 0.72;
   ctx.strokeStyle = pattern(stitch, STITCH_W);
   ctx.lineWidth = 5;
   ctx.stroke();
@@ -117,7 +131,7 @@ const LANDMARK_HAZE = 0.18;
  * first castle at `castleX`.
  * `key` names the canvases so a restart reuses them.
  */
-export function drawFarRange(scene: Phaser.Scene, key: string, span: number, ground: number, bottom: number, depth: number, castleX: number) {
+export function drawFarRange(scene: Phaser.Scene, key: string, span: number, ground: number, bottom: number, depth: number, castleX: number, style: KnitStyle = 'knit') {
   const knit = scene.textures.get(KNIT).getSourceImage() as HTMLImageElement;
   const stitch = scene.textures.get(STITCH).getSourceImage() as HTMLImageElement;
   const ridge = (x: number) => ground - (4.2 + 1.8 * Math.sin(x / 83) + 0.9 * Math.sin(x / 37 + 1)) * 16;
@@ -133,7 +147,7 @@ export function drawFarRange(scene: Phaser.Scene, key: string, span: number, gro
   for (let cx = 0, j = 0; cx < span; cx += CHUNK, j++) {
     const w = Math.min(CHUNK, span + 8 - cx);
     const name = `${key}-${j}`;
-    if (!scene.textures.exists(name)) paint(scene, name, top, cx, y0, w, bottom, knit, stitch, FAR_RES, far);
+    if (!scene.textures.exists(name)) paint(scene, name, top, cx, y0, w, bottom, knit, stitch, FAR_RES, far, style);
     images.push(scene.add.image(cx, y0, name).setOrigin(0).setScale(1 / FAR_RES).setDepth(depth));
   }
   if (!scene.textures.exists(FAR_LANDMARKS)) fadeLandmarks(scene);

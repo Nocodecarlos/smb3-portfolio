@@ -81,7 +81,11 @@ async function start() {
   });
 
   const skip = document.getElementById('qv-btn')!;
-  skip.addEventListener('click', () => showQuickView(undefined, 'skip_button'));
+  // in a level, the case studies open straight at that level's own (as the phone's START does)
+  skip.addEventListener('click', () => {
+    const course = game.scene.isActive('Course') ? (game.scene.getScene('Course') as unknown as { slug: string }) : undefined;
+    showQuickView(course?.slug, 'skip_button');
+  });
   setupOrbit(skip);
   const resume = getSite().contact.resume;
   if (resume) {

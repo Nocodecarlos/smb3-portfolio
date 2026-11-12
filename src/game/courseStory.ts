@@ -1,6 +1,6 @@
 import { track } from '../analytics';
 import Phaser from 'phaser';
-import { ART, FELT, Z, feltPost } from '../art/felt';
+import { ART, FELT, POST, Z, feltPost } from '../art/felt';
 import { resolveSrc } from '../content/store';
 import type { Beat, World } from '../content/types';
 import { type StoryCard, showImage, showStory } from '../ui/overlays';
@@ -94,16 +94,17 @@ export class CourseStory {
   /**
    * Felt billboards, standing on the ground (`groundAt(x)` is its top at x; on a slope the posts differ). An image
    * beat's board is a picture to look at; any other beat's board shows its picture (or its headline) and reads as a story.
-   * `legEnd(x)` is where a post stops, when that's not the ground (over an auto-scroller's gaps).
+   * `legEnd(x)` is where a post stops, when that's not the ground (over an auto-scroller's gaps). `post` is the
+   * posts' texture (candy canes in World 1-5).
    */
-  buildSigns(groundAt: (x: number) => number, legEnd = groundAt) {
+  buildSigns(groundAt: (x: number) => number, legEnd = groundAt, post = POST) {
     for (const b of this.world.beats) {
       if (b.place?.as !== 'sign') continue;
       const x = b.place.at * T;
       const h = b.place.h ?? SIGN_H;
       const legs = [x + 9, x + SIGN_W - 14];
       const top = Math.min(...legs.map((l) => groundAt(l + 2.5))) - h - 30 - (b.place.lift ?? 0);
-      for (const l of legs) feltPost(this.scene, l, top + h - 2, 5, legEnd(l + 2.5) - top - h + 2).setDepth(-3.1);
+      for (const l of legs) feltPost(this.scene, l, top + h - 2, 5, legEnd(l + 2.5) - top - h + 2, post).setDepth(-3.1);
       const board = this.scene.add.nineslice(x, top, FELT, 'platform-f4faf4', SIGN_W * ART, h * ART, 9 * ART, 9 * ART, 9 * ART, 9 * ART).setOrigin(0).setScale(1 / ART).setDepth(-3);
       const parts: { setTint(color: number): unknown }[] = [board];
       const src = picture(b);

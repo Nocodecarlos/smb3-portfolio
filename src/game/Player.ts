@@ -39,11 +39,23 @@ const FLY_LIFT = 900;
 const FLY_SPEED = 140;
 /** With the cape, pressing jump again in the air and holding it slows the fall to this. */
 const FLOAT_FALL = 80;
+/**
+ * Sliding on snow (World 1-5): a slope this steep (rise over run) slides you down by itself; on a gentler one,
+ * holding down does. Sliding speeds up downhill, keeps going on the flat until friction stops it, and knocks
+ * over anything in the way.
+ */
+const SLIDE_STEEP = 0.55;
+const SLIDE_GENTLE = 0.15;
+const SLIDE_ACCEL = 520;
+const SLIDE_MAX = 230;
+const SLIDE_FRICTION = 240;
 
 export interface Controls {
   left: Phaser.Input.Keyboard.Key[];
   right: Phaser.Input.Keyboard.Key[];
   down: Phaser.Input.Keyboard.Key[];
+  /** Up (W, the up arrow, the D-pad): only for going up a pipe. It never jumps. */
+  up: Phaser.Input.Keyboard.Key[];
   jump: Phaser.Input.Keyboard.Key[];
   run: Phaser.Input.Keyboard.Key[];
 }
@@ -58,6 +70,7 @@ export function createControls(scene: Phaser.Scene): Controls {
     left: keys(K.A, K.LEFT),
     right: keys(K.D, K.RIGHT),
     down: keys(K.S, K.DOWN),
+    up: keys(K.W, K.UP),
     jump: keys(K.L, K.SPACE, K.Z),
     // Alt is captured so it can't pop open the browser's menu bar
     run: [...keys(K.K, K.SHIFT, K.X), k.addKey(K.ALT, true)],
@@ -78,6 +91,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   powered = false;
   /** 0..1, fills while running flat out on the ground. */
   pMeter = 0;
+  /** The ground's slope under the hero (rise over run, + going down to the right), set by the course each frame. */
+  slope = 0;
+  /** Sliding down the snow: set on steep slopes, or holding down on a gentle one. */
+  sliding = false;
   private flyUntil = 0;
   /** The current ascent came from a jump, so releasing jump cuts it short. */
   private jumping = false;
@@ -169,8 +186,24 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const now = this.scene.time.now;
     const dt = this.scene.game.loop.delta / 1000;
     const speed = Math.abs(b.velocity.x);
+    const tilt = Math.abs(this.slope);
+    if (onGround && !this.hurting && (tilt >= SLIDE_STEEP || (held(c.down) && tilt > SLIDE_GENTLE))) this.sliding = true;
+    // the slide ends when you get hurt, or once the flat has slowed you nearly to a stop
+    if (this.sliding && (this.hurting || (onGround && tilt < 0.05 && speed < 30))) this.sliding = false;
+    b.maxVelocity.x = this.sliding ? SLIDE_MAX : P_RUN;
 
-    if (this.hurting && !onGround) {
+    if (this.sliding) {
+      if (onGround && tilt > 0.05) {
+        // downhill pulls you along; steering doesn't
+        const down = Math.sign(this.slope);
+        b.setAccelerationX(down * SLIDE_ACCEL);
+        this.setFlipX(down < 0);
+      } else {
+        b.setAccelerationX(0);
+        const step = (onGround ? SLIDE_FRICTION : AIR_DRAG) * dt;
+        b.velocity.x = speed <= step ? 0 : b.velocity.x - Math.sign(b.velocity.x) * step;
+      }
+    } else if (this.hurting && !onGround) {
       // keep knockback momentum
     } else if (dir !== 0) {
       const turning = Math.sign(b.velocity.x) === -dir;
@@ -202,6 +235,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (canJump && now - this.jumpWanted < JUMP_BUFFER) {
       b.setVelocityY(-(JUMP + JUMP_BONUS[Math.min(3, Math.floor(speed / 55))]));
       this.jumping = true;
+      this.sliding = false;
       this.launched = false;
       this.lastGround = this.jumpWanted = -1e9;
       if (this.powered && full) this.flyUntil = now + FLY_MS;
@@ -232,7 +266,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       // With the feather the hero wears a cape: caped walk on the ground, flying pose in the air.
       this.rig.setPowered(this.powered);
       this.rig.setFacing(this.flipX);
-      this.rig.animate(dt, onGround ? Math.min(1, Math.abs(b.velocity.x) / RUN) : 0, !onGround);
+      // sliding: legs still, the body leaning with the snow
+      const lean = this.sliding && onGround ? Phaser.Math.RadToDeg(Math.atan(this.slope)) : 0;
+      this.rig.setTilt(lean, dt);
+      this.rig.animate(dt, onGround && !this.sliding ? Math.min(1, Math.abs(b.velocity.x) / RUN) : 0, !onGround);
     } else if (!onGround) {
       this.anims.stop();
       this.setTexture(`${k}-3`);
