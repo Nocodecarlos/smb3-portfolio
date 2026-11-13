@@ -71,4 +71,20 @@ export function markCleared(slug: string) {
 }
 
 /** True while a DOM overlay (dialog, lightbox, dev panel input) owns the keyboard. */
-export const ui = { blocking: false, dev: false };
+/**
+ * `easy` is Easy mode (the switch on the TV, or E): in a level the hero walks on by themselves, so all there is
+ * to do is jump, and they stop at each billboard. It's remembered between visits.
+ */
+export const ui = { blocking: false, dev: false, easy: (() => {
+  try {
+    return localStorage.getItem('smb3.easy') === '1';
+  } catch {
+    return false;
+  }
+})() };
+export function setEasy(on: boolean) {
+  ui.easy = on;
+  try {
+    localStorage.setItem('smb3.easy', on ? '1' : '0');
+  } catch {}
+}

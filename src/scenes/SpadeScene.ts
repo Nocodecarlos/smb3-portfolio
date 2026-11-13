@@ -1,7 +1,7 @@
 import { track } from '../analytics';
 import Phaser from 'phaser';
 import { asset } from '../assets';
-import { FELT, Z, feltImage, preloadFelt, setupFelt } from '../art/felt';
+import { ART, BLOCK_FIT, FELT, Z, feltImage, preloadFelt, setupFelt } from '../art/felt';
 import { ChibiRig, preloadHeroes } from '../art/hero';
 import { getSite, resolveSrc } from '../content/store';
 import type { MapNode } from '../content/types';
@@ -126,7 +126,7 @@ export class SpadeScene extends Phaser.Scene {
 
     // a floor of blocks from the frame down, behind the status bar; the player's hero on the left, me on the right
     for (let y = LEDGE_Y; y < HEIGHT; y += 16) {
-      for (let x = 0; x < WIDTH; x += 16) feltImage(this, x + 8, y + 8, 'diamond').setDepth(3);
+      for (let x = 0; x < WIDTH; x += 16) feltImage(this, x + 8, y + 8, 'diamond').setScale(BLOCK_FIT / ART).setDepth(3);
     }
     this.hero = new ChibiRig(this, progress.hero, 52);
     this.hero.root.setPosition(SIDE_X, LEDGE_Y).setDepth(4).setVisible(HOSTS);

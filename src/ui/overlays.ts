@@ -2,6 +2,7 @@ import { track } from '../analytics';
 import { getSite, getWorlds, resolveSrc } from '../content/store';
 import type { Beat, World } from '../content/types';
 import { PHONE, ui } from '../game/state';
+import { hushMusic } from '../game/music';
 import { sfx } from '../game/sfx';
 import { isTyping } from './typing';
 
@@ -503,6 +504,7 @@ export function showQuickView(focus?: string, source = 'other') {
 
   const close = () => {
     closeZoom();
+    hushMusic(false);
     root.hidden = true;
     document.body.classList.remove('qv-open');
     ui.blocking = overlay().children.length > 0;
@@ -582,6 +584,8 @@ export function showQuickView(focus?: string, source = 'other') {
 
   root.hidden = false;
   ui.blocking = true;
+  // reading is quiet: the music fades out, and comes back when the case studies close
+  hushMusic(true);
   document.body.classList.add('qv-open');
   const page = worlds.some((w) => w.slug === focus) ? focus! : '';
   history.pushState(null, '', page ? `#work/${page}` : '#work');

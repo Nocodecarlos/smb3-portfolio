@@ -106,6 +106,16 @@ export function haze<T extends Phaser.GameObjects.Image>(obj: T, amount: number,
 export const PIPE_RUN = 'pipe2-body-run';
 /** The body art fills 22 of the pipe's 32 px across; the cap is wider. */
 export const PIPE_INSET = 5;
+/**
+ * The same run, as wide as the cap's knitted band: the braided edge is repeated outward on both sides, so an
+ * upright pipe is one tube from rim to foot, not a narrow body under a wider cap. Its own texture (256 x 36).
+ */
+export const PIPE_WIDE = 'felt-pipe-wide';
+/**
+ * The block art (bricks, ? blocks, wood) fills 115 of its 128 px, which left a gap between neighbours. Drawn
+ * this much bigger, blocks touch edge to edge. Their physics stays one tile.
+ */
+export const BLOCK_FIT = 1.13;
 
 /** Smooth filtering (the game defaults to pixel-art nearest) and the felt animations. */
 export function setupFelt(scene: Phaser.Scene) {
@@ -115,11 +125,97 @@ export function setupFelt(scene: Phaser.Scene) {
     const f = felt.get('pipe2-body');
     felt.add(PIPE_RUN, f.sourceIndex, f.cutX, f.cutY + 30, f.cutWidth, 36);
   }
+  if (!felt.has(SOIL)) {
+    const f = felt.get('soil');
+    felt.add(SOIL, f.sourceIndex, f.cutX + 8, f.cutY + 8, SOIL_W, SOIL_H);
+  }
+  if (!scene.textures.exists(PIPE_WIDE)) {
+    const f = felt.get('pipe2-body');
+    const src = f.source.image as HTMLImageElement;
+    const tex = scene.textures.createCanvas(PIPE_WIDE, 256, 36)!;
+    const ctx = tex.getContext();
+    // the braid sits 40 to 90 px in: copies 30 px out on each side carry it to the cap's edge (10 px in)
+    for (const dx of [-30, 30, 0]) ctx.drawImage(src, f.cutX, f.cutY + 30, 256, 36, dx, 0, 256, 36);
+    // round the tube: a little shade toward both edges
+    ctx.globalCompositeOperation = 'source-atop';
+    const g = ctx.createLinearGradient(0, 0, 256, 0);
+    g.addColorStop(0.04, 'rgba(18, 48, 12, 0.34)');
+    g.addColorStop(0.2, 'rgba(18, 48, 12, 0)');
+    g.addColorStop(0.8, 'rgba(18, 48, 12, 0)');
+    g.addColorStop(0.96, 'rgba(18, 48, 12, 0.38)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 256, 36);
+    tex.refresh();
+    tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
+  }
   const a = scene.anims;
   if (a.exists('felt-snap')) return;
   const frames = (...names: string[]) => names.map((frame) => ({ key: FELT, frame }));
   a.create({ key: 'felt-snap', frames: frames('snapper-0', 'snapper-1'), frameRate: 4, repeat: -1 });
 }
+
+/**
+ * The ground tile with its empty margin cut off (the art fills 113 x 112 of its 128 px), so a tiled floor has no
+ * gaps between tiles. `SOIL_SEAM` is the colour behind it, which only shows at the tiles' rounded corners: the
+ * brown of their own stitched edge.
+ */
+export const SOIL = 'soil-tight';
+export const SOIL_W = 113;
+export const SOIL_H = 112;
+export const SOIL_SEAM = 0x6b4a36;
+
+/** How wide a pipe's body is drawn, of the 32 px its rim spans. */
+const PIPE_BODY = 28;
+/** The rim's depth along the pipe, in game px. */
+const PIPE_RIM = 11;
+
+/**
+ * A whole pipe in one piece, `len` game px long and 32 across, its mouth at the top: one knit from end to end,
+ * flaring out into a rim at the mouth (`rim: false` leaves the end plain). The rim is the same knit, set off only
+ * by its width, a rounded lip and the shade it casts on the body. Painted once per length; flip or turn the
+ * image for hanging and sideways pipes.
+ */
+export function feltPipe(scene: Phaser.Scene, len: number, rim = true) {
+  const key = `felt-pipe-${Math.round(len)}-${rim ? 'rim' : 'plain'}`;
+  if (!scene.textures.exists(key)) {
+    const W = 32 * ART;
+    const H = Math.round(len) * ART;
+    const tile = scene.textures.get(PIPE_WIDE).getSourceImage() as HTMLCanvasElement;
+    const tex = scene.textures.createCanvas(key, W, H)!;
+    const ctx = tex.getContext();
+    const inset = ((32 - PIPE_BODY) / 2) * ART;
+    const R = rim ? PIPE_RIM * ART : 0;
+    // the body, a little narrower, all the way up
+    for (let y = 0; y < H; y += tile.height) ctx.drawImage(tile, 0, 0, tile.width, tile.height, inset, y, W - 2 * inset, tile.height);
+    if (rim) {
+      // the rim: the same knit at full width, with rounded corners
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(0, 0, W, R, 2.5 * ART);
+      ctx.clip();
+      ctx.clearRect(0, 0, W, R);
+      for (let y = 0; y < R; y += tile.height) ctx.drawImage(tile, 0, y);
+      ctx.restore();
+      ctx.globalCompositeOperation = 'source-atop';
+      const band = (y0: number, y1: number, from: string, to: string) => {
+        const g = ctx.createLinearGradient(0, y0, 0, y1);
+        g.addColorStop(0, from);
+        g.addColorStop(1, to);
+        ctx.fillStyle = g;
+        ctx.fillRect(0, y0, W, y1 - y0);
+      };
+      // a lit lip along the mouth, the rim rounding under, and the shade it casts on the body below
+      band(0, 3 * ART, 'rgba(235, 255, 215, 0.34)', 'rgba(235, 255, 215, 0)');
+      band(R - 3 * ART, R, 'rgba(14, 44, 10, 0)', 'rgba(14, 44, 10, 0.3)');
+      band(R, R + 5 * ART, 'rgba(10, 36, 8, 0.5)', 'rgba(10, 36, 8, 0)');
+    }
+    tex.refresh();
+    tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
+  }
+  return scene.add.image(0, 0, key).setOrigin(0).setScale(1 / ART);
+}
+/** A sideways pipe is drawn this much smaller across, so its body is as thick as its 22 px of solid. */
+export const PIPE_SIDE = (32 - 2 * PIPE_INSET) / PIPE_BODY;
 
 /** A felt image at game-pixel size. */
 export function feltImage(scene: Phaser.Scene, x: number, y: number, frame: string) {
@@ -137,9 +233,13 @@ export function feltPlatform(scene: Phaser.Scene, x: number, y: number, w: numbe
   // A solid, rounded drop shadow (chunky, like a felt cut-out on a backing).
   // Shadow and face share a depth so later platforms overlap earlier ones, as in the file order.
   scene.add.graphics().setDepth(-4).fillStyle(0x24170e, 1).fillRoundedRect(x + 4, y + 4, w, h, 5);
-  return scene.add
-    .nineslice(x, y, FELT, scene.textures.get(FELT).has(frame) ? frame : 'platform-acddeb', w * s, h * s, 9 * s, 9 * s, 9 * s, 9 * s)
+  // the blue platform's own art has a scale pattern; it's drawn as the plain white felt, dyed blue, so it's flat like the rest
+  const flat = frame === 'platform-acddeb' || !scene.textures.get(FELT).has(frame);
+  const face = scene.add
+    .nineslice(x, y, FELT, flat ? 'platform-f4faf4' : frame, w * s, h * s, 9 * s, 9 * s, 9 * s, 9 * s)
     .setOrigin(0)
     .setScale(1 / s)
     .setDepth(-4);
+  if (flat) face.setTint(0xacddeb);
+  return face;
 }

@@ -100,6 +100,8 @@ export class CastleScene extends Phaser.Scene {
   update() {
     if (this.busy) return;
     const p = this.player;
+    // by the throne, down talks; anywhere else it ducks
+    p.noCrouch = Math.abs(p.x - CARLOS_X) < TALK_REACH;
     p.update();
     const near = Math.abs(p.x - CARLOS_X) < TALK_REACH;
     this.hint.setText(near ? `${KEYS.s}: TALK` : CALL);

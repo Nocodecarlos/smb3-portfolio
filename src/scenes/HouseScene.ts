@@ -1,7 +1,7 @@
 import { track } from '../analytics';
 import Phaser from 'phaser';
 import { asset } from '../assets';
-import { Z, feltImage, preloadFelt, setupFelt } from '../art/felt';
+import { ART, BLOCK_FIT, Z, feltImage, preloadFelt, setupFelt } from '../art/felt';
 import { ChibiRig, preloadHeroes } from '../art/hero';
 import { getSite, getWorld } from '../content/store';
 import type { HouseBox } from '../content/types';
@@ -117,7 +117,12 @@ export class HouseScene extends Phaser.Scene {
     });
     const solids = this.physics.add.staticGroup();
     ROOM.forEach((row, ty) => {
-      for (let tx = 0; tx < row.length; tx++) if (row[tx] === '#') solids.add(feltImage(this, X0 + tx * T + 8, ty * T + 8, 'diamond').setDepth(3));
+      for (let tx = 0; tx < row.length; tx++) if (row[tx] === '#') {
+        const block = feltImage(this, X0 + tx * T + 8, ty * T + 8, 'diamond').setDepth(3);
+        solids.add(block);
+        // drawn a little bigger than its tile, so the walls have no gaps (the body stays one tile)
+        block.setScale(BLOCK_FIT / ART);
+      }
     });
 
     // the panel on the wall: plain mint felt, a cream edge and a stitched line inside
@@ -175,6 +180,8 @@ export class HouseScene extends Phaser.Scene {
   update() {
     if (this.busy) return;
     const p = this.player;
+    // at a box, down opens it; anywhere else it ducks
+    p.noCrouch = this.boxes.some((b) => Math.abs(p.x - b.x) < 14);
     p.update();
     this.host.animate(this.game.loop.delta / 1000, 0, false);
     const box = this.boxes.find((b) => Math.abs(p.x - b.x) < 14 && p.body.bottom > FLOOR - 4);

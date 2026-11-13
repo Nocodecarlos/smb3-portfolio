@@ -71,7 +71,8 @@ export function createControls(scene: Phaser.Scene): Controls {
     right: keys(K.D, K.RIGHT),
     down: keys(K.S, K.DOWN),
     up: keys(K.W, K.UP),
-    jump: keys(K.L, K.SPACE, K.Z),
+    // W and the up arrow jump too, with Space: what most people reach for first
+    jump: keys(K.SPACE, K.W, K.UP, K.L, K.Z),
     // Alt is captured so it can't pop open the browser's menu bar
     run: [...keys(K.K, K.SHIFT, K.X), k.addKey(K.ALT, true)],
   };
@@ -87,6 +88,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private hurtUntil = 0;
   /** Set when the player presses down while standing; read by the scene for pipes. */
   downPressed = false;
+  /** Ducking: down held on the ground. You stop walking (speed carries you a little) and can still jump. */
+  crouching = false;
+  /** Set by the scene where down means something else (a billboard, a pipe, a door): no ducking there. */
+  noCrouch = false;
+  /** Easy mode: the way the hero walks by themselves (0: they stand). Holding left or right takes over. */
+  autoDir = 0;
   /** Feather power: lets a full P-meter take off, and jump taps slow a fall. */
   powered = false;
   /** 0..1, fills while running flat out on the ground. */
@@ -107,6 +114,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   /** Felt courses draw the chosen felt hero as a puppet; this sprite then only carries the physics body. */
   private rig?: ChibiRig;
+  /** The polish test: the course hears about landings, takeoffs and skids (for dust), with how hard, 0..1. */
+  onFx?: (kind: 'land' | 'jump' | 'skid', power: number) => void;
+  private lively = false;
+  private wasGround = true;
+  private prevVy = 0;
+  private lastSkid = 0;
 
   /** `height` is the puppet's, feet to hat; the body grows with it, feet staying where they are. */
   constructor(scene: Phaser.Scene, x: number, y: number, controls: Controls, hero?: Hero, height = 19) {
@@ -130,6 +143,18 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
     this.body.setMaxVelocity(P_RUN, RISE_MAX);
     this.setDepth(10);
+  }
+
+  /** Turn away to read a billboard behind the course, or back to the game. Resolves when the turn is done. */
+  faceBoard(away: boolean) {
+    return this.rig?.turn(away) ?? Promise.resolve();
+  }
+
+  /** The polish test: the puppet moves like a soft toy (see ChibiRig.lively). */
+  setLively(on: boolean) {
+    this.lively = on;
+    this.rig?.setLively(on);
+    return this;
   }
 
   /** Draws the hero (and its puppet) at this depth: behind the scenery, or back in front at 10. */
@@ -179,10 +204,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const c = this.controls;
     const b = this.body;
     const onGround = b.blocked.down || b.touching.down;
-    const running = held(c.run);
-    const full = this.pMeter >= 0.98;
+    const steer = (held(c.right) ? 1 : 0) - (held(c.left) ? 1 : 0);
+    // walking by themselves, the hero keeps a steady run: fast enough for every gap, never the full-P sprint
+    const auto = steer === 0 && this.autoDir !== 0;
+    const running = held(c.run) || auto;
+    const full = this.pMeter >= 0.98 && !auto;
     const max = !running ? WALK : full ? P_RUN : RUN;
-    const dir = (held(c.right) ? 1 : 0) - (held(c.left) ? 1 : 0);
+    this.crouching = onGround && held(c.down) && !this.noCrouch && !this.sliding && !this.hurting;
+    const dir = this.crouching ? 0 : steer || this.autoDir;
     const now = this.scene.time.now;
     const dt = this.scene.game.loop.delta / 1000;
     const speed = Math.abs(b.velocity.x);
@@ -207,6 +236,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       // keep knockback momentum
     } else if (dir !== 0) {
       const turning = Math.sign(b.velocity.x) === -dir;
+      if (turning && onGround && speed > 70 && now - this.lastSkid > 90) {
+        this.lastSkid = now;
+        this.onFx?.('skid', speed / P_RUN);
+      }
       // past this gait's top speed: ease down on the ground, keep it in the air
       const over = speed > max && !turning;
       b.setAccelerationX(over ? 0 : dir * (turning ? SKID : ACCEL));
@@ -237,6 +270,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.jumping = true;
       this.sliding = false;
       this.launched = false;
+      this.onFx?.('jump', 0.4);
       this.lastGround = this.jumpWanted = -1e9;
       if (this.powered && full) this.flyUntil = now + FLY_MS;
       sfx.jump();
@@ -261,6 +295,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const fall = this.floating ? FLOAT_FALL : FALL;
     if (b.velocity.y > fall) b.velocity.y = fall;
 
+    if (onGround && !this.wasGround && this.prevVy > 120) this.onFx?.('land', Math.min(1, this.prevVy / FALL));
+    this.wasGround = onGround;
+    this.prevVy = b.velocity.y;
+
     const k = this.powered ? 'playerF' : 'player';
     if (this.rig) {
       // With the feather the hero wears a cape: caped walk on the ground, flying pose in the air.
@@ -269,7 +307,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       // sliding: legs still, the body leaning with the snow
       const lean = this.sliding && onGround ? Phaser.Math.RadToDeg(Math.atan(this.slope)) : 0;
       this.rig.setTilt(lean, dt);
-      this.rig.animate(dt, onGround && !this.sliding ? Math.min(1, Math.abs(b.velocity.x) / RUN) : 0, !onGround);
+      // a lively puppet strides faster still at full P speed
+      const pace = Math.abs(b.velocity.x) / RUN;
+      this.rig.animate(dt, onGround && !this.sliding ? (this.lively ? pace : Math.min(1, pace)) : 0, !onGround, b.velocity.y, this.crouching);
     } else if (!onGround) {
       this.anims.stop();
       this.setTexture(`${k}-3`);

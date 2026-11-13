@@ -2,12 +2,17 @@
 
 let ctx: AudioContext | null = null;
 let muted = false;
+/** The TV's volume, as a share of the usual loudness (0 is off). */
+let gain = 1;
+export function setSfxGain(g: number) {
+  gain = g;
+}
 try {
   muted = localStorage.getItem('smb3.muted') === '1';
 } catch {}
 
 function ac(): AudioContext | null {
-  if (muted) return null;
+  if (muted || gain <= 0) return null;
   if (!ctx) {
     try {
       ctx = new AudioContext();
@@ -28,7 +33,7 @@ function tone(notes: [freq: number, dur: number][], type: OscillatorType = 'squa
     const g = a.createGain();
     o.type = type;
     o.frequency.setValueAtTime(f, t);
-    g.gain.setValueAtTime(vol, t);
+    g.gain.setValueAtTime(vol * gain, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + d);
     o.connect(g).connect(a.destination);
     o.start(t);

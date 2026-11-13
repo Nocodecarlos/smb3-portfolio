@@ -130,7 +130,6 @@ export class CourseStory {
       }
       const hint = px(this.scene, x + SIGN_W / 2, top - 9, `${KEYS.s}: ${b.type === 'image' ? 'LOOK' : 'READ'}`, { size: 6, color: '#000' }).setOrigin(0.5).setDepth(20).setVisible(false);
       hint.setBackgroundColor('#ffffff').setPadding(2, 2, 2, 1);
-      this.scene.tweens.add({ targets: hint, y: hint.y - 2, yoyo: true, repeat: -1, duration: 450 });
       this.signs.push({ beat: b, x, top, h, hint, parts });
     }
   }

@@ -1,6 +1,6 @@
 import { setContext, track } from '../analytics';
 import Phaser from 'phaser';
-import { ART, FELT, Z, preloadFelt, setupFelt } from '../art/felt';
+import { ART, FELT, SOIL, SOIL_H, SOIL_SEAM, SOIL_W, Z, preloadFelt, setupFelt } from '../art/felt';
 import { ChibiRig, preloadHeroes } from '../art/hero';
 import { stopMusic } from '../game/music';
 import { sfx } from '../game/sfx';
@@ -53,6 +53,7 @@ export class TitleScene extends Phaser.Scene {
 
     this.choice = Math.max(0, HEROES.indexOf(progress.hero));
     this.add.image(TW / 2, 0, 'title-bg').setOrigin(0.5, 0).setScale(0.5);
+    this.feltFloor();
 
     // A bug pacing between the two heroes, as in the mock
     const bug = this.add.image(640 + OX, 690, FELT, 'bug-0').setScale(4 / ART);
@@ -112,6 +113,33 @@ export class TitleScene extends Phaser.Scene {
     stopMusic(); // the title is silent
     this.cameras.main.fadeIn(300);
     raiseCurtain();
+  }
+
+  /**
+   * The floor, laid over the one in the exported art: the levels' own felt ground along the top, where the heroes
+   * stand, and the art's cookie blocks under it, set edge to edge. (The art's floor was a pixel-striped band over
+   * blocks spaced apart on flat brown, neither of which matched the felt world.)
+   */
+  private feltFloor() {
+    const TILE = 64;
+    const top = 712;
+    const bg = this.textures.get('title-bg');
+    // one cookie block, cut from the art (its pixels are 2 to an art px)
+    if (!bg.has('block')) bg.add('block', 0, 948, 1609, 112, 113);
+    // centred, so both sides of the screen cut the tiles the same way
+    const x0 = TW / 2 - Math.ceil(TW / 2 / TILE) * TILE;
+    const w = TW - 2 * x0;
+    this.add.rectangle(x0, top, w, TILE, SOIL_SEAM).setOrigin(0);
+    this.add.tileSprite(x0, top, w, TILE, FELT, SOIL).setOrigin(0).setTileScale(TILE / SOIL_W, TILE / SOIL_H);
+    this.add.rectangle(x0, top + TILE, w, 960 - top - TILE, 0x703e07).setOrigin(0);
+    this.add.tileSprite(x0, top + TILE, w, 960 - top - TILE, 'title-bg', 'block').setOrigin(0).setTileScale(TILE / 112, TILE / 113);
+    // the year, as it sat on the art's floor
+    const year = this.add.graphics();
+    year.fillStyle(0xffffff).fillRoundedRect(TW / 2 - 58, top + TILE + 20, 116, 50, 12);
+    this.add
+      .text(TW / 2, top + TILE + 46, getSite().year, { fontFamily: '"Press Start 2P", monospace', fontSize: '26px', color: '#333333' })
+      .setOrigin(0.5)
+      .setResolution(Z / 4);
   }
 
   /** A phone has no legend under the screen, so Resume sits over the title art: the legend's own button. */

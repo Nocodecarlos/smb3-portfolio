@@ -1,6 +1,6 @@
 import { setContext, track } from '../analytics';
 import Phaser from 'phaser';
-import { ART, CANDY_POST, FELT, PIPE_INSET, PIPE_RUN, POST, SKY, Z, feltImage, feltOnGround, feltPlatform, feltPost, feltSprite, haze, preloadFelt, setupFelt } from '../art/felt';
+import { ART, BLOCK_FIT, CANDY_POST, FELT, PIPE_INSET, PIPE_SIDE, POST, SOIL, SOIL_H, SOIL_SEAM, SOIL_W, SKY, Z, feltImage, feltOnGround, feltPipe, feltPlatform, feltPost, feltSprite, haze, preloadFelt, setupFelt } from '../art/felt';
 import { HeroRig, preloadHeroes } from '../art/hero';
 import { CAPY, preloadCapy, setupCapy } from '../art/capy';
 import { drawFarRange, drawKnit, preloadKnit } from '../art/knit';
@@ -73,6 +73,12 @@ export interface CourseLevel {
    * tile is `lift` [x, y].
    */
   season?: 'christmas';
+  /**
+   * The polish test (World 1-1 first): a handmade diorama with depth. The hero and enemies move like soft toys
+   * (stretch, squash, paper-flip turns), with dust at their feet; shrubs sway, clouds drift, coins bob,
+   * motes float in the air, and soft out-of-focus bushes pass in front of the course.
+   */
+  polish?: boolean;
   decor?: [string, number, number][];
   enemies: [string, number, number][];
   scenery: {
@@ -166,6 +172,10 @@ export class CourseScene extends Phaser.Scene {
   private skyBound = false;
   /** The slingshot: where it stands, how far it's pulled back (0..1) and its prompt. */
   private sling?: { x: number; pull: number; band: Phaser.GameObjects.Graphics; hint: Phaser.GameObjects.Text; art: Phaser.GameObjects.Image };
+  /** The polish test's effects: dust, coin sparks, and the shrubs that rustle. */
+  private fx?: { dust: Phaser.GameObjects.Particles.ParticleEmitter; spark: Phaser.GameObjects.Particles.ParticleEmitter; shrubs: Phaser.GameObjects.Image[] };
+  /** Easy mode: the billboards (and slingshot, and pipe up) the hero has already stopped at. */
+  private easySeen = new Set<object>();
   /** A hanging pipe that takes you up (World 1-5): its mouth, and the pipe top you come out of. */
   private lift?: { x0: number; x1: number; bottom: number; out: { x: number; top: number }; hint: Phaser.GameObjects.Text };
   private terrain?: Terrain;
@@ -224,7 +234,8 @@ export class CourseScene extends Phaser.Scene {
     this.feet = [];
     this.busy = this.finished = this.inRoom = this.inSky = this.skyBound = false;
     this.exits = {};
-    this.warp = this.skyPipe = this.sling = this.terrain = this.castle = this.lift = undefined;
+    this.warp = this.skyPipe = this.sling = this.terrain = this.castle = this.lift = this.fx = undefined;
+    this.easySeen = new Set();
   }
 
   preload() {
@@ -327,9 +338,12 @@ export class CourseScene extends Phaser.Scene {
       this.tweens.add({ targets: g, alpha: 0.2, yoyo: true, repeat: -1, duration: 900 + ((x * 7) % 900), delay: (y * 13) % 1200 });
     }
     // clouds and the big bushes are the far layer: hazed toward the sky so the course reads first
+    const swaying: Phaser.GameObjects.Image[] = [];
+    const drifting: Phaser.GameObjects.Image[] = [];
     for (const [x, y, w] of L.scenery.clouds) {
       const cloud = haze(feltImage(this, x, y, w > 50 ? 'cloud-l' : w > 40 ? 'cloud-m' : 'cloud-s').setOrigin(0).setDepth(-8), 0.2, 0.95);
       if (px) far(cloud, px.clouds).setDepth(-13); // behind the black goal wall, which doesn't move
+      drifting.push(cloud);
     }
     if (px?.hills) {
       // a soft rolling range with mushroom villages and a castle, as long as this slow layer travels
@@ -346,7 +360,7 @@ export class CourseScene extends Phaser.Scene {
     const sink = terrain ? 3 : 0;
     for (const [x, , w, h] of L.scenery.bushes) haze(feltOnGround(this, x, groundAt(x + w / 2) + sink, `bush2-${w}x${h}`).setDepth(-6), 0.22, 0.85);
     for (const [x, w, h] of L.stubs ?? []) feltOnGround(this, x, groundAt(x + w / 2) + sink, `bush2-${w}x${h}`).setDepth(-6);
-    for (const [x] of L.scenery.shrubs) feltOnGround(this, x * T, groundAt(x * T + 8), 'shrub').setDepth(-6);
+    for (const [x] of L.scenery.shrubs) swaying.push(feltOnGround(this, x * T, groundAt(x * T + 8), 'shrub').setDepth(-6));
     // felt pines and snowmen standing in the snow, a touch hazed like the bushes
     for (const [k, x, h] of L.decor ?? []) {
       const key = `winter-${k}`;
@@ -372,9 +386,10 @@ export class CourseScene extends Phaser.Scene {
     // ---- Ground ----
     for (const [x, w] of L.ground) {
       // felt soil tiles are separate rounded squares; the dark backing shows as the seams between them
-      this.add.rectangle(x * T, G, w * T, this.H - G, 0x4e2e24).setOrigin(0).setDepth(3);
+      this.add.rectangle(x * T, G, w * T, this.H - G, SOIL_SEAM).setOrigin(0).setDepth(3);
       // the Figma course fills both ground rows with the diagonal soil felt
-      this.add.tileSprite(x * T, G, w * T, this.H - G, FELT, 'soil').setOrigin(0).setDepth(3).setTileScale(1 / ART);
+      // tile to tile with no gap: only the tiles' rounded corners let the backing through
+      this.add.tileSprite(x * T, G, w * T, this.H - G, FELT, SOIL).setOrigin(0).setDepth(3).setTileScale(T / SOIL_W, T / SOIL_H);
       this.floor.add(solidRect(x * T, G, w * T, this.H - G));
     }
     // the knit pieces are drawn in front of the pipes, so pipe feet tuck into the ground,
@@ -392,18 +407,14 @@ export class CourseScene extends Phaser.Scene {
         // lowered so the body itself rests on what's below; the wider cap tucks behind the ground.
         const len = p.w! * T;
         const left = p.side === 'left';
-        const bodyX = left ? x + cap - 4 : x;
         const mid = top + 16 + PIPE_INSET;
-        this.add.tileSprite(bodyX + (len - cap + 4) / 2, mid, 32, len - cap + 4, FELT, PIPE_RUN).setDepth(2).setTileScale(1 / ART).setAngle(90);
-        feltImage(this, left ? x + cap / 2 : x + len - cap / 2, mid, 'pipe2-top').setDisplaySize(32, cap).setAngle(left ? -90 : 90).setDepth(2);
+        this.sidePipe(x + len / 2, mid, len, left);
         solidRect(x, top + 2 * PIPE_INSET, len, 32 - 2 * PIPE_INSET);
         continue;
       }
       const h = p.h! * T;
-      // One knitted body (tiled down the pipe) under a 14px felt cap; hanging pipes cap their bottom end.
-      const bodyY = p.hanging || p.capless ? top : top + cap - 4;
-      this.add.tileSprite(x, bodyY, 32, h - (p.capless ? 0 : cap - 4), FELT, PIPE_RUN).setOrigin(0).setDepth(p.capless ? 1.9 : 2).setTileScale(1 / ART);
-      if (!p.capless) feltImage(this, x, p.hanging ? top + h - cap : top, 'pipe2-top').setOrigin(0).setDisplaySize(32, cap).setDepth(2).setFlipY(!!p.hanging);
+      // one piece, rim and all; a hanging pipe is the same turned over, its rim at the bottom
+      feltPipe(this, h, !p.capless).setPosition(x, top).setDepth(p.capless ? 1.9 : 2).setFlipY(!!p.hanging);
       solidRect(x, top, 32, h);
       if (p.plant) {
         const s = feltSprite(this, x + 16, top, 'snapper-0').setOrigin(0.5, 0).setDepth(1);
@@ -431,6 +442,8 @@ export class CourseScene extends Phaser.Scene {
       const s = (kind === 'story' ? this.add.sprite(0, 0, STORY_TEXTURE).setScale(T / 128) : feltSprite(this, 0, 0, key)).setPosition(ox + tx * T + 8, oy + ty * T + 8).setDepth(3);
       if (kind === 'story') this.textures.get(STORY_TEXTURE).setFilter(Phaser.Textures.FilterMode.LINEAR);
       this.solids.add(s);
+      // drawn a little bigger than its tile, so neighbours touch with no gap (the body stays one tile)
+      if (kind !== 'story') s.setScale(BLOCK_FIT / ART);
       this.blocks.set(s, { sprite: s, kind, tx, ty });
       return s;
     };
@@ -476,6 +489,12 @@ export class CourseScene extends Phaser.Scene {
       (e.body as Phaser.Physics.Arcade.Body).setSize(12 * ART, (walker ? 18 : 12) * ART).setOffset(2 * ART, (walker ? 2 : 4) * ART);
       e.setVelocityX(-24);
       e.setData('walker', walker);
+      if (L.polish) {
+        // soft toys: the turtle sways and flips like paper, the bug squashes with each waddle
+        const rig = e.getData('rig') as HeroRig | undefined;
+        if (rig) rig.lively = true;
+        else this.tweens.add({ targets: e, scaleY: { from: 0.9 / ART, to: 1.08 / ART }, yoyo: true, repeat: -1, duration: 240, ease: 'Sine.easeInOut' });
+      }
     }
 
     // ---- Goal: black end zone with the spinning card box ----
@@ -530,6 +549,7 @@ export class CourseScene extends Phaser.Scene {
     const overGround = (x: number) => L.ground.some(([gx, w]) => x >= gx * T && x < (gx + w) * T);
     this.story.buildSigns(L.autoscroll ? () => G : groundAt, L.autoscroll ? (x) => (overGround(x) ? G : this.H + 8) : groundAt, snowy ? CANDY_POST : POST);
     if (snowy) this.snowfall();
+    if (L.polish) this.polish(swaying, drifting, px ? far : undefined);
     if (this.readBefore) this.story.restoreRead(this.readBefore);
     this.input.keyboard!.on('keydown-ESC', () => {
       if (ui.blocking) return;
@@ -680,6 +700,7 @@ export class CourseScene extends Phaser.Scene {
         if (row[tx] !== '#') continue;
         const s = feltImage(this, this.RX + tx * T + 8, ty * T + 8, 'diamond').setDepth(3);
         this.solids.add(s);
+        s.setScale(BLOCK_FIT / ART);
       }
     });
     const cap = 14;
@@ -690,8 +711,7 @@ export class CourseScene extends Phaser.Scene {
       // A felt pipe, two tiles long, hanging under the ceiling with its mouth down
       const x = this.RX + R.pipe * T;
       const top = R.pipeY * T;
-      this.add.tileSprite(x, top, 32, 2 * T - cap + 4, FELT, PIPE_RUN).setOrigin(0).setDepth(2).setTileScale(1 / ART);
-      feltImage(this, x, top + 2 * T - cap, 'pipe2-top').setOrigin(0).setDisplaySize(32, cap).setDepth(2).setFlipY(true);
+      feltPipe(this, 2 * T).setPosition(x, top).setDepth(2).setFlipY(true);
       this.solids.add(this.add.rectangle(x + 16, top + T, 32, 2 * T).setVisible(false));
     }
     if (R.exit) {
@@ -701,8 +721,7 @@ export class CourseScene extends Phaser.Scene {
       const y = ey * T;
       // lowered like the sideways pipes outside, so the body rests on the floor
       const mid = y + 16 + PIPE_INSET;
-      this.add.tileSprite(x + (2 * T - cap + 4) / 2, mid, 32, 2 * T - cap + 4, FELT, PIPE_RUN).setDepth(2).setTileScale(1 / ART).setAngle(90);
-      feltImage(this, x + 2 * T - cap / 2, mid, 'pipe2-top').setDisplaySize(32, cap).setAngle(90).setDepth(2);
+      this.sidePipe(x + T, mid, 2 * T, false);
       this.solids.add(this.add.rectangle(x + T, y + 16, 2 * T, 32).setVisible(false));
     }
     for (const [x, y] of R.coins) this.coins.add(feltImage(this, this.RX + x * T + 8, y * T + 8, 'coin').setDepth(4));
@@ -749,8 +768,7 @@ export class CourseScene extends Phaser.Scene {
     const cap = 14;
     const px0 = x0 + S.pipe * T;
     const ptop = floor - 2 * T;
-    this.add.tileSprite(px0, ptop + cap - 4, 32, h - ptop - cap + 4, FELT, PIPE_RUN).setOrigin(0).setDepth(2.5).setTileScale(1 / ART);
-    feltImage(this, px0, ptop, 'pipe2-top').setOrigin(0).setDisplaySize(32, cap).setDepth(2.5);
+    feltPipe(this, h - ptop).setPosition(px0, ptop).setDepth(2.5);
     this.solids.add(this.add.rectangle(px0 + 16, ptop + T, 32, 2 * T).setVisible(false));
     this.skyPipe = { x0: px0, x1: px0 + 32, top: ptop };
   }
@@ -848,6 +866,16 @@ export class CourseScene extends Phaser.Scene {
     this.busy = false;
   }
 
+  /** A pipe lying on its side, `len` long, centred on (cx, cy), its mouth (and rim) facing left or right. */
+  private sidePipe(cx: number, cy: number, len: number, left: boolean) {
+    return feltPipe(this, len)
+      .setOrigin(0.5)
+      .setScale(PIPE_SIDE / ART, 1 / ART)
+      .setAngle(left ? -90 : 90)
+      .setPosition(cx, cy)
+      .setDepth(2);
+  }
+
   /** A small black-on-white pixel label (the prompts over pipes and the slingshot). */
   private label(x: number, y: number, s: string) {
     return px(this, x, y, s, { size: 6, color: '#000' });
@@ -878,13 +906,7 @@ export class CourseScene extends Phaser.Scene {
   /** Snow drifting down over everything, in front and (smaller, slower) behind the course. Skipped for reduced motion. */
   private snowfall() {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    if (!this.textures.exists('snowflake')) {
-      const g = this.make.graphics({ x: 0, y: 0 }, false);
-      g.fillStyle(0xffffff, 0.35).fillCircle(8, 8, 8);
-      g.fillStyle(0xffffff, 1).fillCircle(8, 8, 5);
-      g.generateTexture('snowflake', 16, 16);
-      g.destroy();
-    }
+    this.softDot();
     // a camera that's zoomed in sees the middle of a scrollFactor-0 layer: start the flakes there
     const zx = (WIDTH * Z - WIDTH) / 2;
     const zy = (HEIGHT * Z - HEIGHT) / 2;
@@ -1047,6 +1069,65 @@ export class CourseScene extends Phaser.Scene {
     this.busy = false;
   }
 
+  /**
+   * Reading a billboard: the hero stops and turns to face it, looks for a moment, and then the card unfolds.
+   * Closing it turns the hero back to the game.
+   */
+  private async readSign(open: () => Promise<void>) {
+    if (this.busy || ui.blocking) return;
+    this.busy = true;
+    const p = this.player;
+    p.setVelocity(0, 0);
+    p.setAccelerationX(0);
+    this.physics.pause();
+    // in Easy mode the hero walks on once this one's been read
+    const sign = this.story.signFor(p.x);
+    if (sign) this.easySeen.add(sign);
+    await p.faceBoard(true);
+    await new Promise((r) => this.time.delayedCall(260, r));
+    await open();
+    await p.faceBoard(false);
+    this.physics.resume();
+    this.input.keyboard!.resetKeys();
+    this.busy = false;
+  }
+
+  /**
+   * Easy mode: which way the hero walks by themselves this frame. On, they head right at a steady run and the
+   * player only jumps. They stop once at each billboard, at the slingshot and under a pipe that goes up, so
+   * nothing is walked past; reading it, jumping, or pressing right moves on.
+   */
+  private autoWalk(p: Player) {
+    if (!ui.easy || this.finished || this.behind) return 0;
+    const stop = this.easyStop(p);
+    if (stop) {
+      if (!held(this.controls.right) && !held(this.controls.jump)) return 0;
+      this.easySeen.add(stop);
+    }
+    return 1;
+  }
+
+  /** The thing the hero has stopped for in Easy mode, if they're at one they haven't stopped at before. */
+  private easyStop(p: Player): object | undefined {
+    const fresh = (o?: object) => (o && !this.easySeen.has(o) ? o : undefined);
+    const sign = fresh(this.story.signFor(p.x));
+    // at the middle of the board (it's 72 px wide)
+    if (sign && p.x >= (sign as { x: number }).x + 30) return sign;
+    if (fresh(this.sling) && Math.abs(p.x - this.sling!.x) < 6) return this.sling;
+    if (fresh(this.lift) && !this.inSky && !this.inRoom && Math.abs(p.x - (this.lift!.x0 + this.lift!.x1) / 2) < 5) return this.lift;
+    return undefined;
+  }
+
+  /** Where pressing down does something already (read, enter a pipe, pull the slingshot, the doors), so the hero doesn't duck there. */
+  private downMeansSomething(p: Player) {
+    const on = (q?: { x0: number; x1: number; top: number }) => !!q && p.x > q.x0 + 2 && p.x < q.x1 - 2 && Math.abs(p.body.bottom - q.top) < 4;
+    if (this.story.signAt(p.x)) return true;
+    if ((!this.inRoom && !this.inSky && on(this.warp)) || (this.inSky && on(this.skyPipe))) return true;
+    if (this.sling && Math.abs(p.x - this.sling.x) < 14) return true;
+    if (on(this.door)) return true;
+    return !!this.castle?.doorAt(p.x, p.body.bottom, this.inRoom);
+  }
+
   private tweenTo(target: object, props: Record<string, number>, duration: number) {
     return new Promise<void>((resolve) => this.tweens.add({ targets: target, ...props, duration, onComplete: () => resolve() }));
   }
@@ -1063,6 +1144,8 @@ export class CourseScene extends Phaser.Scene {
       const b = t.surface(p.x + 4);
       p.slope = a !== undefined && b !== undefined ? (b - a) / 8 : 0;
     } else p.slope = 0;
+    p.noCrouch = this.downMeansSomething(p);
+    p.autoDir = this.autoWalk(p);
     p.update();
     this.hud.setMeter(Math.round(p.pMeter * 6));
 
@@ -1125,7 +1208,7 @@ export class CourseScene extends Phaser.Scene {
       const look = this.story.signAt(p.x);
       if (look) {
         if (ui.dev) this.select(this.story.signFor(p.x)!.beat.id);
-        void this.read(look);
+        void this.readSign(look);
         return;
       }
     }
@@ -1157,6 +1240,7 @@ export class CourseScene extends Phaser.Scene {
 
     // the sky sits past the course: chapters there stay where they were, like in a room
     this.story.update(p.x, this.inRoom || this.inSky);
+    this.rustle();
     this.updateEnemies();
     this.updateFeathers();
     const fire = this.castle?.update(this.time.now, p.getBounds());
@@ -1168,7 +1252,9 @@ export class CourseScene extends Phaser.Scene {
     }
 
     if (!this.finished) {
-      if (!this.behind && Phaser.Math.Distance.Between(p.x, p.y, this.goal.x, this.goal.y) < 18) void this.finish();
+      // in Easy mode walking under a goal card that's a hop up is enough
+      const under = ui.easy && Math.abs(p.x - this.goal.x) < 8 && p.y - this.goal.y < 56 && p.y > this.goal.y;
+      if (!this.behind && (under || Phaser.Math.Distance.Between(p.x, p.y, this.goal.x, this.goal.y) < 18)) void this.finish();
       else this.goal.setTexture(FELT, `icon-${['star', 'heart', 'pencil', 'seed'][Math.floor(this.time.now / 140) % 4]}`);
     }
   }
@@ -1216,6 +1302,121 @@ export class CourseScene extends Phaser.Scene {
     }
   };
 
+  /** Shrubs rustle as the hero brushes past: a quick squash from the roots, then back. */
+  private rustle() {
+    const fx = this.fx;
+    const p = this.player;
+    if (!fx || this.behind || Math.abs(p.body.velocity.x) < 30) return;
+    for (const o of fx.shrubs) {
+      if (o.getData('rustling') || Math.abs(o.x + 8 - p.x) > 7 || o.y - p.body.bottom > 10 || p.body.bottom - o.y > 4) continue;
+      const k = o.scaleY;
+      o.setData('rustling', true);
+      this.tweens.add({ targets: o, scaleY: { from: k * 0.78, to: k }, duration: 420, ease: 'Back.easeOut', onComplete: () => void o.setData('rustling', false).setScale(o.scaleX, k) });
+    }
+  }
+
+  /** A felt frame shrunk to a twelfth of its size, made once: shown big, it reads as out of focus. */
+  private softCopy(frame: string) {
+    const key = `soft-${frame}`;
+    if (this.textures.exists(key)) return key;
+    const f = this.textures.getFrame(FELT, frame);
+    const w = Math.max(2, Math.round(f.cutWidth / 12));
+    const h = Math.max(2, Math.round(f.cutHeight / 12));
+    const tex = this.textures.createCanvas(key, w, h)!;
+    const ctx = tex.getContext();
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(f.source.image as HTMLImageElement, f.cutX, f.cutY, f.cutWidth, f.cutHeight, 0, 0, w, h);
+    tex.refresh();
+    tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
+    return key;
+  }
+
+  /** A soft round dot (snow, dust, motes), made once. */
+  private softDot() {
+    if (this.textures.exists('snowflake')) return;
+    const g = this.make.graphics({ x: 0, y: 0 }, false);
+    g.fillStyle(0xffffff, 0.35).fillCircle(8, 8, 8);
+    g.fillStyle(0xffffff, 1).fillCircle(8, 8, 5);
+    g.generateTexture('snowflake', 16, 16);
+    g.destroy();
+  }
+
+  /**
+   * The polish test: everything that makes the course feel like a diorama with depth. `far` places a layer that
+   * scrolls at its own speed (undefined when the device asks for less motion: then nothing drifts or sways).
+   */
+  private polish(swaying: Phaser.GameObjects.Image[], drifting: Phaser.GameObjects.Image[], far?: <O extends Phaser.GameObjects.Image>(o: O, f: number, fy?: number) => O) {
+    const L = this.level;
+    const G = L.groundRow * T;
+    this.softDot();
+    // dust at the hero's feet (landing, taking off, skidding) and a sparkle off each coin
+    const puff = (tint: number, speed: number, size: number, life: number) =>
+      this.add.particles(0, 0, 'snowflake', {
+        lifespan: life,
+        speedX: { min: -speed, max: speed },
+        speedY: { min: -speed * 0.8, max: -4 },
+        scale: { start: size, end: 0 },
+        alpha: { start: 0.85, end: 0 },
+        tint,
+        emitting: false,
+      });
+    const dust = puff(0xf6efdc, 26, 0.3, 380).setDepth(9);
+    const spark = puff(0xffd75e, 42, 0.2, 320).setDepth(9);
+    this.fx = { dust, spark, shrubs: swaying };
+    const p = this.player.setLively(true);
+    p.onFx = (kind, power) => {
+      if (this.behind) return;
+      const y = p.body.bottom - 1;
+      if (kind === 'land') for (const side of [-4, 4]) dust.emitParticleAt(p.x + side, y, 2 + Math.round(2 * power));
+      else if (kind === 'jump') dust.emitParticleAt(p.x, y, 3);
+      else dust.emitParticleAt(p.x + Math.sign(p.body.velocity.x) * 5, y, 1 + Math.round(power));
+    };
+    if (!far) return;
+
+    // the world is never quite still: shrubs sway from their roots, clouds drift, coins bob
+    swaying.forEach((o, i) => this.tweens.add({ targets: o, angle: { from: -2.5, to: 2.5 }, yoyo: true, repeat: -1, duration: 1300 + ((i * 173) % 500), delay: (i * 260) % 1300, ease: 'Sine.easeInOut' }));
+    drifting.forEach((o, i) => this.tweens.add({ targets: o, x: o.x + 7, yoyo: true, repeat: -1, duration: 5200 + ((i * 911) % 2600), ease: 'Sine.easeInOut' }));
+    (this.coins.getChildren() as Phaser.GameObjects.Image[]).forEach((c) =>
+      this.tweens.add({ targets: c, y: c.y - 1.5, yoyo: true, repeat: -1, duration: 620, delay: (c.x * 9) % 620, ease: 'Sine.easeInOut' }),
+    );
+
+    // motes floating in the light, in front of the far hills
+    const zx = (WIDTH * Z - WIDTH) / 2;
+    const zy = (HEIGHT * Z - HEIGHT) / 2;
+    this.add
+      .particles(0, 0, 'snowflake', {
+        x: { min: zx - 20, max: zx + WIDTH + 20 },
+        y: { min: zy + 10, max: zy + HEIGHT - BAR - 30 },
+        lifespan: 9000,
+        speedX: { min: 3, max: 9 },
+        speedY: { min: -4, max: 3 },
+        scale: { min: 0.06, max: 0.13 },
+        // fade in and out over each mote's life
+        alpha: { onUpdate: (_p: unknown, _k: string, t: number) => Math.sin(t * Math.PI) * 0.55 },
+        tint: 0xfff4c8,
+        frequency: 520,
+      })
+      .setScrollFactor(0)
+      .setDepth(-5)
+      .fastForward(8000);
+
+    // the front of the diorama: big soft bushes, out of focus, sliding past quicker than the course
+    const FRONT = 1.4;
+    const frames = ['bush2-34x48', 'bush2-40x48', 'bush2-22x34', 'bush2-38x48'];
+    let n = 0;
+    for (const [gx, gw] of L.ground) {
+      for (let tx = gx + 6 + ((n * 5) % 4); tx < gx + gw - 5; tx += 15 + ((n * 7) % 9), n++) {
+        if (tx < 12 || tx > L.goal - 10) continue;
+        // out of focus without a live blur (which redrew every bush through a shader each frame and slowed the
+        // game): the art is shrunk to a few pixels once, and drawing that big again is what softens it
+        const o = this.add.image(tx * T, this.H + BAR + 6, this.softCopy(frames[n % frames.length])).setOrigin(0.5, 1);
+        // tall enough to peek over the ground line, never over the hero's head
+        o.setScale((this.H + BAR + 6 - (G - 7 - (n % 3) * 3)) / o.height).setTint(0xb9d2b4).setAlpha(0.94);
+        far(o, FRONT, 1).setDepth(40);
+      }
+    }
+  }
+
   // ---------- Collisions ----------
 
   private touchSolid(o: Phaser.GameObjects.GameObject) {
@@ -1230,6 +1431,12 @@ export class CourseScene extends Phaser.Scene {
     const s = b.sprite;
     sfx.bump();
     this.tweens.add({ targets: s, y: s.y - 5, duration: 70, yoyo: true });
+    // soft toys squash when you hit them
+    if (this.fx && b.kind !== 'super' && b.kind !== 'story') {
+      const k = BLOCK_FIT / ART;
+      this.tweens.add({ targets: s, scaleX: k * 1.14, scaleY: k * 0.86, duration: 70, yoyo: true, onComplete: () => void s.setScale(k) });
+      this.fx.dust.emitParticleAt(s.x, s.y + 8, 3);
+    }
     // Story blocks open their reading card on every bump (so they can be re-read); read ones dim a little.
     if (b.kind === 'story') {
       const open = this.story.storyAt(b.tx, b.ty);
@@ -1327,6 +1534,7 @@ export class CourseScene extends Phaser.Scene {
     if (pb.velocity.y > 0 && pb.bottom - eb.top < 10) {
       e.setData('stompedAt', this.time.now);
       sfx.stomp();
+      this.fx?.dust.emitParticleAt(e.x, eb.bottom - 2, 6);
       this.player.bounce();
       if (!e.getData('walker')) {
         e.setData('dead', true);
@@ -1415,6 +1623,7 @@ export class CourseScene extends Phaser.Scene {
     // the physics step is mid-collision here: let it finish before removing the sprite
     this.time.delayedCall(0, () => s.destroy());
     sfx.bump();
+    this.fx?.dust.emitParticleAt(s.x, s.y, 8);
     for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
       const piece = feltImage(this, s.x + dx * 4, s.y + dy * 4, 'brick2').setScale(0.4 / ART).setDepth(8);
       this.tweens.add({ targets: piece, x: piece.x + dx * 18, y: piece.y + 40, angle: dx * 200, duration: 600, ease: 'Quad.easeIn', onComplete: () => piece.destroy() });
@@ -1441,6 +1650,8 @@ export class CourseScene extends Phaser.Scene {
   }
 
   private collect(c: Phaser.GameObjects.Image) {
+    this.fx?.spark.emitParticleAt(c.x, c.y, 6);
+    this.tweens.killTweensOf(c);
     c.destroy();
     sfx.coin();
     this.addCoins(1);
@@ -1450,7 +1661,16 @@ export class CourseScene extends Phaser.Scene {
     sfx.coin();
     this.addCoins(1);
     const c = feltImage(this, x, y, 'coin').setDepth(8);
-    this.tweens.add({ targets: c, y: y - 32, duration: 260, yoyo: true, onComplete: () => c.destroy() });
+    this.tweens.add({
+      targets: c,
+      y: y - 32,
+      duration: 260,
+      yoyo: true,
+      onComplete: () => {
+        this.fx?.spark.emitParticleAt(c.x, c.y, 6);
+        c.destroy();
+      },
+    });
   }
 
   private addCoins(n: number) {

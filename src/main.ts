@@ -1,9 +1,10 @@
-import { initAnalytics } from './analytics';
+import { initAnalytics, track } from './analytics';
 import Phaser from 'phaser';
 import { setRenderZoom } from './art/felt';
 import { getSite, onContentChange, resolveSrc } from './content/store';
+import { VOLUME_MAX, stepVolume, volumeLevel } from './game/music';
 import { isMuted, toggleMute } from './game/sfx';
-import { HEIGHT, PHONE, WIDTH, ui } from './game/state';
+import { HEIGHT, PHONE, WIDTH, ui, setEasy } from './game/state';
 import { BootScene } from './scenes/BootScene';
 import { CastleScene } from './scenes/CastleScene';
 import { CourseScene } from './scenes/CourseScene';
@@ -77,8 +78,54 @@ async function start() {
     if (isTyping(t) || ui.blocking) return;
     // Alt is a run key: keep Alt+arrow (back/forward) and Alt+letter browser shortcuts from firing mid-run
     if (e.altKey) e.preventDefault();
-    if (e.key === 'm' || e.key === 'M') game.sound.mute = toggleMute();
+    if (e.key === 'm' || e.key === 'M') {
+      game.sound.mute = toggleMute();
+      showVolume();
+    }
+    if (e.key === '-' || e.key === '_') volume(-1);
+    if (e.key === '=' || e.key === '+') volume(1);
   });
+
+  // The TV's volume: buttons on its bottom strip and the - and + keys, shown for a moment on the screen like a TV does
+  const osd = document.getElementById('vol-osd')!;
+  let osdTimer = 0;
+  const showVolume = () => {
+    const n = isMuted() ? 0 : volumeLevel();
+    osd.textContent = `${isMuted() ? 'MUTE' : 'VOLUME'} ${'▮'.repeat(n)}${'▯'.repeat(VOLUME_MAX - n)}`;
+    osd.classList.add('on');
+    window.clearTimeout(osdTimer);
+    osdTimer = window.setTimeout(() => osd.classList.remove('on'), 1400);
+  };
+  const volume = (by: number) => {
+    // turning it up also takes it off mute
+    if (isMuted() && by > 0) game.sound.mute = toggleMute();
+    const n = stepVolume(by);
+    track('volume_changed', { level: n });
+    showVolume();
+  };
+  // Easy mode: a switch on the TV's strip, or E
+  const easy = document.getElementById('easy-toggle') as HTMLInputElement;
+  easy.checked = ui.easy;
+  const setEasyMode = (on: boolean) => {
+    setEasy(on);
+    easy.checked = on;
+    track('easy_mode', { on });
+    osd.textContent = `EASY MODE ${on ? 'ON' : 'OFF'}`;
+    osd.classList.add('on');
+    window.clearTimeout(osdTimer);
+    osdTimer = window.setTimeout(() => osd.classList.remove('on'), 1600);
+  };
+  easy.addEventListener('change', () => {
+    setEasyMode(easy.checked);
+    // back to the game: keys go to it, not to the switch
+    easy.blur();
+  });
+  window.addEventListener('keydown', (e) => {
+    if (isTyping(e.target as HTMLElement) || ui.blocking || e.repeat) return;
+    if (e.key === 'e' || e.key === 'E') setEasyMode(!ui.easy);
+  });
+  document.getElementById('vol-down')!.addEventListener('click', () => volume(-1));
+  document.getElementById('vol-up')!.addEventListener('click', () => volume(1));
 
   const skip = document.getElementById('qv-btn')!;
   // in a level, the case studies open straight at that level's own (as the phone's START does)

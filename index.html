@@ -19,14 +19,25 @@
             <div id="overlay"></div>
             <div id="dev-badge">DEV MODE</div>
             <div id="curtain" aria-hidden="true"></div>
+            <div id="vol-osd" aria-live="polite"></div>
           </div>
           <span class="tv-power"></span>
+          <label class="tv-easy" title="Easy mode (E): the hero walks on their own. You jump, and they stop at each billboard.">
+            <span aria-hidden="true">EASY</span>
+            <input id="easy-toggle" type="checkbox" role="switch" aria-label="Easy mode: the hero walks on their own" />
+            <i aria-hidden="true"></i>
+          </label>
+          <div class="tv-vol">
+            <button id="vol-down" type="button" aria-label="Volume down" title="Volume down (-)">−</button>
+            <span aria-hidden="true">VOL</span>
+            <button id="vol-up" type="button" aria-label="Volume up" title="Volume up (+)">+</button>
+          </div>
         </div>
       </div>
       <p id="legend">
         <span><kbd>A</kbd><kbd>W</kbd><kbd>S</kbd><kbd>D</kbd> move</span>
         <span><kbd>K</kbd> / <kbd>Alt</kbd> run</span>
-        <span><kbd>L</kbd> / <kbd>Space</kbd> jump</span>
+        <span><kbd>W</kbd> / <kbd>Space</kbd> jump</span>
         <span><kbd>S</kbd> pipes</span>
         <span><kbd>Esc</kbd> map</span>
         <span><kbd>M</kbd> mute</span>
