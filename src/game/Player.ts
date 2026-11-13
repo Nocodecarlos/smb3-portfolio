@@ -7,6 +7,9 @@ import { type Hero, ui } from './state';
 // takeoff at speed. The amounts are tuned tighter than its numbers, to suit these levels: shorter, quicker jumps
 // and a hero who stops when you let go.
 const WALK = 78;
+/** Easy mode's stroll, a quarter slower than a walk; and how fast a jump carries it forward, so every gap can still be cleared. */
+const EASY_WALK = WALK * 0.75;
+const EASY_LEAP = 105;
 const RUN = 125;
 const P_RUN = 165;
 const ACCEL = 700;
@@ -205,11 +208,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const b = this.body;
     const onGround = b.blocked.down || b.touching.down;
     const steer = (held(c.right) ? 1 : 0) - (held(c.left) ? 1 : 0);
-    // walking by themselves, the hero keeps a steady run: fast enough for every gap, never the full-P sprint
+    // walking by themselves (Easy mode), the hero strolls at the ordinary walking pace: a run only comes from the run key
     const auto = steer === 0 && this.autoDir !== 0;
-    const running = held(c.run) || auto;
+    const running = held(c.run);
     const full = this.pMeter >= 0.98 && !auto;
-    const max = !running ? WALK : full ? P_RUN : RUN;
+    // a strolling hero's jump still carries forward (EASY_LEAP), so every gap can be cleared; the stroll resumes on landing
+    const max = !running ? (auto ? (onGround ? EASY_WALK : EASY_LEAP) : WALK) : full ? P_RUN : RUN;
     this.crouching = onGround && held(c.down) && !this.noCrouch && !this.sliding && !this.hurting;
     const dir = this.crouching ? 0 : steer || this.autoDir;
     const now = this.scene.time.now;

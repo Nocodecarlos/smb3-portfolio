@@ -1,7 +1,7 @@
 import { track } from '../analytics';
 import { getSite, getWorlds, resolveSrc } from '../content/store';
 import type { Beat, World } from '../content/types';
-import { PHONE, ui } from '../game/state';
+import { PHONE, setEasy, ui } from '../game/state';
 import { hushMusic } from '../game/music';
 import { sfx } from '../game/sfx';
 import { isTyping } from './typing';
@@ -243,15 +243,26 @@ export function showIntro(): Promise<void> {
           <h2 class="story-title">${esc(about.title)}</h2>
           <div class="story-body">${richText(body)}${PHONE ? `<p class="intro-wide">This portfolio is better played on a wider screen. <button class="intro-send" type="button">Send to desktop?</button></p>` : ''}</div>
         </div>
-        <footer class="story-foot"><button class="story-btn" data-close="">ok let's a-go</button></footer>
+        <footer class="story-foot"><button class="story-btn" data-close="">ok let's a-go</button>${PHONE ? '' : '<p class="intro-easy"></p>'}</footer>
       </article>
     </div>`);
+  // a keyboard note: E turns Easy mode on (the hero walks on their own, so all there is to do is jump)
+  const easyNote = node.querySelector<HTMLElement>('.intro-easy');
+  const showEasy = () => {
+    if (easyNote) easyNote.innerHTML = ui.easy ? 'Easy mode is on. Press <kbd>E</kbd> to turn it off.' : 'Want to play on easy mode? Press <kbd>E</kbd>.';
+  };
+  showEasy();
   node.querySelector<HTMLElement>('.intro-send')?.addEventListener('click', (e) => void sendToDesktop(e.currentTarget as HTMLElement));
   const shown = performance.now();
   return open<void>(node, (e, close) => {
     // the Enter that left the title screen can still be repeating: ignore keys for a moment
     if (performance.now() - shown < 500) return;
     if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') close();
+    else if ((e.key === 'e' || e.key === 'E') && easyNote && !e.repeat) {
+      setEasy(!ui.easy);
+      track('easy_mode', { on: ui.easy });
+      showEasy();
+    }
   });
 }
 

@@ -3,24 +3,24 @@ import { asset } from '../assets';
 
 // Background music: one looping track at a time, shared across scenes
 // (Phaser's sound manager is global). The overworld and each course have a
-// track (World 1-2's is "Hidden Forest Loop", the fortress's "Dungeon Loop"); the title is silent. Files live
+// track (World 1-2's is "Hidden Forest Loop", the fortress's "Dungeon Loop", World 1-5's "Christmas Chiptune"); the title is silent. Files live
 // in public/music as AAC with an MP3 fallback. Browsers only allow sound after
 // the first key press, so a track asked for before then starts on that press.
 
-export type Track = 'overworld' | 'world-1-1' | 'world-1-2' | 'world-1-3' | 'fortress';
+export type Track = 'overworld' | 'world-1-1' | 'world-1-2' | 'world-1-3' | 'world-1-5' | 'fortress';
 
 import { setSfxGain } from './sfx';
 
 const VOLUME = 0.45;
 /**
- * The TV's volume: 0 (off) to 4, where 3 is the usual loudness. Set with the buttons on the TV's bottom strip or the
+ * The TV's volume: 0 (off) to 20, like a 90s set's bar, where 12 is the usual loudness. Set with the buttons on the TV's bottom strip or the
  * - and + keys, and remembered. It turns the sound effects up and down too.
  */
-export const VOLUME_MAX = 4;
-const USUAL = 3;
+export const VOLUME_MAX = 20;
+const USUAL = 12;
 let level = USUAL;
 try {
-  const saved = Number(localStorage.getItem('smb3.volume') ?? USUAL);
+  const saved = Number(localStorage.getItem('smb3.vol20') ?? USUAL);
   if (saved >= 0 && saved <= VOLUME_MAX) level = Math.round(saved);
 } catch {}
 setSfxGain(level / USUAL);
@@ -36,7 +36,7 @@ export function volumeLevel() {
 export function stepVolume(by: number) {
   level = Math.max(0, Math.min(VOLUME_MAX, level + by));
   try {
-    localStorage.setItem('smb3.volume', String(level));
+    localStorage.setItem('smb3.vol20', String(level));
   } catch {}
   setSfxGain(level / USUAL);
   if (current) ramp(current.sound, loudness(), 200);

@@ -563,7 +563,7 @@ export class CourseScene extends Phaser.Scene {
     // back from the secret house it fades in like a fresh start; an editor rebuild cuts straight back
     if (!at || this.readBefore) this.cameras.main.fadeIn(250);
     // each course has its own track; any course without one plays World 1-1's
-    playMusic(this, L.id === 'world-1-2' || L.id === 'world-1-3' || L.id === 'fortress' ? L.id : 'world-1-1');
+    playMusic(this, L.id === 'world-1-2' || L.id === 'world-1-3' || L.id === 'world-1-5' || L.id === 'fortress' ? L.id : 'world-1-1');
   }
 
   /** The world billboard at the start of the course (Figma: screen/gameplay · world 1 start). */
@@ -1244,9 +1244,10 @@ export class CourseScene extends Phaser.Scene {
     this.updateEnemies();
     this.updateFeathers();
     const fire = this.castle?.update(this.time.now, p.getBounds());
-    if (fire !== undefined) p.hurt(fire);
+    // in Easy mode nothing hurts: enemies walk past the hero, and stomping them still works
+    if (fire !== undefined && !ui.easy) p.hurt(fire);
     for (const pl of this.plants) {
-      if (!this.behind && pl.sprite.y < pl.top - 4 && Phaser.Geom.Intersects.RectangleToRectangle(p.getBounds(), new Phaser.Geom.Rectangle(pl.cx - 6, pl.sprite.y + 2, 12, pl.top - pl.sprite.y))) {
+      if (!ui.easy && !this.behind && pl.sprite.y < pl.top - 4 && Phaser.Geom.Intersects.RectangleToRectangle(p.getBounds(), new Phaser.Geom.Rectangle(pl.cx - 6, pl.sprite.y + 2, 12, pl.top - pl.sprite.y))) {
         p.hurt(pl.cx);
       }
     }
@@ -1551,7 +1552,8 @@ export class CourseScene extends Phaser.Scene {
     }
     // a resting shell is harmless, and a kicked one gives you a moment to get clear
     if (shell === 'still' || (shell === 'slide' && this.time.now - e.getData('kickedAt') < 250)) return;
-    this.player.hurt(e.x);
+    // Easy mode: touching an enemy from the side does nothing, it just walks by (behind the hero)
+    if (!ui.easy) this.player.hurt(e.x);
   }
 
   /** Hit by a slide: tumbles off, spinning, and is gone. */

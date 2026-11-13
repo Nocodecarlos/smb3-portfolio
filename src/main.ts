@@ -89,13 +89,15 @@ async function start() {
   // The TV's volume: buttons on its bottom strip and the - and + keys, shown for a moment on the screen like a TV does
   const osd = document.getElementById('vol-osd')!;
   let osdTimer = 0;
-  const showVolume = () => {
-    const n = isMuted() ? 0 : volumeLevel();
-    osd.textContent = `${isMuted() ? 'MUTE' : 'VOLUME'} ${'▮'.repeat(n)}${'▯'.repeat(VOLUME_MAX - n)}`;
+  /** The set's on-screen display, bottom left in old-TV green: a word, and for volume a row of bars then dots. */
+  const showOsd = (label: string, level?: number) => {
+    const bars = level === undefined ? '' : `<span class="osd-bars">${Array.from({ length: VOLUME_MAX }, (_, i) => `<i class="${i < level ? 'bar' : 'dot'}"></i>`).join('')}</span>`;
+    osd.innerHTML = `<span class="osd-label">${label}</span>${bars}`;
     osd.classList.add('on');
     window.clearTimeout(osdTimer);
-    osdTimer = window.setTimeout(() => osd.classList.remove('on'), 1400);
+    osdTimer = window.setTimeout(() => osd.classList.remove('on'), 1800);
   };
+  const showVolume = () => (isMuted() ? showOsd('Mute', 0) : showOsd('Volume', volumeLevel()));
   const volume = (by: number) => {
     // turning it up also takes it off mute
     if (isMuted() && by > 0) game.sound.mute = toggleMute();
@@ -103,23 +105,12 @@ async function start() {
     track('volume_changed', { level: n });
     showVolume();
   };
-  // Easy mode: a switch on the TV's strip, or E
-  const easy = document.getElementById('easy-toggle') as HTMLInputElement;
-  easy.checked = ui.easy;
+  // Easy mode (the hero walks on their own) has no switch on the TV; the E key still turns it on and off
   const setEasyMode = (on: boolean) => {
     setEasy(on);
-    easy.checked = on;
     track('easy_mode', { on });
-    osd.textContent = `EASY MODE ${on ? 'ON' : 'OFF'}`;
-    osd.classList.add('on');
-    window.clearTimeout(osdTimer);
-    osdTimer = window.setTimeout(() => osd.classList.remove('on'), 1600);
+    showOsd(`Easy mode ${on ? 'on' : 'off'}`);
   };
-  easy.addEventListener('change', () => {
-    setEasyMode(easy.checked);
-    // back to the game: keys go to it, not to the switch
-    easy.blur();
-  });
   window.addEventListener('keydown', (e) => {
     if (isTyping(e.target as HTMLElement) || ui.blocking || e.repeat) return;
     if (e.key === 'e' || e.key === 'E') setEasyMode(!ui.easy);
