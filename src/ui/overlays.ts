@@ -443,7 +443,12 @@ function projectHtml(w: World, worlds: World[]): string {
         <h2>${esc(w.title)}</h2>
         <p class="qv-tagline">${esc(w.tagline)}</p>
         <p class="qv-role"><b>Role:</b> ${esc(w.role)}</p>
-        ${article ? `<nav class="qv-toc" aria-label="${esc(w.title)} sections">${article.toc.map((t) => `<a href="#${esc(t.id)}">${esc(t.label)}</a>`).join('')}</nav>` : ''}
+        ${
+          // the sections, tucked into a dropdown so a long list doesn't push the story down the page
+          article
+            ? `<details class="qv-toc"><summary>Jump to a section</summary><nav aria-label="${esc(w.title)} sections">${article.toc.map((t) => `<a href="#${esc(t.id)}">${esc(t.label)}</a>`).join('')}</nav></details>`
+            : ''
+        }
         ${
           // the full case study when there is one; otherwise the game's beats, read in order
           article
@@ -559,8 +564,13 @@ export function showQuickView(focus?: string, source = 'other') {
     }
     if (e.key === 'Escape' || e.key === 'q' || e.key === 'Q') {
       e.stopImmediatePropagation();
+      const menu = root.querySelector<HTMLDetailsElement>('details.qv-toc[open]');
       if (zoom) closeZoom();
-      else close();
+      // Escape shuts an open sections menu first, and a second press closes the page
+      else if (menu && e.key === 'Escape') {
+        menu.open = false;
+        menu.querySelector('summary')?.focus();
+      } else close();
     }
   };
   window.addEventListener('keydown', onKey, true);
@@ -568,6 +578,9 @@ export function showQuickView(focus?: string, source = 'other') {
 
   root.onclick = (e) => {
     const t = e.target as HTMLElement;
+    // a click anywhere outside the open sections menu, or on one of its links, shuts it
+    const menu = root.querySelector<HTMLDetailsElement>('details.qv-toc[open]');
+    if (menu && (!menu.contains(t) || t.closest('.qv-toc a'))) menu.open = false;
     const pic = t.closest<HTMLImageElement>('.qv-inner figure img');
     if (pic) return openZoom(pic);
     const pageLink = t.closest<HTMLAnchorElement>('a[data-page]');
